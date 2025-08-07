@@ -1,0 +1,264 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 199 89% 48%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 199 89% 48%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 199 89% 48%;
+  }
+
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Construction-specific styles */
+@layer components {
+  .construction-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4;
+  }
+  
+  .construction-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  /* Mobile-first touch targets for construction sites */
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Construction site responsive grid */
+  .construction-grid {
+    @apply grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+
+  /* Construction status indicators */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full mr-2;
+  }
+
+  .status-completed { @apply bg-green-500; }
+  .status-in-progress { @apply bg-blue-500; }
+  .status-pending { @apply bg-yellow-500; }
+  .status-blocked { @apply bg-red-500; }
+
+  /* Mobile-optimized form controls */
+  .mobile-input {
+    @apply min-h-[44px] text-base; /* Prevent zoom on iOS */
+  }
+
+  .mobile-button {
+    @apply min-h-[44px] px-6 text-base font-medium;
+  }
+
+  /* Construction project colors */
+  .project-active { @apply bg-green-50 border-green-200; }
+  .project-planning { @apply bg-blue-50 border-blue-200; }
+  .project-on-hold { @apply bg-yellow-50 border-yellow-200; }
+  .project-completed { @apply bg-gray-50 border-gray-200; }
+
+  /* Mobile-first navigation */
+  .mobile-nav {
+    @apply fixed bottom-0 left-0 right-0 z-50 bg-background border-t;
+    @apply lg:static lg:border-t-0 lg:bg-transparent;
+  }
+
+  /* Construction document viewer optimizations */
+  .document-viewer {
+    @apply w-full max-w-none overflow-hidden;
+    max-height: calc(100vh - 200px);
+  }
+
+  /* Responsive table for mobile */
+  .mobile-table {
+    @apply block lg:table w-full;
+  }
+
+  .mobile-table-row {
+    @apply block lg:table-row border-b lg:border-b-0;
+  }
+
+  .mobile-table-cell {
+    @apply block lg:table-cell px-4 py-2 lg:border-b;
+  }
+
+  .mobile-table-cell:before {
+    content: attr(data-label) ": ";
+    @apply font-medium lg:hidden;
+  }
+}
+
+/* Mobile-first utilities */
+@layer utilities {
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
+
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Safe area insets for mobile devices */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Mobile navigation safe areas */
+  .pb-safe-mobile {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 60px);
+  }
+
+  /* Hardware acceleration */
+  .transform-gpu {
+    transform: translateZ(0);
+  }
+
+  /* CSS viewport height for mobile */
+  .min-h-screen-mobile {
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+  }
+}
+
+/* Construction app shell styles */
+@layer components {
+  .construction-app-shell {
+    /* Base container */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+  }
+
+  .construction-content-area {
+    /* Content optimization */
+    isolation: isolate;
+    contain: layout;
+  }
+
+  /* Mobile optimizations */
+  .mobile-optimized .construction-app-shell {
+    /* Prevent overscroll bounce on iOS */
+    overscroll-behavior-y: none;
+    /* Optimize for touch */
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Density variants */
+  .density-compact {
+    --space-unit: 0.25rem;
+  }
+
+  .density-comfortable {
+    --space-unit: 0.5rem;
+  }
+
+  .density-spacious {
+    --space-unit: 0.75rem;
+  }
+
+  /* Accessibility: High contrast mode */
+  .high-contrast {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+  }
+
+  /* Accessibility: Large text */
+  .large-text {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+
+  .large-text .text-sm {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+
+  .large-text .text-xs {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+  }
+
+  /* Accessibility: Reduced motion */
+  .reduce-motion *,
+  .reduce-motion *::before,
+  .reduce-motion *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
