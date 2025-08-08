@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 
 export async function GET() {
   const results: any[] = []
@@ -27,7 +27,7 @@ export async function GET() {
     }
 
     // Test 2: Simple Supabase Connection
-    const supabase = createClient(url, key)
+    // Using our configured client
     
     try {
       // Try the simplest possible query
@@ -75,7 +75,7 @@ export async function GET() {
 
     for (const table of tables) {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
           .from(table)
           .select('*')
           .limit(1)

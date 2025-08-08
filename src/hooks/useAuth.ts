@@ -6,20 +6,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
-import type { UserProfile } from '@/types/auth'
+import { getCurrentUserProfile } from '@/lib/database/queries'
+import type { AppUserProfile } from '@/types/database'
+import type { User } from '@supabase/supabase-js'
 
 interface AuthState {
   user: User | null
-  profile: UserProfile | null
+  profile: AppUserProfile | null
   loading: boolean
   isAuthenticated: boolean
 }
 
 export function useAuth(): AuthState {
   const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [profile, setProfile] = useState<AppUserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export function useAuth(): AuthState {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        fetchProfile(session.user.id)
+        fetchProfile()
       } else {
         setLoading(false)
       }
@@ -39,7 +40,7 @@ export function useAuth(): AuthState {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setUser(session?.user ?? null)
       if (session?.user) {
-        await fetchProfile(session.user.id)
+        await fetchProfile()
       } else {
         setProfile(null)
         setLoading(false)
@@ -49,17 +50,14 @@ export function useAuth(): AuthState {
     return () => subscription.unsubscribe()
   }, [])
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async () => {
     try {
-      const { data } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      
-      setProfile(data)
+      // Use the type-safe getCurrentUserProfile function
+      const userProfile = await getCurrentUserProfile()
+      setProfile(userProfile)
     } catch (error) {
       console.error('Error fetching profile:', error)
+      setProfile(null)
     } finally {
       setLoading(false)
     }

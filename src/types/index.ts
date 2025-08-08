@@ -16,33 +16,25 @@ export type {
 
 export { PERMISSION_TEMPLATES } from './auth'
 
-// Database types
+// Database types (only exporting types that exist in generated schema)
 export type {
   // Projects
   Project,
   ProjectStatus,
-  ProjectFilters,
   
   // Scope management
   ScopeItem,
   ScopeCategory,
   ScopeStatus,
-  ScopeFilters,
   
   // Workflows
   ShopDrawing,
   MaterialSpec,
-  WorkflowStatus,
   
   // Tasks
   Task,
-  TaskComment,
   TaskStatus,
   TaskPriority,
-  TaskFilters,
-  
-  // Milestones & Timeline
-  Milestone,
   
   // RFIs & Change Orders
   RFI,
@@ -50,10 +42,9 @@ export type {
   
   // Company & Users
   Company,
-  Client,
   Subcontractor,
   
-  // API responses
-  ApiResponse,
-  PaginatedResponse,
+  // Other
+  PunchItem,
+  ActivityLog
 } from './database'

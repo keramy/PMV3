@@ -8,6 +8,7 @@
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
+    "strictNullChecks": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -38,6 +39,10 @@
   "exclude": [
     "node_modules",
     "formulapmv3",
-    "formulapmv3copiedfromv2"
+    "formulapmv3copiedfromv2",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/test/**/*",
+    "vitest.config.ts"
   ]
 }

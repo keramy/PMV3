@@ -153,4 +153,386 @@ class PerformanceMonitor {
       const navigationObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries()
         entries.forEach((entry: any) => {
-          if (entry.entryType === 'navigation') {\n            this.updateMetric('navigationTime', entry.loadEventEnd - entry.fetchStart)\n          }\n        })\n      })\n      \n      try {\n        navigationObserver.observe({ entryTypes: ['navigation'] })\n        this.observers.push(navigationObserver)\n      } catch (e) {\n        console.warn('Navigation observer not supported')\n      }\n    }\n  }\n  \n  private initializeNetworkMonitoring() {\n    // @ts-ignore - Network Information API\n    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection\n    \n    if (connection) {\n      this.updateMetric('connectionType', connection.effectiveType)\n      this.updateMetric('bandwidth', connection.downlink)\n      \n      connection.addEventListener('change', () => {\n        this.updateMetric('connectionType', connection.effectiveType)\n        this.updateMetric('bandwidth', connection.downlink)\n        \n        // Report slow connection for construction sites\n        if (connection.downlink < PERFORMANCE_THRESHOLDS.LOW_BANDWIDTH_THRESHOLD) {\n          this.reportSlowConnection(connection.effectiveType, connection.downlink)\n        }\n      })\n    }\n    \n    // Monitor latency via ping\n    this.measureLatency()\n    setInterval(() => this.measureLatency(), 30000) // Every 30 seconds\n  }\n  \n  private async measureLatency() {\n    try {\n      const start = Date.now()\n      await fetch('/api/ping', { method: 'HEAD', cache: 'no-cache' })\n      const latency = Date.now() - start\n      this.updateMetric('latency', latency)\n      \n      if (latency > PERFORMANCE_THRESHOLDS.SLOW_CONNECTION_THRESHOLD) {\n        this.reportHighLatency(latency)\n      }\n    } catch (error) {\n      console.warn('Latency measurement failed:', error)\n    }\n  }\n  \n  private initializeConstructionMonitoring() {\n    // Monitor drawing viewer load times\n    window.addEventListener('drawingViewerLoad', (event: any) => {\n      this.updateMetric('drawingViewerLoadTime', event.detail.loadTime)\n    })\n    \n    // Monitor Excel import performance\n    window.addEventListener('excelImportStart', () => {\n      this.startTime = Date.now()\n    })\n    \n    window.addEventListener('excelImportComplete', () => {\n      const importTime = Date.now() - this.startTime\n      this.updateMetric('excelImportTime', importTime)\n      \n      if (importTime > PERFORMANCE_THRESHOLDS.EXCEL_IMPORT_TIME) {\n        this.reportSlowExcelImport(importTime)\n      }\n    })\n    \n    // Monitor offline queue size\n    this.monitorOfflineQueue()\n  }\n  \n  private initializeMobileMonitoring() {\n    // Monitor touch response time\n    let touchStart = 0\n    \n    document.addEventListener('touchstart', () => {\n      touchStart = Date.now()\n    }, { passive: true })\n    \n    document.addEventListener('touchend', () => {\n      if (touchStart) {\n        const responseTime = Date.now() - touchStart\n        this.updateMetric('touchResponseTime', responseTime)\n        \n        if (responseTime > PERFORMANCE_THRESHOLDS.TOUCH_RESPONSE_TIME) {\n          this.reportSlowTouchResponse(responseTime)\n        }\n      }\n    }, { passive: true })\n    \n    // Monitor scroll performance\n    let scrollStart = 0\n    let scrollCount = 0\n    \n    document.addEventListener('scroll', () => {\n      if (scrollStart === 0) {\n        scrollStart = Date.now()\n      }\n      scrollCount++\n    }, { passive: true })\n    \n    // Calculate scroll FPS every second\n    setInterval(() => {\n      if (scrollCount > 0) {\n        const scrollDuration = Date.now() - scrollStart\n        const scrollFPS = (scrollCount / scrollDuration) * 1000\n        this.updateMetric('scrollPerformance', scrollFPS)\n        \n        scrollStart = 0\n        scrollCount = 0\n      }\n    }, 1000)\n  }\n  \n  private monitorOfflineQueue() {\n    // Mock implementation - would integrate with actual offline system\n    const checkOfflineQueue = () => {\n      const queueSize = parseInt(localStorage.getItem('offline-queue-size') || '0')\n      this.updateMetric('offlineQueueSize', queueSize)\n    }\n    \n    checkOfflineQueue()\n    setInterval(checkOfflineQueue, 5000) // Check every 5 seconds\n  }\n  \n  private updateMetric(key: keyof PerformanceMetrics, value: any) {\n    this.metrics[key] = value\n    this.notifyListeners()\n  }\n  \n  private notifyListeners() {\n    this.listeners.forEach(listener => {\n      listener(this.metrics as PerformanceMetrics)\n    })\n  }\n  \n  // Reporting methods for construction-specific issues\n  private reportSlowNavigation(time: number) {\n    console.warn(`Slow navigation detected: ${time}ms (threshold: ${PERFORMANCE_THRESHOLDS.NAVIGATION_TIME}ms)`)\n    \n    // Send to monitoring service in production\n    this.sendToMonitoring({\n      type: 'slow_navigation',\n      value: time,\n      threshold: PERFORMANCE_THRESHOLDS.NAVIGATION_TIME,\n      context: 'construction_app'\n    })\n  }\n  \n  private reportSlowConnection(type: string, bandwidth: number) {\n    console.warn(`Slow connection detected: ${type}, ${bandwidth} Mbps`)\n    \n    this.sendToMonitoring({\n      type: 'slow_connection',\n      connectionType: type,\n      bandwidth,\n      context: 'construction_site'\n    })\n  }\n  \n  private reportHighLatency(latency: number) {\n    console.warn(`High latency detected: ${latency}ms`)\n    \n    this.sendToMonitoring({\n      type: 'high_latency',\n      value: latency,\n      threshold: PERFORMANCE_THRESHOLDS.SLOW_CONNECTION_THRESHOLD,\n      context: 'construction_site'\n    })\n  }\n  \n  private reportSlowTouchResponse(time: number) {\n    console.warn(`Slow touch response: ${time}ms`)\n    \n    this.sendToMonitoring({\n      type: 'slow_touch_response',\n      value: time,\n      threshold: PERFORMANCE_THRESHOLDS.TOUCH_RESPONSE_TIME,\n      context: 'mobile_construction'\n    })\n  }\n  \n  private reportSlowExcelImport(time: number) {\n    console.warn(`Slow Excel import: ${time}ms`)\n    \n    this.sendToMonitoring({\n      type: 'slow_excel_import',\n      value: time,\n      threshold: PERFORMANCE_THRESHOLDS.EXCEL_IMPORT_TIME,\n      context: 'construction_data'\n    })\n  }\n  \n  private sendToMonitoring(data: any) {\n    // In production, send to monitoring service (e.g., Sentry, DataDog)\n    if (process.env.NODE_ENV === 'production') {\n      // Example: Send to monitoring API\n      fetch('/api/monitoring/performance', {\n        method: 'POST',\n        headers: { 'Content-Type': 'application/json' },\n        body: JSON.stringify({\n          ...data,\n          timestamp: Date.now(),\n          userAgent: navigator.userAgent,\n          url: window.location.href\n        })\n      }).catch(console.error)\n    }\n  }\n  \n  // Public API methods\n  public getMetrics(): Partial<PerformanceMetrics> {\n    return { ...this.metrics }\n  }\n  \n  public onMetricsUpdate(callback: (metrics: PerformanceMetrics) => void) {\n    this.listeners.push(callback)\n    \n    // Return unsubscribe function\n    return () => {\n      const index = this.listeners.indexOf(callback)\n      if (index > -1) {\n        this.listeners.splice(index, 1)\n      }\n    }\n  }\n  \n  public markTabSwitch(tabName: string) {\n    const switchTime = Date.now() - this.startTime\n    this.updateMetric('tabSwitchTime', switchTime)\n    \n    if (switchTime > PERFORMANCE_THRESHOLDS.TAB_SWITCH_TIME) {\n      this.reportSlowTabSwitch(tabName, switchTime)\n    }\n    \n    this.startTime = Date.now()\n  }\n  \n  private reportSlowTabSwitch(tabName: string, time: number) {\n    console.warn(`Slow tab switch to ${tabName}: ${time}ms`)\n    \n    this.sendToMonitoring({\n      type: 'slow_tab_switch',\n      tab: tabName,\n      value: time,\n      threshold: PERFORMANCE_THRESHOLDS.TAB_SWITCH_TIME,\n      context: 'project_navigation'\n    })\n  }\n  \n  public markAPICall(endpoint: string, duration: number, success: boolean) {\n    this.updateMetric('apiResponseTime', duration)\n    \n    if (duration > PERFORMANCE_THRESHOLDS.API_RESPONSE_WARNING) {\n      this.reportSlowAPI(endpoint, duration, success)\n    }\n  }\n  \n  private reportSlowAPI(endpoint: string, time: number, success: boolean) {\n    const level = time > PERFORMANCE_THRESHOLDS.API_RESPONSE_TIME ? 'error' : 'warning'\n    console[level](`Slow API call to ${endpoint}: ${time}ms (success: ${success})`)\n    \n    this.sendToMonitoring({\n      type: 'slow_api_call',\n      endpoint,\n      duration: time,\n      success,\n      threshold: PERFORMANCE_THRESHOLDS.API_RESPONSE_TIME,\n      context: 'construction_api'\n    })\n  }\n  \n  public destroy() {\n    // Cleanup observers\n    this.observers.forEach(observer => observer.disconnect())\n    this.observers = []\n    this.listeners = []\n  }\n}\n\n// Singleton instance\nlet performanceMonitor: PerformanceMonitor | null = null\n\nexport function getPerformanceMonitor(): PerformanceMonitor {\n  if (typeof window === 'undefined') {\n    // Return mock for SSR\n    return {\n      getMetrics: () => ({}),\n      onMetricsUpdate: () => () => {},\n      markTabSwitch: () => {},\n      markAPICall: () => {},\n      destroy: () => {}\n    } as any\n  }\n  \n  if (!performanceMonitor) {\n    performanceMonitor = new PerformanceMonitor()\n  }\n  \n  return performanceMonitor\n}\n\n// Hook for using performance monitoring in React components\nexport function usePerformanceMonitoring() {\n  const monitor = getPerformanceMonitor()\n  \n  return {\n    metrics: monitor.getMetrics(),\n    markTabSwitch: monitor.markTabSwitch.bind(monitor),\n    markAPICall: monitor.markAPICall.bind(monitor),\n    onMetricsUpdate: monitor.onMetricsUpdate.bind(monitor)\n  }\n}\n\n// Utility for measuring component render performance\nexport function measureRenderTime<T extends (...args: any[]) => any>(\n  componentName: string,\n  renderFunction: T\n): T {\n  return ((...args: Parameters<T>) => {\n    const start = performance.now()\n    const result = renderFunction(...args)\n    const end = performance.now()\n    \n    const monitor = getPerformanceMonitor()\n    monitor.markAPICall(`render:${componentName}`, end - start, true)\n    \n    return result\n  }) as T\n}\n\n// Construction-specific performance utilities\nexport const constructionPerformanceUtils = {\n  // Mark drawing viewer events\n  markDrawingViewerLoad: (loadTime: number) => {\n    window.dispatchEvent(new CustomEvent('drawingViewerLoad', {\n      detail: { loadTime }\n    }))\n  },\n  \n  // Mark Excel import events\n  markExcelImportStart: () => {\n    window.dispatchEvent(new CustomEvent('excelImportStart'))\n  },\n  \n  markExcelImportComplete: () => {\n    window.dispatchEvent(new CustomEvent('excelImportComplete'))\n  },\n  \n  // Get performance recommendations for construction sites\n  getPerformanceRecommendations: (metrics: Partial<PerformanceMetrics>) => {\n    const recommendations: string[] = []\n    \n    if (metrics.connectionType === 'slow-2g' || metrics.connectionType === '2g') {\n      recommendations.push('Enable offline mode for better performance in low connectivity areas')\n    }\n    \n    if (metrics.navigationTime && metrics.navigationTime > PERFORMANCE_THRESHOLDS.NAVIGATION_TIME) {\n      recommendations.push('Consider reducing data loaded on navigation for faster page switches')\n    }\n    \n    if (metrics.touchResponseTime && metrics.touchResponseTime > PERFORMANCE_THRESHOLDS.TOUCH_RESPONSE_TIME) {\n      recommendations.push('Touch interactions may be slow - consider using a device with better touch response')\n    }\n    \n    if (metrics.offlineQueueSize && metrics.offlineQueueSize > 50) {\n      recommendations.push('Large offline queue detected - connect to internet to sync data')\n    }\n    \n    return recommendations\n  }\n}"
+          if (entry.entryType === 'navigation') {
+            this.updateMetric('navigationTime', entry.loadEventEnd - entry.fetchStart)
+          }
+        })
+      })
+      
+      try {
+        navigationObserver.observe({ entryTypes: ['navigation'] })
+        this.observers.push(navigationObserver)
+      } catch (e) {
+        console.warn('Navigation observer not supported')
+      }
+    }
+  }
+  
+  private initializeNetworkMonitoring() {
+    // @ts-ignore - Network Information API
+    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+    
+    if (connection) {
+      this.updateMetric('connectionType', connection.effectiveType)
+      this.updateMetric('bandwidth', connection.downlink)
+      
+      connection.addEventListener('change', () => {
+        this.updateMetric('connectionType', connection.effectiveType)
+        this.updateMetric('bandwidth', connection.downlink)
+        
+        // Report slow connection for construction sites
+        if (connection.downlink < PERFORMANCE_THRESHOLDS.LOW_BANDWIDTH_THRESHOLD) {
+          this.reportSlowConnection(connection.effectiveType, connection.downlink)
+        }
+      })
+    }
+    
+    // Monitor latency via ping
+    this.measureLatency()
+    setInterval(() => this.measureLatency(), 30000) // Every 30 seconds
+  }
+  
+  private async measureLatency() {
+    try {
+      const start = Date.now()
+      await fetch('/api/ping', { method: 'HEAD', cache: 'no-cache' })
+      const latency = Date.now() - start
+      this.updateMetric('latency', latency)
+      
+      if (latency > PERFORMANCE_THRESHOLDS.SLOW_CONNECTION_THRESHOLD) {
+        this.reportHighLatency(latency)
+      }
+    } catch (error) {
+      console.warn('Latency measurement failed:', error)
+    }
+  }
+  
+  private initializeConstructionMonitoring() {
+    // Monitor drawing viewer load times
+    window.addEventListener('drawingViewerLoad', (event: any) => {
+      this.updateMetric('drawingViewerLoadTime', event.detail.loadTime)
+    })
+    
+    // Monitor Excel import performance
+    window.addEventListener('excelImportStart', () => {
+      this.startTime = Date.now()
+    })
+    
+    window.addEventListener('excelImportComplete', () => {
+      const importTime = Date.now() - this.startTime
+      this.updateMetric('excelImportTime', importTime)
+      
+      if (importTime > PERFORMANCE_THRESHOLDS.EXCEL_IMPORT_TIME) {
+        this.reportSlowExcelImport(importTime)
+      }
+    })
+    
+    // Monitor offline queue size
+    this.monitorOfflineQueue()
+  }
+  
+  private initializeMobileMonitoring() {
+    // Monitor touch response time
+    let touchStart = 0
+    
+    document.addEventListener('touchstart', () => {
+      touchStart = Date.now()
+    }, { passive: true })
+    
+    document.addEventListener('touchend', () => {
+      if (touchStart) {
+        const responseTime = Date.now() - touchStart
+        this.updateMetric('touchResponseTime', responseTime)
+        
+        if (responseTime > PERFORMANCE_THRESHOLDS.TOUCH_RESPONSE_TIME) {
+          this.reportSlowTouchResponse(responseTime)
+        }
+      }
+    }, { passive: true })
+    
+    // Monitor scroll performance
+    let scrollStart = 0
+    let scrollCount = 0
+    
+    document.addEventListener('scroll', () => {
+      if (scrollStart === 0) {
+        scrollStart = Date.now()
+      }
+      scrollCount++
+    }, { passive: true })
+    
+    // Calculate scroll FPS every second
+    setInterval(() => {
+      if (scrollCount > 0) {
+        const scrollDuration = Date.now() - scrollStart
+        const scrollFPS = (scrollCount / scrollDuration) * 1000
+        this.updateMetric('scrollPerformance', scrollFPS)
+        
+        scrollStart = 0
+        scrollCount = 0
+      }
+    }, 1000)
+  }
+  
+  private monitorOfflineQueue() {
+    // Mock implementation - would integrate with actual offline system
+    const checkOfflineQueue = () => {
+      const queueSize = parseInt(localStorage.getItem('offline-queue-size') || '0')
+      this.updateMetric('offlineQueueSize', queueSize)
+    }
+    
+    checkOfflineQueue()
+    setInterval(checkOfflineQueue, 5000) // Check every 5 seconds
+  }
+  
+  private updateMetric<K extends keyof PerformanceMetrics>(key: K, value: PerformanceMetrics[K]) {
+    this.metrics[key] = value
+    this.notifyListeners()
+  }
+  
+  private notifyListeners() {
+    this.listeners.forEach(listener => {
+      listener(this.metrics as PerformanceMetrics)
+    })
+  }
+  
+  // Reporting methods for construction-specific issues
+  private reportSlowNavigation(time: number) {
+    console.warn(`Slow navigation detected: ${time}ms (threshold: ${PERFORMANCE_THRESHOLDS.NAVIGATION_TIME}ms)`)
+    
+    // Send to monitoring service in production
+    this.sendToMonitoring({
+      type: 'slow_navigation',
+      value: time,
+      threshold: PERFORMANCE_THRESHOLDS.NAVIGATION_TIME,
+      context: 'construction_app'
+    })
+  }
+  
+  private reportSlowConnection(type: string, bandwidth: number) {
+    console.warn(`Slow connection detected: ${type}, ${bandwidth} Mbps`)
+    
+    this.sendToMonitoring({
+      type: 'slow_connection',
+      connectionType: type,
+      bandwidth,
+      context: 'construction_site'
+    })
+  }
+  
+  private reportHighLatency(latency: number) {
+    console.warn(`High latency detected: ${latency}ms`)
+    
+    this.sendToMonitoring({
+      type: 'high_latency',
+      value: latency,
+      threshold: PERFORMANCE_THRESHOLDS.SLOW_CONNECTION_THRESHOLD,
+      context: 'construction_site'
+    })
+  }
+  
+  private reportSlowTouchResponse(time: number) {
+    console.warn(`Slow touch response: ${time}ms`)
+    
+    this.sendToMonitoring({
+      type: 'slow_touch_response',
+      value: time,
+      threshold: PERFORMANCE_THRESHOLDS.TOUCH_RESPONSE_TIME,
+      context: 'mobile_construction'
+    })
+  }
+  
+  private reportSlowExcelImport(time: number) {
+    console.warn(`Slow Excel import: ${time}ms`)
+    
+    this.sendToMonitoring({
+      type: 'slow_excel_import',
+      value: time,
+      threshold: PERFORMANCE_THRESHOLDS.EXCEL_IMPORT_TIME,
+      context: 'construction_data'
+    })
+  }
+  
+  private sendToMonitoring(data: any) {
+    // In production, send to monitoring service (e.g., Sentry, DataDog)
+    if (process.env.NODE_ENV === 'production') {
+      // Example: Send to monitoring API
+      fetch('/api/monitoring/performance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...data,
+          timestamp: Date.now(),
+          userAgent: navigator.userAgent,
+          url: window.location.href
+        })
+      }).catch(console.error)
+    }
+  }
+  
+  // Public API methods
+  public getMetrics(): Partial<PerformanceMetrics> {
+    return { ...this.metrics }
+  }
+  
+  public onMetricsUpdate(callback: (metrics: PerformanceMetrics) => void) {
+    this.listeners.push(callback)
+    
+    // Return unsubscribe function
+    return () => {
+      const index = this.listeners.indexOf(callback)
+      if (index > -1) {
+        this.listeners.splice(index, 1)
+      }
+    }
+  }
+  
+  public markTabSwitch(tabName: string) {
+    const switchTime = Date.now() - this.startTime
+    this.updateMetric('tabSwitchTime', switchTime)
+    
+    if (switchTime > PERFORMANCE_THRESHOLDS.TAB_SWITCH_TIME) {
+      this.reportSlowTabSwitch(tabName, switchTime)
+    }
+    
+    this.startTime = Date.now()
+  }
+  
+  private reportSlowTabSwitch(tabName: string, time: number) {
+    console.warn(`Slow tab switch to ${tabName}: ${time}ms`)
+    
+    this.sendToMonitoring({
+      type: 'slow_tab_switch',
+      tab: tabName,
+      value: time,
+      threshold: PERFORMANCE_THRESHOLDS.TAB_SWITCH_TIME,
+      context: 'project_navigation'
+    })
+  }
+  
+  public markAPICall(endpoint: string, duration: number, success: boolean) {
+    this.updateMetric('apiResponseTime', duration)
+    
+    if (duration > PERFORMANCE_THRESHOLDS.API_RESPONSE_WARNING) {
+      this.reportSlowAPI(endpoint, duration, success)
+    }
+  }
+  
+  private reportSlowAPI(endpoint: string, time: number, success: boolean) {
+    const level = time > PERFORMANCE_THRESHOLDS.API_RESPONSE_TIME ? 'error' : 'warning'
+    if (level === 'error') {
+      console.error(`Slow API call to ${endpoint}: ${time}ms (success: ${success})`)
+    } else {
+      console.warn(`Slow API call to ${endpoint}: ${time}ms (success: ${success})`)
+    }
+    
+    this.sendToMonitoring({
+      type: 'slow_api_call',
+      endpoint,
+      duration: time,
+      success,
+      threshold: PERFORMANCE_THRESHOLDS.API_RESPONSE_TIME,
+      context: 'construction_api'
+    })
+  }
+  
+  public destroy() {
+    // Cleanup observers
+    this.observers.forEach(observer => observer.disconnect())
+    this.observers = []
+    this.listeners = []
+  }
+}
+
+// Singleton instance
+let performanceMonitor: PerformanceMonitor | null = null
+
+export function getPerformanceMonitor(): PerformanceMonitor {
+  if (typeof window === 'undefined') {
+    // Return mock for SSR
+    return {
+      getMetrics: () => ({}),
+      onMetricsUpdate: () => () => {},
+      markTabSwitch: () => {},
+      markAPICall: () => {},
+      destroy: () => {}
+    } as any
+  }
+  
+  if (!performanceMonitor) {
+    performanceMonitor = new PerformanceMonitor()
+  }
+  
+  return performanceMonitor
+}
+
+// Hook for using performance monitoring in React components
+export function usePerformanceMonitoring() {
+  const monitor = getPerformanceMonitor()
+  
+  return {
+    metrics: monitor.getMetrics(),
+    markTabSwitch: monitor.markTabSwitch.bind(monitor),
+    markAPICall: monitor.markAPICall.bind(monitor),
+    onMetricsUpdate: monitor.onMetricsUpdate.bind(monitor)
+  }
+}
+
+// Utility for measuring component render performance
+export function measureRenderTime<T extends (...args: any[]) => any>(
+  componentName: string,
+  renderFunction: T
+): T {
+  return ((...args: Parameters<T>) => {
+    const start = performance.now()
+    const result = renderFunction(...args)
+    const end = performance.now()
+    
+    const monitor = getPerformanceMonitor()
+    monitor.markAPICall(`render:${componentName}`, end - start, true)
+    
+    return result
+  }) as T
+}
+
+// Construction-specific performance utilities
+export const constructionPerformanceUtils = {
+  // Mark drawing viewer events
+  markDrawingViewerLoad: (loadTime: number) => {
+    window.dispatchEvent(new CustomEvent('drawingViewerLoad', {
+      detail: { loadTime }
+    }))
+  },
+  
+  // Mark Excel import events
+  markExcelImportStart: () => {
+    window.dispatchEvent(new CustomEvent('excelImportStart'))
+  },
+  
+  markExcelImportComplete: () => {
+    window.dispatchEvent(new CustomEvent('excelImportComplete'))
+  },
+  
+  // Get performance recommendations for construction sites
+  getPerformanceRecommendations: (metrics: Partial<PerformanceMetrics>) => {
+    const recommendations: string[] = []
+    
+    if (metrics.connectionType === 'slow-2g' || metrics.connectionType === '2g') {
+      recommendations.push('Enable offline mode for better performance in low connectivity areas')
+    }
+    
+    if (metrics.navigationTime && metrics.navigationTime > PERFORMANCE_THRESHOLDS.NAVIGATION_TIME) {
+      recommendations.push('Consider reducing data loaded on navigation for faster page switches')
+    }
+    
+    if (metrics.touchResponseTime && metrics.touchResponseTime > PERFORMANCE_THRESHOLDS.TOUCH_RESPONSE_TIME) {
+      recommendations.push('Touch interactions may be slow - consider using a device with better touch response')
+    }
+    
+    if (metrics.offlineQueueSize && metrics.offlineQueueSize > 50) {
+      recommendations.push('Large offline queue detected - connect to internet to sync data')
+    }
+    
+    return recommendations
+  }
+}

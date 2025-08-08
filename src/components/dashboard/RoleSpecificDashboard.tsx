@@ -33,10 +33,11 @@ import {
 } from './ConstructionCharts'
 import { ActivityFeed, CompactActivityFeed } from './ActivityFeed'
 import { useDashboardData, useRoleSpecificData } from '@/hooks/useDashboardData'
-import type { UserProfile, Permission } from '@/types/auth'
+import type { AppUserProfile } from '@/types/database'
+import type { Permission } from '@/types/auth'
 
 interface RoleSpecificDashboardProps {
-  userProfile: UserProfile | null
+  userProfile: AppUserProfile | null
 }
 
 // Quick action buttons based on role
@@ -108,7 +109,7 @@ function QuickActions({ permissions }: { permissions: Permission[] }) {
 }
 
 // Project Manager Dashboard
-function ProjectManagerDashboard({ userProfile }: { userProfile: UserProfile }) {
+function ProjectManagerDashboard({ userProfile }: { userProfile: AppUserProfile }) {
   const { metrics, projects, activity, isLoading } = useDashboardData(userProfile)
   const roleData = useRoleSpecificData(userProfile)
 
@@ -169,7 +170,7 @@ function ProjectManagerDashboard({ userProfile }: { userProfile: UserProfile }) 
 }
 
 // Superintendent/Foreman Dashboard (Field Operations Focus)
-function FieldOperationsDashboard({ userProfile }: { userProfile: UserProfile }) {
+function FieldOperationsDashboard({ userProfile }: { userProfile: AppUserProfile }) {
   const { metrics, activity, isLoading } = useDashboardData(userProfile)
 
   // Simplified metrics for field operations
@@ -276,7 +277,7 @@ function FieldOperationsDashboard({ userProfile }: { userProfile: UserProfile })
 }
 
 // Admin Dashboard (Company-wide View)
-function AdminDashboard({ userProfile }: { userProfile: UserProfile }) {
+function AdminDashboard({ userProfile }: { userProfile: AppUserProfile }) {
   const { metrics, projects, isLoading } = useDashboardData(userProfile)
   const roleData = useRoleSpecificData(userProfile)
 
@@ -348,7 +349,7 @@ function AdminDashboard({ userProfile }: { userProfile: UserProfile }) {
 }
 
 // Client Portal Dashboard (Simplified View)
-function ClientDashboard({ userProfile }: { userProfile: UserProfile }) {
+function ClientDashboard({ userProfile }: { userProfile: AppUserProfile }) {
   const { metrics, projects, activity, isLoading } = useDashboardData(userProfile)
 
   return (

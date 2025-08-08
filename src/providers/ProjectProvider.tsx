@@ -233,4 +233,164 @@ export function ProjectProvider({ children, initialProjectId }: ProjectProviderP
       queryFn: () => fetchProjectNotifications(projectId),
       staleTime: 30 * 1000,
     })
-  }, [queryClient])\n  \n  // Refresh current project data\n  const refreshProject = useCallback(async () => {\n    await refetchProject()\n    if (currentProjectId) {\n      queryClient.invalidateQueries({ queryKey: ['projectStats', currentProjectId] })\n      queryClient.invalidateQueries({ queryKey: ['projectNotifications', currentProjectId] })\n    }\n  }, [refetchProject, queryClient, currentProjectId])\n  \n  // Update project\n  const updateProject = useCallback(async (updates: Partial<Project>) => {\n    await updateProjectMutation.mutateAsync(updates)\n  }, [updateProjectMutation])\n  \n  // Prefetch project data for performance\n  const prefetchProjectData = useCallback((projectId: string) => {\n    // Only prefetch if not already cached\n    const cachedProject = queryClient.getQueryData(['project', projectId])\n    if (!cachedProject) {\n      queryClient.prefetchQuery({\n        queryKey: ['project', projectId],\n        queryFn: () => fetchProject(projectId),\n        staleTime: 5 * 60 * 1000,\n      })\n    }\n    \n    const cachedStats = queryClient.getQueryData(['projectStats', projectId])\n    if (!cachedStats) {\n      queryClient.prefetchQuery({\n        queryKey: ['projectStats', projectId],\n        queryFn: () => fetchProjectStats(projectId),\n        staleTime: 2 * 60 * 1000,\n      })\n    }\n  }, [queryClient])\n  \n  // Notification management\n  const markNotificationRead = useCallback((notificationId: string) => {\n    // Optimistic update\n    queryClient.setQueryData(\n      ['projectNotifications', currentProjectId],\n      (old: ProjectNotification[] | undefined) => {\n        if (!old) return []\n        return old.map(notification =>\n          notification.id === notificationId\n            ? { ...notification, isRead: true }\n            : notification\n        )\n      }\n    )\n    \n    // API call to persist the change\n    fetch(`/api/notifications/${notificationId}/read`, {\n      method: 'POST',\n    }).catch(console.error)\n  }, [queryClient, currentProjectId])\n  \n  const clearAllNotifications = useCallback(() => {\n    // Optimistic update\n    queryClient.setQueryData(\n      ['projectNotifications', currentProjectId],\n      (old: ProjectNotification[] | undefined) => {\n        if (!old) return []\n        return old.map(notification => ({ ...notification, isRead: true }))\n      }\n    )\n    \n    // API call to persist the change\n    fetch(`/api/projects/${currentProjectId}/notifications/read-all`, {\n      method: 'POST',\n    }).catch(console.error)\n  }, [queryClient, currentProjectId])\n  \n  // Computed values\n  const unreadCount = notifications.filter(n => !n.isRead).length\n  const isLoading = isProjectLoading || isStatsLoading || isNotificationsLoading\n  const isError = isProjectError\n  const error = projectError\n  \n  // Construction-specific computed values\n  const isProjectActive = project?.status === 'active'\n  const canEditProject = hasPermission('edit_projects')\n  const hasActiveWorkflows = projectStats ? (\n    projectStats.pendingRFIs > 0 ||\n    projectStats.pendingDrawings > 0 ||\n    projectStats.pendingChangeOrders > 0\n  ) : false\n  \n  // Tab-specific notification counts\n  const getTabNotificationCount = useCallback((tabId: string): number => {\n    const typeMappings: Record<string, ProjectNotification['type'][]> = {\n      'tasks': ['task'],\n      'drawings': ['drawing', 'approval'],\n      'rfis': ['rfi'],\n      'change-orders': ['change_order'],\n      'milestones': ['milestone'],\n      'materials': ['approval'],\n    }\n    \n    const relevantTypes = typeMappings[tabId] || []\n    return notifications.filter(n => \n      !n.isRead && relevantTypes.includes(n.type)\n    ).length\n  }, [notifications])\n  \n  // Load saved project ID from localStorage on mount\n  useEffect(() => {\n    if (!currentProjectId && user && typeof window !== 'undefined') {\n      const saved = localStorage.getItem(`formula-pm-current-project-${user.id}`)\n      if (saved) {\n        setCurrentProjectId(saved)\n      }\n    }\n  }, [user, currentProjectId])\n  \n  // Save current project ID to localStorage\n  useEffect(() => {\n    if (currentProjectId && user && typeof window !== 'undefined') {\n      localStorage.setItem(`formula-pm-current-project-${user.id}`, currentProjectId)\n    }\n  }, [currentProjectId, user])\n  \n  const contextValue: ProjectContextType = {\n    // State\n    project: project || null,\n    projectStats: projectStats || null,\n    notifications,\n    \n    // Loading states\n    isLoading,\n    isError,\n    error,\n    \n    // Operations\n    switchProject,\n    refreshProject,\n    updateProject,\n    \n    // Notifications\n    markNotificationRead,\n    clearAllNotifications,\n    unreadCount,\n    \n    // Performance\n    prefetchProjectData,\n    \n    // Construction-specific\n    isProjectActive,\n    canEditProject,\n    hasActiveWorkflows,\n    getTabNotificationCount,\n  }\n  \n  return (\n    <ProjectContext.Provider value={contextValue}>\n      {children}\n    </ProjectContext.Provider>\n  )\n}"
+  }, [queryClient])
+  
+  // Refresh current project data
+  const refreshProject = useCallback(async () => {
+    await refetchProject()
+    if (currentProjectId) {
+      queryClient.invalidateQueries({ queryKey: ['projectStats', currentProjectId] })
+      queryClient.invalidateQueries({ queryKey: ['projectNotifications', currentProjectId] })
+    }
+  }, [refetchProject, queryClient, currentProjectId])
+  
+  // Update project
+  const updateProject = useCallback(async (updates: Partial<Project>) => {
+    await updateProjectMutation.mutateAsync(updates)
+  }, [updateProjectMutation])
+  
+  // Prefetch project data for performance
+  const prefetchProjectData = useCallback((projectId: string) => {
+    // Only prefetch if not already cached
+    const cachedProject = queryClient.getQueryData(['project', projectId])
+    if (!cachedProject) {
+      queryClient.prefetchQuery({
+        queryKey: ['project', projectId],
+        queryFn: () => fetchProject(projectId),
+        staleTime: 5 * 60 * 1000,
+      })
+    }
+    
+    const cachedStats = queryClient.getQueryData(['projectStats', projectId])
+    if (!cachedStats) {
+      queryClient.prefetchQuery({
+        queryKey: ['projectStats', projectId],
+        queryFn: () => fetchProjectStats(projectId),
+        staleTime: 2 * 60 * 1000,
+      })
+    }
+  }, [queryClient])
+  
+  // Notification management
+  const markNotificationRead = useCallback((notificationId: string) => {
+    // Optimistic update
+    queryClient.setQueryData(
+      ['projectNotifications', currentProjectId],
+      (old: ProjectNotification[] | undefined) => {
+        if (!old) return []
+        return old.map(notification =>
+          notification.id === notificationId
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      }
+    )
+    
+    // API call to persist the change
+    fetch(`/api/notifications/${notificationId}/read`, {
+      method: 'POST',
+    }).catch(console.error)
+  }, [queryClient, currentProjectId])
+  
+  const clearAllNotifications = useCallback(() => {
+    // Optimistic update
+    queryClient.setQueryData(
+      ['projectNotifications', currentProjectId],
+      (old: ProjectNotification[] | undefined) => {
+        if (!old) return []
+        return old.map(notification => ({ ...notification, isRead: true }))
+      }
+    )
+    
+    // API call to persist the change
+    fetch(`/api/projects/${currentProjectId}/notifications/read-all`, {
+      method: 'POST',
+    }).catch(console.error)
+  }, [queryClient, currentProjectId])
+  
+  // Computed values
+  const unreadCount = notifications.filter(n => !n.isRead).length
+  const isLoading = isProjectLoading || isStatsLoading || isNotificationsLoading
+  const isError = isProjectError
+  const error = projectError
+  
+  // Construction-specific computed values
+  const isProjectActive = project?.status === 'active'
+  const canEditProject = hasPermission('edit_projects')
+  const hasActiveWorkflows = projectStats ? (
+    projectStats.pendingRFIs > 0 ||
+    projectStats.pendingDrawings > 0 ||
+    projectStats.pendingChangeOrders > 0
+  ) : false
+  
+  // Tab-specific notification counts
+  const getTabNotificationCount = useCallback((tabId: string): number => {
+    const typeMappings: Record<string, ProjectNotification['type'][]> = {
+      'tasks': ['task'],
+      'drawings': ['drawing', 'approval'],
+      'rfis': ['rfi'],
+      'change-orders': ['change_order'],
+      'milestones': ['milestone'],
+      'materials': ['approval'],
+    }
+    
+    const relevantTypes = typeMappings[tabId] || []
+    return notifications.filter(n => 
+      !n.isRead && relevantTypes.includes(n.type)
+    ).length
+  }, [notifications])
+  
+  // Load saved project ID from localStorage on mount
+  useEffect(() => {
+    if (!currentProjectId && user && typeof window !== 'undefined') {
+      const saved = localStorage.getItem(`formula-pm-current-project-${user.id}`)
+      if (saved) {
+        setCurrentProjectId(saved)
+      }
+    }
+  }, [user, currentProjectId])
+  
+  // Save current project ID to localStorage
+  useEffect(() => {
+    if (currentProjectId && user && typeof window !== 'undefined') {
+      localStorage.setItem(`formula-pm-current-project-${user.id}`, currentProjectId)
+    }
+  }, [currentProjectId, user])
+  
+  const contextValue: ProjectContextType = {
+    // State
+    project: project || null,
+    projectStats: projectStats || null,
+    notifications,
+    
+    // Loading states
+    isLoading,
+    isError,
+    error,
+    
+    // Operations
+    switchProject,
+    refreshProject,
+    updateProject,
+    
+    // Notifications
+    markNotificationRead,
+    clearAllNotifications,
+    unreadCount,
+    
+    // Performance
+    prefetchProjectData,
+    
+    // Construction-specific
+    isProjectActive,
+    canEditProject,
+    hasActiveWorkflows,
+    getTabNotificationCount,
+  }
+  
+  return (
+    <ProjectContext.Provider value={contextValue}>
+      {children}
+    </ProjectContext.Provider>
+  )
+}

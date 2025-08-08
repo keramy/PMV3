@@ -445,8 +445,7 @@ export function TimelinePerformanceChart({
           <RadialBarChart cx="50%" cy="50%" innerRadius="40%" outerRadius="90%" data={chartData}>
             <RadialBar 
               dataKey="value" 
-              cornerRadius={4} 
-              fill={(entry: any) => entry.fill}
+              cornerRadius={4}
             />
             <Tooltip formatter={(value: number) => [`${value}%`, 'Projects']} />
           </RadialBarChart>

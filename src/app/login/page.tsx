@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { getClient } from '@/lib/supabase'
+import { createTypedQuery, eqFilter } from '@/lib/database-helpers'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -19,12 +20,8 @@ export default function LoginPage() {
       setLoading(true)
       setResult(null)
 
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
-
       // Sign in with email and password
+      const supabase = getClient()
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -36,9 +33,10 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        // Fetch user profile
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
+        // Fetch user profile using type-safe helper
+        const supabase = getClient()
+        const profileQuery = createTypedQuery('user_profiles')
+        const { data: profile, error: profileError } = await profileQuery
           .select('*')
           .eq('id', data.user.id)
           .single()
@@ -72,11 +70,8 @@ export default function LoginPage() {
 
   const checkCurrentSession = async () => {
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
 
+      const supabase = getClient()
       const { data, error } = await supabase.auth.getSession()
       
       setResult({
@@ -97,11 +92,8 @@ export default function LoginPage() {
 
   const signOut = async () => {
     try {
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      )
 
+      const supabase = getClient()
       const { error } = await supabase.auth.signOut()
       
       if (error) {

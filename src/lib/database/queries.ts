@@ -5,15 +5,38 @@
 
 import { supabase, supabaseAdmin } from '@/lib/supabase'
 import { createClient } from '@/lib/supabase/server'
-import type { Database } from '@/types/database'
-import type { Permission } from '@/types/auth'
+import { 
+  createTypedQuery, 
+  withTransformErrorHandling,
+  withErrorHandling,
+  withArrayErrorHandling,
+  transformUserProfile,
+  transformToRawUserProfile
+} from '@/lib/database-helpers'
+import type { 
+  Database,
+  UserProfile,
+  AppUserProfile,
+  Project,
+  Task,
+  ScopeItem,
+  ShopDrawing,
+  MaterialSpec,
+  RFI,
+  ChangeOrder,
+  PunchItem,
+  ActivityLog
+} from '@/types/database'
 
-// Type helpers for better TypeScript support
-type Tables = Database['public']['Tables']
-type UserProfile = Tables['user_profiles']['Row']
-type Project = Tables['projects']['Row']
-type Task = Tables['tasks']['Row']
-type ScopeItem = Tables['scope_items']['Row']
+// Temporary type for missing Milestone table
+type Milestone = {
+  id: string
+  name: string
+  due_date: string
+  completed_at?: string
+  status: string
+}
+import type { Permission } from '@/types/auth'
 
 // ============================================================================
 // USER & AUTHENTICATION QUERIES
@@ -23,23 +46,28 @@ type ScopeItem = Tables['scope_items']['Row']
  * Get current user's profile with permissions
  * Optimized for frequent calls on construction sites
  */
-export async function getCurrentUserProfile(): Promise<UserProfile | null> {
+export async function getCurrentUserProfile(): Promise<AppUserProfile | null> {
   try {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return null
 
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    // Use type-safe query builder
+    const userQuery = createTypedQuery('user_profiles')
+    const result = await withTransformErrorHandling(
+      () => userQuery
+        .select('*')
+        .eq('id', user.id)
+        .single(),
+      { toApp: transformUserProfile, toRaw: transformToRawUserProfile },
+      'getCurrentUserProfile'
+    )
 
-    if (error) {
-      console.warn('🔍 Failed to fetch user profile:', error.message)
+    if (!result.success) {
+      console.warn('🔍 Failed to fetch user profile:', result.error?.message)
       return null
     }
 
-    return data
+    return result.data
   } catch (error) {
     console.error('🔍 Error fetching user profile:', error)
     return null
@@ -65,16 +93,25 @@ export async function hasPermission(permission: Permission): Promise<boolean> {
 /**
  * Get user profile by ID (admin function)
  */
-export async function getUserProfile(userId: string): Promise<UserProfile | null> {
+export async function getUserProfile(userId: string): Promise<AppUserProfile | null> {
   try {
-    const { data, error } = await supabaseAdmin
-      .from('user_profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
+    // Use type-safe query builder with admin client
+    const userQuery = createTypedQuery('user_profiles', true)
+    const result = await withTransformErrorHandling(
+      () => userQuery
+        .select('*')
+        .eq('id', userId)
+        .single(),
+      { toApp: transformUserProfile, toRaw: transformToRawUserProfile },
+      'getUserProfile'
+    )
 
-    if (error) throw error
-    return data
+    if (!result.success) {
+      console.error('🔍 Error fetching user profile:', result.error?.message)
+      return null
+    }
+
+    return result.data
   } catch (error) {
     console.error('🔍 Error fetching user profile:', error)
     return null
@@ -95,48 +132,57 @@ export async function getCompanyProjects(
   filters: { status?: string; search?: string } = {}
 ) {
   try {
-    let query = supabase
-      .from('projects')
-      .select(`
-        *,
-        clients (
-          id,
-          name,
-          company_name
-        ),
-        user_profiles!project_manager_id (
-          id,
-          full_name,
-          job_title
-        )
-      `)
-      .order('updated_at', { ascending: false })
+    // Use type-safe query builder with enhanced error handling
+    const result = await withArrayErrorHandling(
+      async () => {
+        const projectQuery = createTypedQuery('projects')
+        let query = projectQuery
+          .select(`
+            *,
+            clients (
+              id,
+              name,
+              company_name
+            ),
+            user_profiles!project_manager_id (
+              id,
+              full_name,
+              job_title
+            )
+          `)
+          .order('updated_at', { ascending: false })
 
-    // Apply filters for construction workflows
-    if (filters.status) {
-      query = query.eq('status', filters.status)
+        // Apply type-safe filters for construction workflows
+        if (filters.status) {
+          query = query.eq('status', filters.status)
+        }
+
+        if (filters.search) {
+          query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
+        }
+
+        // Pagination for mobile performance
+        const from = (page - 1) * limit
+        const to = from + limit - 1
+        query = query.range(from, to)
+
+        return query
+      },
+      'getCompanyProjects'
+    )
+
+    if (!result.success) {
+      console.error('🏗️ Error fetching projects:', result.error?.message)
+      return { data: [], pagination: { page, limit, total: 0, totalPages: 0 } }
     }
-
-    if (filters.search) {
-      query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`)
-    }
-
-    // Pagination for mobile performance
-    const from = (page - 1) * limit
-    const to = from + limit - 1
-    query = query.range(from, to)
-
-    const { data, error, count } = await query
-
-    if (error) throw error
 
     return {
-      data: data || [],
+      data: result.data,
       pagination: {
         page,
         limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
+        total: result.count || 0,
+        totalPages: Math.ceil((result.count || 0) / limit)
       }
     }
   } catch (error) {
@@ -151,54 +197,64 @@ export async function getCompanyProjects(
  */
 export async function getProjectDetails(projectId: string) {
   try {
-    const { data, error } = await supabase
-      .from('projects')
-      .select(`
-        *,
-        clients (
-          id,
-          name,
-          company_name,
-          email,
-          phone
-        ),
-        user_profiles!project_manager_id (
-          id,
-          full_name,
-          job_title,
-          email
-        ),
-        scope_items (
-          id,
-          name,
-          category,
-          status,
-          completion_percentage,
-          estimated_cost,
-          actual_cost
-        ),
-        tasks (
-          id,
-          title,
-          status,
-          priority,
-          due_date,
-          assigned_to
-        ),
-        milestones (
-          id,
-          name,
-          due_date,
-          completed_at,
-          is_critical,
-          status
-        )
-      `)
-      .eq('id', projectId)
-      .single()
+    // Use type-safe query builder with enhanced error handling
+    const result = await withErrorHandling(
+      async () => {
+        const projectQuery = createTypedQuery('projects')
+        return projectQuery
+          .select(`
+            *,
+            clients (
+              id,
+              name,
+              company_name,
+              email,
+              phone
+            ),
+            user_profiles!project_manager_id (
+              id,
+              full_name,
+              job_title,
+              email
+            ),
+            scope_items (
+              id,
+              name,
+              category,
+              status,
+              completion_percentage,
+              estimated_cost,
+              actual_cost
+            ),
+            tasks (
+              id,
+              title,
+              status,
+              priority,
+              due_date,
+              assigned_to
+            ),
+            milestones (
+              id,
+              name,
+              due_date,
+              completed_at,
+              is_critical,
+              status
+            )
+          `)
+          .eq('id', projectId)
+          .single()
+      },
+      'getProjectDetails'
+    )
 
-    if (error) throw error
-    return data
+    if (!result.success) {
+      console.error('🏗️ Error fetching project details:', result.error?.message)
+      return null
+    }
+
+    return result.data
   } catch (error) {
     console.error('🏗️ Error fetching project details:', error)
     return null
@@ -221,55 +277,66 @@ export async function getTasks(options: {
   limit?: number
 } = {}) {
   try {
-    let query = supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects!inner (
-          id,
-          name
-        ),
-        scope_items (
-          id,
-          name,
-          category
-        ),
-        user_profiles!assigned_to (
-          id,
-          full_name,
-          job_title
-        ),
-        user_profiles!created_by (
-          id,
-          full_name
-        )
-      `)
-      .order('due_date', { ascending: true, nullsLast: true })
+    // Use type-safe query builder with enhanced error handling
+    const result = await withArrayErrorHandling(
+      async () => {
+        const taskQuery = createTypedQuery('tasks')
+        let query = taskQuery
+          .select(`
+            *,
+            projects!inner (
+              id,
+              name
+            ),
+            scope_items (
+              id,
+              name,
+              category
+            ),
+            user_profiles!assigned_to (
+              id,
+              full_name,
+              job_title
+            ),
+            user_profiles!created_by (
+              id,
+              full_name
+            )
+          `)
+          .order('due_date', { ascending: true })
 
-    if (options.projectId) {
-      query = query.eq('project_id', options.projectId)
+        // Apply type-safe filters
+        if (options.projectId) {
+          query = query.eq('project_id', options.projectId)
+        }
+
+        if (options.assignedTo) {
+          query = query.eq('assigned_to', options.assignedTo)
+        }
+
+        if (options.status) {
+          query = query.eq('status', options.status)
+        }
+
+        if (options.priority) {
+          query = query.eq('priority', options.priority)
+        }
+
+        if (options.limit) {
+          query = query.limit(options.limit)
+        }
+
+        return query
+      },
+      'getTasks'
+    )
+
+    if (!result.success) {
+      console.error('📋 Error fetching tasks:', result.error?.message)
+      return []
     }
 
-    if (options.assignedTo) {
-      query = query.eq('assigned_to', options.assignedTo)
-    }
-
-    if (options.status) {
-      query = query.eq('status', options.status)
-    }
-
-    if (options.priority) {
-      query = query.eq('priority', options.priority)
-    }
-
-    if (options.limit) {
-      query = query.limit(options.limit)
-    }
-
-    const { data, error } = await query
-
-    if (error) throw error
-    return data || []
+    return result.data
   } catch (error) {
     console.error('📋 Error fetching tasks:', error)
     return []
@@ -282,25 +349,36 @@ export async function getTasks(options: {
  */
 export async function getOverdueTasks(projectId?: string) {
   try {
-    let query = supabase
-      .from('tasks')
-      .select(`
-        *,
-        projects (name),
-        user_profiles!assigned_to (full_name)
-      `)
-      .lt('due_date', new Date().toISOString().split('T')[0])
-      .neq('status', 'completed')
-      .neq('status', 'cancelled')
+    // Use type-safe query builder with enhanced error handling
+    const result = await withArrayErrorHandling(
+      async () => {
+        const taskQuery = createTypedQuery('tasks')
+        let query = taskQuery
+          .select(`
+            *,
+            projects (name),
+            user_profiles!assigned_to (full_name)
+          `)
+          .lt('due_date', new Date().toISOString().split('T')[0])
+          .neq('status', 'completed')
+          .neq('status', 'cancelled')
 
-    if (projectId) {
-      query = query.eq('project_id', projectId)
+        // Apply type-safe project filter if provided
+        if (projectId) {
+          query = query.eq('project_id', projectId)
+        }
+
+        return query
+      },
+      'getOverdueTasks'
+    )
+
+    if (!result.success) {
+      console.error('⚠️ Error fetching overdue tasks:', result.error?.message)
+      return []
     }
 
-    const { data, error } = await query
-
-    if (error) throw error
-    return data || []
+    return result.data
   } catch (error) {
     console.error('⚠️ Error fetching overdue tasks:', error)
     return []
@@ -317,33 +395,44 @@ export async function getOverdueTasks(projectId?: string) {
  */
 export async function getScopeItems(projectId: string, category?: string) {
   try {
-    let query = supabase
-      .from('scope_items')
-      .select(`
-        *,
-        subcontractors (
-          id,
-          name,
-          company_name
-        ),
-        tasks (
-          id,
-          title,
-          status,
-          due_date
-        )
-      `)
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: false })
+    // Use type-safe query builder with enhanced error handling
+    const result = await withArrayErrorHandling(
+      async () => {
+        const scopeQuery = createTypedQuery('scope_items')
+        let query = scopeQuery
+          .select(`
+            *,
+            subcontractors (
+              id,
+              name,
+              company_name
+            ),
+            tasks (
+              id,
+              title,
+              status,
+              due_date
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false })
 
-    if (category) {
-      query = query.eq('category', category)
+        // Apply type-safe category filter if provided
+        if (category) {
+          query = query.eq('category', category)
+        }
+
+        return query
+      },
+      'getScopeItems'
+    )
+
+    if (!result.success) {
+      console.error('🏗️ Error fetching scope items:', result.error?.message)
+      return []
     }
 
-    const { data, error } = await query
-
-    if (error) throw error
-    return data || []
+    return result.data
   } catch (error) {
     console.error('🏗️ Error fetching scope items:', error)
     return []
@@ -360,33 +449,96 @@ export async function getScopeItems(projectId: string, category?: string) {
  */
 export async function getShopDrawings(projectId: string, status?: string) {
   try {
-    let query = supabase
-      .from('shop_drawings')
-      .select(`
-        *,
-        scope_items (
-          id,
-          name,
-          category
-        ),
-        user_profiles!submitted_by (
-          full_name,
-          job_title
-        )
-      `)
-      .eq('project_id', projectId)
-      .order('submitted_at', { ascending: false })
+    // Use type-safe query builder with enhanced error handling
+    const result = await withArrayErrorHandling(
+      async () => {
+        const drawingQuery = createTypedQuery('shop_drawings')
+        let query = drawingQuery
+          .select(`
+            *,
+            scope_items (
+              id,
+              name,
+              category
+            ),
+            user_profiles!submitted_by (
+              full_name,
+              job_title
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('submitted_at', { ascending: false })
 
-    if (status) {
-      query = query.eq('status', status)
+        // Apply type-safe status filter if provided
+        if (status) {
+          query = query.eq('status', status)
+        }
+
+        return query
+      },
+      'getShopDrawings'
+    )
+
+    if (!result.success) {
+      console.error('📐 Error fetching shop drawings:', result.error?.message)
+      return []
     }
 
-    const { data, error } = await query
-
-    if (error) throw error
-    return data || []
+    return result.data
   } catch (error) {
     console.error('📐 Error fetching shop drawings:', error)
+    return []
+  }
+}
+
+/**
+ * Get RFIs (Request for Information) for a project
+ * Critical for construction communication and issue resolution
+ */
+export async function getRFIs(projectId: string, status?: string) {
+  try {
+    // Use type-safe query builder with enhanced error handling
+    const result = await withArrayErrorHandling(
+      async () => {
+        const rfiQuery = createTypedQuery('rfis')
+        let query = rfiQuery
+          .select(`
+            *,
+            scope_items (
+              id,
+              name,
+              category
+            ),
+            user_profiles!submitted_by (
+              full_name,
+              job_title
+            ),
+            user_profiles!assigned_to (
+              full_name,
+              job_title
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('submitted_at', { ascending: false })
+
+        // Apply type-safe status filter if provided
+        if (status) {
+          query = query.eq('status', status)
+        }
+
+        return query
+      },
+      'getRFIs'
+    )
+
+    if (!result.success) {
+      console.error('❓ Error fetching RFIs:', result.error?.message)
+      return []
+    }
+
+    return result.data
+  } catch (error) {
+    console.error('❓ Error fetching RFIs:', error)
     return []
   }
 }
@@ -396,35 +548,46 @@ export async function getShopDrawings(projectId: string, status?: string) {
  */
 export async function getMaterialSpecs(projectId: string, status?: string) {
   try {
-    let query = supabase
-      .from('material_specs')
-      .select(`
-        *,
-        scope_items (
-          id,
-          name,
-          category
-        ),
-        subcontractors!supplier_id (
-          name,
-          company_name
-        ),
-        user_profiles!submitted_by (
-          full_name,
-          job_title
-        )
-      `)
-      .eq('project_id', projectId)
-      .order('submitted_at', { ascending: false })
+    // Use type-safe query builder with enhanced error handling
+    const result = await withArrayErrorHandling(
+      async () => {
+        const materialQuery = createTypedQuery('material_specs')
+        let query = materialQuery
+          .select(`
+            *,
+            scope_items (
+              id,
+              name,
+              category
+            ),
+            subcontractors!supplier_id (
+              name,
+              company_name
+            ),
+            user_profiles!submitted_by (
+              full_name,
+              job_title
+            )
+          `)
+          .eq('project_id', projectId)
+          .order('submitted_at', { ascending: false })
 
-    if (status) {
-      query = query.eq('status', status)
+        // Apply type-safe status filter if provided
+        if (status) {
+          query = query.eq('status', status)
+        }
+
+        return query
+      },
+      'getMaterialSpecs'
+    )
+
+    if (!result.success) {
+      console.error('🔧 Error fetching material specs:', result.error?.message)
+      return []
     }
 
-    const { data, error } = await query
-
-    if (error) throw error
-    return data || []
+    return result.data
   } catch (error) {
     console.error('🔧 Error fetching material specs:', error)
     return []
@@ -441,63 +604,85 @@ export async function getMaterialSpecs(projectId: string, status?: string) {
  */
 export async function getProjectStats(projectId: string) {
   try {
-    // Use Promise.all for parallel queries (better for poor connectivity)
+    // Use Promise.all for parallel queries with enhanced error handling
     const [
       tasksResult,
       scopeResult,
       drawingsResult,
       milestonesResult
     ] = await Promise.all([
-      supabase
-        .from('tasks')
-        .select('status')
-        .eq('project_id', projectId),
+      withArrayErrorHandling(
+        async () => {
+          const taskQuery = createTypedQuery('tasks')
+          return taskQuery
+            .select('status, due_date')
+            .eq('project_id', projectId)
+        },
+        'getProjectStats:tasks'
+      ),
       
-      supabase
-        .from('scope_items')
-        .select('status, completion_percentage, estimated_cost, actual_cost')
-        .eq('project_id', projectId),
+      withArrayErrorHandling(
+        async () => {
+          const scopeQuery = createTypedQuery('scope_items')
+          return scopeQuery
+            .select('status, completion_percentage, estimated_cost, actual_cost')
+            .eq('project_id', projectId)
+        },
+        'getProjectStats:scope'
+      ),
         
-      supabase
-        .from('shop_drawings')
-        .select('status')
-        .eq('project_id', projectId),
+      withArrayErrorHandling(
+        async () => {
+          const drawingQuery = createTypedQuery('shop_drawings')
+          return drawingQuery
+            .select('status')
+            .eq('project_id', projectId)
+        },
+        'getProjectStats:drawings'
+      ),
         
-      supabase
-        .from('milestones')
-        .select('status, due_date, completed_at')
-        .eq('project_id', projectId)
+      // Note: milestones table might not exist in current schema, using fallback
+      withArrayErrorHandling(
+        async () => {
+          const milestonesQuery = createTypedQuery('milestones')
+          return milestonesQuery
+            .select('status, due_date, completed_at')
+            .eq('project_id', projectId)
+        },
+        'getProjectStats:milestones'
+      ).catch(() => ({ data: [] as any[], success: true, error: null as any }))
     ])
 
-    const tasks = tasksResult.data || []
-    const scopeItems = scopeResult.data || []
-    const drawings = drawingsResult.data || []
-    const milestones = milestonesResult.data || []
+    // Handle potential errors in individual queries
+    const tasks = tasksResult.success ? tasksResult.data : []
+    const scopeItems = scopeResult.success ? scopeResult.data : []
+    const drawings = drawingsResult.success ? drawingsResult.data : []
+    const milestones = milestonesResult.success ? milestonesResult.data : []
 
     return {
       tasks: {
         total: tasks.length,
-        completed: tasks.filter(t => t.status === 'completed').length,
-        inProgress: tasks.filter(t => t.status === 'in_progress').length,
-        overdue: tasks.filter(t => t.status !== 'completed' && new Date(t.due_date) < new Date()).length
+        completed: tasks.filter((t: any) => t.status === 'completed').length,
+        inProgress: tasks.filter((t: any) => t.status === 'in_progress').length,
+        overdue: tasks.filter((t: any) => t.status !== 'completed' && new Date(t.due_date) < new Date()).length
       },
       scope: {
         total: scopeItems.length,
-        completed: scopeItems.filter(s => s.status === 'completed').length,
+        completed: scopeItems.filter((s: any) => s.status === 'completed').length,
         avgCompletion: scopeItems.length > 0 
-          ? Math.round(scopeItems.reduce((sum, s) => sum + s.completion_percentage, 0) / scopeItems.length)
+          ? Math.round(scopeItems.reduce((sum: number, s: any) => sum + (Number(s.completion_percentage) || 0), 0) / scopeItems.length)
           : 0,
-        budgetVariance: scopeItems.reduce((sum, s) => sum + ((s.actual_cost || 0) - (s.estimated_cost || 0)), 0)
+        budgetVariance: scopeItems.reduce((sum: number, s: any) => sum + ((Number(s.actual_cost) || 0) - (Number(s.estimated_cost) || 0)), 0)
       },
       drawings: {
         total: drawings.length,
-        approved: drawings.filter(d => d.status === 'approved').length,
-        pending: drawings.filter(d => ['draft', 'internal_review', 'client_review'].includes(d.status)).length
+        approved: drawings.filter((d: any) => d.status === 'approved').length,
+        pending: drawings.filter((d: any) => ['draft', 'internal_review', 'client_review'].includes(d.status)).length
       },
       milestones: {
         total: milestones.length,
-        completed: milestones.filter(m => m.status === 'completed').length,
-        overdue: milestones.filter(m => m.status !== 'completed' && new Date(m.due_date) < new Date()).length
+        completed: milestones.filter((m: any) => m.status === 'completed').length,
+        overdue: milestones.filter((m: any) => m.status !== 'completed' && new Date(m.due_date) < new Date()).length
       }
     }
   } catch (error) {

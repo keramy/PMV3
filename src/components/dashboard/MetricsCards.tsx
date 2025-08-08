@@ -136,7 +136,7 @@ export function MetricsCards({ metrics, isLoading, permissions }: MetricsCardsPr
       value: metrics?.openTasks || 0,
       subtitle: `${metrics?.overdueTasks || 0} overdue`,
       icon: <CheckCircle className="h-5 w-5" />,
-      color: (metrics?.overdueTasks || 0) > 0 ? 'warning' : 'success',
+      color: ((metrics?.overdueTasks || 0) > 0 ? 'warning' : 'success') as 'warning' | 'success',
       trend: metrics ? {
         value: Math.round((metrics.overdueTasks / Math.max(metrics.openTasks, 1)) * 100),
         isPositive: (metrics.overdueTasks / Math.max(metrics.openTasks, 1)) < 0.1
@@ -147,7 +147,7 @@ export function MetricsCards({ metrics, isLoading, permissions }: MetricsCardsPr
       value: metrics?.pendingDrawings || 0,
       subtitle: `${metrics?.approvedDrawings || 0} approved this week`,
       icon: <Wrench className="h-5 w-5" />,
-      color: (metrics?.pendingDrawings || 0) > 10 ? 'warning' : 'info',
+      color: ((metrics?.pendingDrawings || 0) > 10 ? 'warning' : 'info') as 'warning' | 'info',
     },
     {
       title: 'Upcoming Milestones',
@@ -210,9 +210,9 @@ export function MetricsCards({ metrics, isLoading, permissions }: MetricsCardsPr
           title={metric.title}
           value={metric.value}
           subtitle={metric.subtitle}
-          trend={metric.trend}
+          trend={'trend' in metric ? metric.trend : undefined}
           icon={metric.icon}
-          color={metric.color}
+          color={metric.color as 'primary' | 'success' | 'warning' | 'danger' | 'info'}
           isLoading={isLoading}
         />
       ))}

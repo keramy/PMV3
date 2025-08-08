@@ -84,8 +84,17 @@ const nextConfig: NextConfig = {
     // Optimize for Excel processing
     config.externals = [...(config.externals || []), { canvas: 'canvas' }]
 
+    // Exclude test files from build
+    config.module.rules.push({
+      test: /\.(test|spec)\.(js|jsx|ts|tsx)$/,
+      loader: 'ignore-loader'
+    })
+
     return config
-  }
+  },
+
+  // Exclude test files from pages
+  pageExtensions: ['js', 'jsx', 'ts', 'tsx'].filter(ext => !ext.includes('test'))
 }
 
 export default nextConfig

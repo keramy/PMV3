@@ -128,7 +128,7 @@ export function createServiceClient() {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
       cookies: {
-        getAll: () => [],
+        getAll: (): any[] => [],
         setAll: () => {},
       },
       auth: {

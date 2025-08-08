@@ -10,13 +10,21 @@ import type {
   Project, 
   Task, 
   ScopeItem, 
-  Milestone, 
   ShopDrawing, 
   RFI, 
   ChangeOrder,
-  UserProfile,
-  Permission 
+  AppUserProfile
 } from '@/types/database'
+
+// Temporary type for missing Milestone table
+type Milestone = {
+  id: string
+  name: string
+  due_date: string
+  completed_at?: string
+  status: string
+}
+import type { Permission } from '@/types/auth'
 
 // Construction-specific dashboard metrics
 export interface DashboardMetrics {
@@ -67,7 +75,7 @@ export const dashboardKeys = {
 }
 
 // Main dashboard metrics hook with role-based data
-export function useDashboardMetrics(userProfile: UserProfile | null) {
+export function useDashboardMetrics(userProfile: AppUserProfile | null) {
   return useQuery({
     queryKey: dashboardKeys.metrics(userProfile?.id || ''),
     queryFn: async (): Promise<DashboardMetrics> => {
@@ -87,7 +95,7 @@ export function useDashboardMetrics(userProfile: UserProfile | null) {
 }
 
 // Project progress tracking for dashboard overview
-export function useProjectProgress(userProfile: UserProfile | null) {
+export function useProjectProgress(userProfile: AppUserProfile | null) {
   return useQuery({
     queryKey: dashboardKeys.projects(userProfile?.id || ''),
     queryFn: async (): Promise<ProjectProgress[]> => {
@@ -107,7 +115,7 @@ export function useProjectProgress(userProfile: UserProfile | null) {
 }
 
 // Activity feed with real-time updates
-export function useActivityFeed(userProfile: UserProfile | null, limit: number = 20) {
+export function useActivityFeed(userProfile: AppUserProfile | null, limit: number = 20) {
   return useQuery({
     queryKey: [...dashboardKeys.activity(userProfile?.id || ''), limit],
     queryFn: async (): Promise<ActivityFeedItem[]> => {
@@ -127,7 +135,7 @@ export function useActivityFeed(userProfile: UserProfile | null, limit: number =
 }
 
 // Critical tasks requiring attention
-export function useCriticalTasks(userProfile: UserProfile | null) {
+export function useCriticalTasks(userProfile: AppUserProfile | null) {
   return useQuery({
     queryKey: [...dashboardKeys.tasks(userProfile?.id || ''), 'critical'],
     queryFn: async (): Promise<Task[]> => {
@@ -166,7 +174,7 @@ export function useWeatherData(location?: { lat: number; lng: number }) {
 }
 
 // Multi-query hook for complete dashboard data
-export function useDashboardData(userProfile: UserProfile | null) {
+export function useDashboardData(userProfile: AppUserProfile | null) {
   const queries = useQueries({
     queries: [
       {
@@ -224,10 +232,10 @@ export function useDashboardData(userProfile: UserProfile | null) {
 }
 
 // Permission-based data filtering
-export function useRoleSpecificData(userProfile: UserProfile | null) {
-  const hasFinanceAccess = userProfile?.permissions.includes('view_project_budgets')
-  const hasAdminAccess = userProfile?.permissions.includes('manage_users')
-  const hasProjectManagement = userProfile?.permissions.includes('create_projects')
+export function useRoleSpecificData(userProfile: AppUserProfile | null) {
+  const hasFinanceAccess = userProfile?.permissions?.includes('view_project_budgets')
+  const hasAdminAccess = userProfile?.permissions?.includes('manage_users')
+  const hasProjectManagement = userProfile?.permissions?.includes('create_projects')
 
   return useQuery({
     queryKey: ['role-data', userProfile?.id, userProfile?.permissions],
@@ -251,7 +259,7 @@ export function useRoleSpecificData(userProfile: UserProfile | null) {
 }
 
 // Construction site safety metrics
-export function useSafetyMetrics(userProfile: UserProfile | null) {
+export function useSafetyMetrics(userProfile: AppUserProfile | null) {
   return useQuery({
     queryKey: ['safety-metrics', userProfile?.id],
     queryFn: async () => {
@@ -263,7 +271,7 @@ export function useSafetyMetrics(userProfile: UserProfile | null) {
       if (!response.ok) throw new Error('Failed to fetch safety metrics')
       return response.json()
     },
-    enabled: !!userProfile && userProfile.permissions.includes('view_project_reports'),
+    enabled: !!userProfile && userProfile.permissions?.includes('view_project_reports'),
     staleTime: 5 * 60 * 1000,
     refetchInterval: 15 * 60 * 1000,
   })

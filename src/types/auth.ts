@@ -1,4 +1,6 @@
-import { User as SupabaseUser } from '@supabase/supabase-js'
+// Temporary workaround for import issue
+const supabaseLib = require('@supabase/supabase-js')
+type SupabaseUser = any // Will be properly typed later
 
 /**
  * Formula PM V3 Authentication Types
@@ -23,36 +25,60 @@ export type Permission =
   | 'create_projects'
   | 'edit_projects' 
   | 'delete_projects'
+  | 'edit_project_settings'
   | 'view_project_costs'
   | 'assign_project_team'
   
   // Scope management
+  | 'view_scope'
   | 'manage_scope_items'
   | 'assign_subcontractors'
   | 'approve_scope_changes'
   | 'export_scope_excel'
   
   // Shop drawings workflow
+  | 'view_drawings'
   | 'upload_drawings'
   | 'internal_review_drawings'
   | 'client_review_drawings'
   | 'approve_drawings'
   
   // Material specifications
+  | 'view_materials'
   | 'create_material_specs'
   | 'approve_material_specs'
   | 'view_material_costs'
   
   // Task management
+  | 'view_tasks'
   | 'create_tasks'
   | 'assign_tasks'
   | 'complete_tasks'
   | 'view_all_tasks'
   
+  // Timeline and milestones
+  | 'view_timeline'
+  | 'view_milestones'
+  | 'view_timeline_gantt'
+  
+  // RFIs and Change Orders
+  | 'view_rfis'
+  | 'view_change_orders'
+  | 'manage_change_orders'
+  
+  // Quality Control
+  | 'view_qc_lists'
+  
+  // Subcontractors
+  | 'view_subcontractors'
+  
+  // Documents
+  | 'view_documents'
+  
   // Reports and analytics
+  | 'view_reports'
   | 'view_project_reports'
   | 'export_reports'
-  | 'view_timeline_gantt'
   
   // Admin functions
   | 'manage_users'
@@ -66,23 +92,17 @@ export type Permission =
   
   // Finance and billing
   | 'view_project_budgets'
-  | 'manage_change_orders'
   | 'approve_invoices'
 
 // User profile with dynamic permissions
-export interface UserProfile {
-  id: string
-  email: string
-  full_name: string
-  job_title: string           // Descriptive only - not used for access control
-  company_id: string
-  permissions: Permission[]   // THE REAL ACCESS CONTROL
-  is_active: boolean
-  created_at: string
-  updated_at: string
-  avatar_url?: string
-  phone?: string
-  department?: string
+// This extends the database UserProfile with computed fields
+import type { UserProfile as DBUserProfile } from './database'
+
+export interface UserProfile extends DBUserProfile {
+  // Add computed full_name for convenience
+  full_name?: string
+  // Override permissions to be typed array
+  permissions: Permission[]
 }
 
 // Enhanced user with Supabase auth

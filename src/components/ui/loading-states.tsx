@@ -277,4 +277,207 @@ export function RFIsSkeleton({ count = 5 }: { count?: number }) {
                   <ConstructionSkeleton className="h-3 w-20" />
                 </div>
               </div>
-            </CardContent>\n          </Card>\n        ))}\n      </div>\n    </div>\n  )\n}\n\n// Loading state with construction icon and message\ninterface ConstructionLoadingProps {\n  icon?: React.ElementType\n  message?: string\n  description?: string\n  className?: string\n  size?: 'sm' | 'md' | 'lg'\n}\n\nexport function ConstructionLoading({ \n  icon: Icon = Building2, \n  message = \"Loading construction data...\", \n  description,\n  className,\n  size = 'md'\n}: ConstructionLoadingProps) {\n  const sizeClasses = {\n    sm: 'p-8',\n    md: 'p-12',\n    lg: 'p-16'\n  }\n  \n  const iconSizes = {\n    sm: 'h-8 w-8',\n    md: 'h-12 w-12', \n    lg: 'h-16 w-16'\n  }\n  \n  return (\n    <div className={cn(\n      'flex flex-col items-center justify-center text-center',\n      sizeClasses[size],\n      className\n    )}>\n      <div className=\"relative mb-4\">\n        <Icon className={cn(\n          iconSizes[size],\n          'text-primary animate-pulse'\n        )} />\n        \n        {/* Construction site animation effect */}\n        <div className=\"absolute inset-0 border-2 border-primary/20 rounded-full animate-ping\" />\n      </div>\n      \n      <h3 className={cn(\n        'font-semibold text-foreground mb-2',\n        {\n          'text-lg': size === 'sm',\n          'text-xl': size === 'md',\n          'text-2xl': size === 'lg'\n        }\n      )}>\n        {message}\n      </h3>\n      \n      {description && (\n        <p className={cn(\n          'text-muted-foreground max-w-sm',\n          {\n            'text-sm': size === 'sm',\n            'text-base': size === 'md',\n            'text-lg': size === 'lg'\n          }\n        )}>\n          {description}\n        </p>\n      )}\n      \n      {/* Progress indicator for mobile */}\n      <div className=\"mt-4 w-32\">\n        <div className=\"h-1 bg-muted rounded-full overflow-hidden\">\n          <div className=\"h-full bg-primary rounded-full animate-pulse\" \n               style={{ width: '60%' }} />\n        </div>\n      </div>\n    </div>\n  )\n}\n\n// Specific loading states for different construction features\nexport function ScopeLoading() {\n  return (\n    <ConstructionLoading \n      icon={Layers}\n      message=\"Loading scope items...\"\n      description=\"Fetching project scope and subcontractor assignments\"\n    />\n  )\n}\n\nexport function DrawingsLoading() {\n  return (\n    <ConstructionLoading \n      icon={FileImage}\n      message=\"Loading drawings...\"\n      description=\"Retrieving shop drawings and approval status\"\n    />\n  )\n}\n\nexport function TasksLoading() {\n  return (\n    <ConstructionLoading \n      icon={ListTodo}\n      message=\"Loading tasks...\"\n      description=\"Gathering task assignments and progress updates\"\n    />\n  )\n}\n\nexport function MaterialsLoading() {\n  return (\n    <ConstructionLoading \n      icon={Package}\n      message=\"Loading materials...\"\n      description=\"Fetching material specifications and approvals\"\n    />\n  )\n}\n\nexport function TeamLoading() {\n  return (\n    <ConstructionLoading \n      icon={Users}\n      message=\"Loading team...\"\n      description=\"Getting team member assignments and availability\"\n    />\n  )\n}\n\nexport function ScheduleLoading() {\n  return (\n    <ConstructionLoading \n      icon={Calendar}\n      message=\"Loading schedule...\"\n      description=\"Building project timeline and milestone data\"\n    />\n  )\n}\n\nexport function ReportsLoading() {\n  return (\n    <ConstructionLoading \n      icon={BarChart3}\n      message=\"Generating reports...\"\n      description=\"Analyzing project data and creating visualizations\"\n    />\n  )\n}\n\n// Error state for construction workflows\ninterface ConstructionErrorProps {\n  error: Error\n  onRetry?: () => void\n  context?: string\n  className?: string\n}\n\nexport function ConstructionError({ \n  error, \n  onRetry, \n  context = \"construction data\",\n  className \n}: ConstructionErrorProps) {\n  return (\n    <div className={cn(\n      'flex flex-col items-center justify-center text-center p-12',\n      className\n    )}>\n      <div className=\"relative mb-4\">\n        <AlertTriangle className=\"h-12 w-12 text-red-500\" />\n      </div>\n      \n      <h3 className=\"text-xl font-semibold text-foreground mb-2\">\n        Failed to load {context}\n      </h3>\n      \n      <p className=\"text-muted-foreground max-w-sm mb-4\">\n        {error.message || \"An unexpected error occurred while loading the data.\"}\n      </p>\n      \n      {onRetry && (\n        <button\n          onClick={onRetry}\n          className=\"bg-primary text-primary-foreground px-4 py-2 rounded-md mobile-touch-target hover:bg-primary/90 transition-colors\"\n        >\n          Try Again\n        </button>\n      )}\n      \n      <p className=\"text-xs text-muted-foreground mt-4\">\n        If this problem persists, contact your system administrator.\n      </p>\n    </div>\n  )\n}"
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Loading state with construction icon and message
+interface ConstructionLoadingProps {
+  icon?: React.ElementType
+  message?: string
+  description?: string
+  className?: string
+  size?: 'sm' | 'md' | 'lg'
+}
+
+export function ConstructionLoading({ 
+  icon: Icon = Building2, 
+  message = "Loading construction data...", 
+  description,
+  className,
+  size = 'md'
+}: ConstructionLoadingProps) {
+  const sizeClasses = {
+    sm: 'p-8',
+    md: 'p-12',
+    lg: 'p-16'
+  }
+  
+  const iconSizes = {
+    sm: 'h-8 w-8',
+    md: 'h-12 w-12', 
+    lg: 'h-16 w-16'
+  }
+  
+  return (
+    <div className={cn(
+      'flex flex-col items-center justify-center text-center',
+      sizeClasses[size],
+      className
+    )}>
+      <div className="relative mb-4">
+        <Icon className={cn(
+          iconSizes[size],
+          'text-primary animate-pulse'
+        )} />
+        
+        {/* Construction site animation effect */}
+        <div className="absolute inset-0 border-2 border-primary/20 rounded-full animate-ping" />
+      </div>
+      
+      <h3 className={cn(
+        'font-semibold text-foreground mb-2',
+        {
+          'text-lg': size === 'sm',
+          'text-xl': size === 'md',
+          'text-2xl': size === 'lg'
+        }
+      )}>
+        {message}
+      </h3>
+      
+      {description && (
+        <p className={cn(
+          'text-muted-foreground max-w-sm',
+          {
+            'text-sm': size === 'sm',
+            'text-base': size === 'md',
+            'text-lg': size === 'lg'
+          }
+        )}>
+          {description}
+        </p>
+      )}
+      
+      {/* Progress indicator for mobile */}
+      <div className="mt-4 w-32">
+        <div className="h-1 bg-muted rounded-full overflow-hidden">
+          <div className="h-full bg-primary rounded-full animate-pulse" 
+               style={{ width: '60%' }} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Specific loading states for different construction features
+export function ScopeLoading() {
+  return (
+    <ConstructionLoading 
+      icon={Layers}
+      message="Loading scope items..."
+      description="Fetching project scope and subcontractor assignments"
+    />
+  )
+}
+
+export function DrawingsLoading() {
+  return (
+    <ConstructionLoading 
+      icon={FileImage}
+      message="Loading drawings..."
+      description="Retrieving shop drawings and approval status"
+    />
+  )
+}
+
+export function TasksLoading() {
+  return (
+    <ConstructionLoading 
+      icon={ListTodo}
+      message="Loading tasks..."
+      description="Gathering task assignments and progress updates"
+    />
+  )
+}
+
+export function MaterialsLoading() {
+  return (
+    <ConstructionLoading 
+      icon={Package}
+      message="Loading materials..."
+      description="Fetching material specifications and approvals"
+    />
+  )
+}
+
+export function TeamLoading() {
+  return (
+    <ConstructionLoading 
+      icon={Users}
+      message="Loading team..."
+      description="Getting team member assignments and availability"
+    />
+  )
+}
+
+export function ScheduleLoading() {
+  return (
+    <ConstructionLoading 
+      icon={Calendar}
+      message="Loading schedule..."
+      description="Building project timeline and milestone data"
+    />
+  )
+}
+
+export function ReportsLoading() {
+  return (
+    <ConstructionLoading 
+      icon={BarChart3}
+      message="Generating reports..."
+      description="Analyzing project data and creating visualizations"
+    />
+  )
+}
+
+// Error state for construction workflows
+interface ConstructionErrorProps {
+  error: Error
+  onRetry?: () => void
+  context?: string
+  className?: string
+}
+
+export function ConstructionError({ 
+  error, 
+  onRetry, 
+  context = "construction data",
+  className 
+}: ConstructionErrorProps) {
+  return (
+    <div className={cn(
+      'flex flex-col items-center justify-center text-center p-12',
+      className
+    )}>
+      <div className="relative mb-4">
+        <AlertTriangle className="h-12 w-12 text-red-500" />
+      </div>
+      
+      <h3 className="text-xl font-semibold text-foreground mb-2">
+        Failed to load {context}
+      </h3>
+      
+      <p className="text-muted-foreground max-w-sm mb-4">
+        {error.message || "An unexpected error occurred while loading the data."}
+      </p>
+      
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="bg-primary text-primary-foreground px-4 py-2 rounded-md mobile-touch-target hover:bg-primary/90 transition-colors"
+        >
+          Try Again
+        </button>
+      )}
+      
+      <p className="text-xs text-muted-foreground mt-4">
+        If this problem persists, contact your system administrator.
+      </p>
+    </div>
+  )
+}

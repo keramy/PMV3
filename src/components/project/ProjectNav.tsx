@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { usePermissions } from '@/hooks/usePermissions'
+import { Permission } from '@/types/auth'
 import {
   FileImage,
   ListTodo,
@@ -54,7 +55,7 @@ interface TabConfig {
   name: string
   href: string
   icon: React.ElementType
-  permission?: string
+  permission?: Permission
   isPinnable?: boolean
   description?: string
   mobileLabel?: string

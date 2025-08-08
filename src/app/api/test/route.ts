@@ -107,7 +107,7 @@ async function testDatabaseConnection(): Promise<TestResult> {
   const startTime = Date.now()
   
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Test basic connection with a simple query
     const { data, error } = await supabase
@@ -166,7 +166,7 @@ async function testCoreTables(): Promise<TestResult> {
   const startTime = Date.now()
   
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     const expectedTables = [
       'companies',
@@ -187,7 +187,7 @@ async function testCoreTables(): Promise<TestResult> {
     const tableTests = await Promise.all(
       expectedTables.map(async (table) => {
         const { data, error } = await supabase
-          .from(table)
+          .from(table as any)
           .select('*')
           .limit(1)
         
@@ -233,7 +233,7 @@ async function testUserProfileTrigger(): Promise<TestResult> {
   const startTime = Date.now()
   
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Since we can't directly query system tables, we'll test the trigger indirectly
     // by checking if user profiles exist (which indicates the trigger worked before)
@@ -280,7 +280,7 @@ async function testPermissionsSystem(): Promise<TestResult> {
   const startTime = Date.now()
   
   try {
-    const supabase = createClient()
+    const supabase = await createClient()
     
     // Test that user_profiles has permissions column with proper structure
     const { data, error } = await supabase
