@@ -208,8 +208,11 @@ export type Database = {
           model: string | null
           name: string
           notes: string | null
+          priority: Database["public"]["Enums"]["material_priority"]
           project_id: string | null
           quantity: number | null
+          review_date: string | null
+          review_notes: string | null
           spec_number: string | null
           specification: string | null
           status: string | null
@@ -230,8 +233,11 @@ export type Database = {
           model?: string | null
           name: string
           notes?: string | null
+          priority?: Database["public"]["Enums"]["material_priority"]
           project_id?: string | null
           quantity?: number | null
+          review_date?: string | null
+          review_notes?: string | null
           spec_number?: string | null
           specification?: string | null
           status?: string | null
@@ -252,8 +258,11 @@ export type Database = {
           model?: string | null
           name?: string
           notes?: string | null
+          priority?: Database["public"]["Enums"]["material_priority"]
           project_id?: string | null
           quantity?: number | null
+          review_date?: string | null
+          review_notes?: string | null
           spec_number?: string | null
           specification?: string | null
           status?: string | null
@@ -992,13 +1001,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      material_specs_pm_dashboard: {
+        Row: {
+          approval_date: string | null
+          approved_by_name: string | null
+          category: string | null
+          created_at: string | null
+          created_by_name: string | null
+          days_since_created: number | null
+          days_since_review: number | null
+          id: string | null
+          manufacturer: string | null
+          model: string | null
+          name: string | null
+          priority: Database["public"]["Enums"]["material_priority"] | null
+          project_id: string | null
+          project_name: string | null
+          review_date: string | null
+          review_notes: string | null
+          spec_number: string | null
+          status: string | null
+          supplier: string | null
+          total_cost: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_specs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      material_priority: "low" | "medium" | "high" | "critical"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1125,6 +1166,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      material_priority: ["low", "medium", "high", "critical"],
+    },
   },
 } as const
