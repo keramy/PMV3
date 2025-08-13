@@ -51,9 +51,12 @@ const nextConfig: NextConfig = {
             value: 'on'
           },
           // Performance headers for construction site connections
+          // In development, prevent aggressive caching to avoid similar issues
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable'
+            value: process.env.NODE_ENV === 'development' 
+              ? 'no-store, must-revalidate' 
+              : 'public, max-age=31536000, immutable'
           }
         ]
       },

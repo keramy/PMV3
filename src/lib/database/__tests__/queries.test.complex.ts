@@ -71,9 +71,10 @@ describe('User & Authentication Queries', () => {
   let mockSupabaseAdmin: any
 
   beforeEach(async () => {
-    const { supabase, supabaseAdmin } = await import('@/lib/supabase')
-    mockSupabase = supabase
-    mockSupabaseAdmin = supabaseAdmin
+    const supabaseModule = await import('@/lib/supabase')
+    mockSupabase = supabaseModule.supabase
+    // Use server client for admin operations
+    mockSupabaseAdmin = mockSupabase
   })
 
   afterEach(() => {

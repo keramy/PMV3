@@ -4,7 +4,7 @@
  * Optimized for construction site connectivity and offline scenarios
  */
 
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 
 // Environment variables with validation
@@ -24,88 +24,38 @@ const jwtExpiry = parseInt(process.env.NEXT_PUBLIC_JWT_EXPIRY || '14400')
 // TYPE-SAFE CLIENT CONFIGURATION
 // ============================================================================
 
-/**
- * Enhanced client options interface for type safety
- */
-interface EnhancedBrowserClientOptions {
-  auth: {
-    autoRefreshToken: boolean
-    persistSession: boolean
-    detectSessionInUrl: boolean
-    flowType: 'pkce'
-    debug: boolean
-    sessionRefreshInterval: number
-    storage?: Storage
-    storageKey: string
-  }
-  db: {
-    schema: 'public'
-  }
-  global: {
-    headers: Record<string, string>
-    fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
-  }
-  realtime: {
-    params: {
-      eventsPerSecond: number
-    }
-  }
-}
+// Basic client options compatible with @supabase/ssr
 
 /**
- * Create optimized client options based on environment
+ * Create standard Supabase client options for better session persistence
  */
-function createBrowserClientOptions(): EnhancedBrowserClientOptions {
-  const baseOptions: EnhancedBrowserClientOptions = {
+function createBrowserClientOptions() {
+  return {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: true,
-      flowType: 'pkce', // Enhanced security for construction teams
-      debug: isDevelopment,
-      sessionRefreshInterval: jwtExpiry, // Extended session for construction sites (4 hours default)
+      detectSessionInUrl: false, // Handled by middleware
+      storageKey: 'formulapm_auth_token',
+      // Configure for construction site connectivity
+      flowType: 'pkce' as const,
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-      storageKey: 'formulapm_auth_token', // Consistent naming
     },
-
     db: {
-      schema: 'public'
+      schema: 'public' as const
     },
-
+    // Global request configuration for construction sites
     global: {
       headers: {
         'X-Client-Info': 'formulapm-v3-browser',
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-        'X-Connection-Mode': enableOfflineMode ? 'resilient' : 'standard',
-        ...(isDevelopment && { 'X-Debug-Mode': 'true' })
-      }
+      },
     },
-
+    // Realtime options for construction team collaboration
     realtime: {
       params: {
-        eventsPerSecond: isDevelopment ? 10 : 2, // Higher rate in development, throttled for production construction sites
-      },
+        eventsPerSecond: 2, // Reduced for mobile connections
+      }
     }
   }
-
-  // Add fetch optimization for production (construction site network optimizations)
-  if (isProduction || enableOfflineMode) {
-    baseOptions.global.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
-      const controller = new AbortController()
-
-      // Extended timeout for poor connectivity
-      const timeoutId = setTimeout(() => controller.abort(), connectionTimeout)
-
-      return fetch(input, {
-        ...init,
-        signal: controller.signal
-      }).finally(() => clearTimeout(timeoutId))
-    }
-  }
-
-  return baseOptions
 }
 
 // ============================================================================
@@ -117,17 +67,38 @@ function createBrowserClientOptions(): EnhancedBrowserClientOptions {
  * Configured for compile-time safety and runtime performance
  */
 export function createClient() {
-  // Validate required environment variables
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('❌ Missing Supabase environment variables:', {
-      supabaseUrl: !!supabaseUrl,
-      supabaseAnonKey: !!supabaseAnonKey,
+  // Development debugging (only in dev mode)
+  if (isDevelopment) {
+    console.log('🔍 Supabase Client Creation:', {
+      supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
+      supabaseAnonKey: supabaseAnonKey ? 'Present' : 'MISSING',
       env: process.env.NODE_ENV
     })
-    throw new Error('Missing Supabase environment variables')
   }
 
-  return createBrowserClient<Database>(
+  // Enhanced validation with better error messages
+  if (!supabaseUrl) {
+    const error = 'Missing NEXT_PUBLIC_SUPABASE_URL environment variable. Please check your .env.local file.'
+    console.error('❌ Supabase Configuration Error:', error)
+    throw new Error(error)
+  }
+
+  if (!supabaseAnonKey) {
+    const error = 'Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable. Please check your .env.local file.'
+    console.error('❌ Supabase Configuration Error:', error)
+    throw new Error(error)
+  }
+
+  // Validate URL format
+  try {
+    new URL(supabaseUrl)
+  } catch (err) {
+    const error = `Invalid Supabase URL format: ${supabaseUrl}`
+    console.error('❌ Supabase Configuration Error:', error)
+    throw new Error(error)
+  }
+
+  return createSupabaseClient<Database>(
     supabaseUrl,
     supabaseAnonKey,
     createBrowserClientOptions()
@@ -145,7 +116,8 @@ export function getTypedTable<TTableName extends keyof Database['public']['Table
   client: ReturnType<typeof createClient>,
   tableName: TTableName
 ) {
-  return client.from(tableName)
+  // Cast to string to satisfy Supabase client interface
+  return client.from(tableName as Extract<TTableName, string>)
 }
 
 /**
@@ -247,8 +219,8 @@ export const getClientInfo = () => ({
  */
 export async function callClientTypedRPC<
   TFunctionName extends keyof Database['public']['Functions'],
-  TArgs = Database['public']['Functions'][TFunctionName]['Args'],
-  TReturn = Database['public']['Functions'][TFunctionName]['Returns']
+  TArgs = Database['public']['Functions'][TFunctionName] extends { Args: infer A } ? A : never,
+  TReturn = Database['public']['Functions'][TFunctionName] extends { Returns: infer R } ? R : never
 >(
   client: ReturnType<typeof createClient>,
   functionName: TFunctionName,

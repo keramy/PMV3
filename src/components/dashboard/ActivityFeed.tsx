@@ -7,9 +7,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { ActivityFeedSkeleton, CompactActivityFeedSkeleton } from '@/components/ui/loading-states'
+import { getPriorityBadgeProps } from '@/lib/styling/construction-styles'
 import { 
   CheckCircle, 
   FileImage, 
@@ -22,7 +23,7 @@ import {
   Filter,
   Zap
 } from 'lucide-react'
-import { format, formatDistanceToNow, isToday, isYesterday } from 'date-fns'
+import { formatDate, formatDistanceToNow, formatSmartTimestamp, getDateGroupLabel } from '@/lib/formatting'
 import { useState } from 'react'
 import type { ActivityFeedItem } from '@/hooks/useDashboardData'
 
@@ -77,27 +78,13 @@ function ActivityItem({ activity }: { activity: ActivityFeedItem }) {
   const Icon = config.icon
   
   const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp)
-    if (isToday(date)) {
-      return formatDistanceToNow(date, { addSuffix: true })
-    } else if (isYesterday(date)) {
-      return `Yesterday at ${format(date, 'h:mm a')}`
-    } else {
-      return format(date, 'MMM d, h:mm a')
-    }
+    return formatSmartTimestamp(timestamp)
   }
 
   const getPriorityBadge = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-        return <Badge variant="destructive" className="text-xs">Critical</Badge>
-      case 'high':
-        return <Badge variant="secondary" className="text-xs">High</Badge>
-      case 'medium':
-        return <Badge variant="outline" className="text-xs">Medium</Badge>
-      default:
-        return null
-    }
+    if (!priority || !['critical', 'high', 'medium'].includes(priority)) return null
+    const props = getPriorityBadgeProps(priority as any, 'text-xs')
+    return <Badge {...props} />
   }
 
   return (
@@ -139,28 +126,6 @@ function ActivityItem({ activity }: { activity: ActivityFeedItem }) {
   )
 }
 
-function ActivityFeedSkeleton() {
-  return (
-    <div className="space-y-3">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex gap-3 p-4 rounded-lg border bg-gray-50">
-          <Skeleton className="w-8 h-8 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <div className="flex justify-between">
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-3 w-16" />
-            </div>
-            <Skeleton className="h-3 w-full" />
-            <div className="flex gap-4">
-              <Skeleton className="h-3 w-20" />
-              <Skeleton className="h-3 w-32" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export function ActivityFeed({ activities, isLoading, onRefresh, isRefreshing }: ActivityFeedProps) {
   const [filter, setFilter] = useState<'all' | 'critical' | 'high'>('all')
@@ -210,16 +175,7 @@ export function ActivityFeed({ activities, isLoading, onRefresh, isRefreshing }:
     const groups: { [key: string]: ActivityFeedItem[] } = {}
     
     activities.forEach(activity => {
-      const date = new Date(activity.timestamp)
-      let key: string
-      
-      if (isToday(date)) {
-        key = 'Today'
-      } else if (isYesterday(date)) {
-        key = 'Yesterday'  
-      } else {
-        key = format(date, 'MMMM d, yyyy')
-      }
+      const key = getDateGroupLabel(activity.timestamp)
       
       if (!groups[key]) {
         groups[key] = []
@@ -336,19 +292,7 @@ export function ActivityFeed({ activities, isLoading, onRefresh, isRefreshing }:
 // Compact activity feed for smaller spaces
 export function CompactActivityFeed({ activities, isLoading }: { activities?: ActivityFeedItem[], isLoading: boolean }) {
   if (isLoading) {
-    return (
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex gap-2 p-2 rounded border">
-            <Skeleton className="w-4 h-4 rounded" />
-            <div className="flex-1 space-y-1">
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-2 w-2/3" />
-            </div>
-          </div>
-        ))}
-      </div>
-    )
+    return <CompactActivityFeedSkeleton />
   }
 
   const recentActivities = activities?.slice(0, 5) || []
@@ -367,7 +311,7 @@ export function CompactActivityFeed({ activities, isLoading }: { activities?: Ac
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{activity.title}</p>
               <p className="text-xs text-muted-foreground truncate">
-                {activity.user_name} • {formatDistanceToNow(new Date(activity.timestamp), { addSuffix: true })}
+                {activity.user_name} • {formatDistanceToNow(activity.timestamp)}
               </p>
             </div>
           </div>

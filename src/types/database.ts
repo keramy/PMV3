@@ -6,10 +6,12 @@
 
 // Export all generated types from Supabase
 export * from './database.generated'
-export type { Database } from './database.generated'
 
 // Import the generated Database type for extending
 import type { Database as GeneratedDatabase } from './database.generated'
+
+// Re-export the primary Database type
+export type Database = GeneratedDatabase
 import type { Permission } from './auth'
 
 // ============================================================================
@@ -91,11 +93,59 @@ export type ScopeStatus =
 
 export type DrawingStatus = 
   | 'draft'
+  | 'pending'
+  | 'in_review'
+  | 'approved'
+  | 'rejected'
+  | 'on_hold'
+  | 'archived'
+
+// Enhanced shop drawing approval stages
+export type ShopDrawingApprovalStage =
+  | 'not_submitted'
   | 'internal_review'
   | 'client_review'
   | 'approved'
+  | 'approved_with_comments'
   | 'rejected'
-  | 'revised'
+  | 'resubmit_required'
+
+// Shop drawing categories
+export type ShopDrawingCategory =
+  | 'architectural'
+  | 'structural'
+  | 'mechanical'
+  | 'electrical'
+  | 'plumbing'
+  | 'hvac'
+  | 'fire_protection'
+  | 'technology'
+  | 'specialty'
+
+// Construction trades
+export type ConstructionTrade =
+  | 'general_contractor'
+  | 'electrical'
+  | 'plumbing'
+  | 'hvac'
+  | 'structural_steel'
+  | 'concrete'
+  | 'masonry'
+  | 'roofing'
+  | 'glazing'
+  | 'flooring'
+  | 'painting'
+  | 'fire_protection'
+  | 'technology'
+  | 'landscaping'
+  | 'specialty'
+
+// Priority levels
+export type PriorityLevel =
+  | 'low'
+  | 'medium'
+  | 'high'
+  | 'critical'
 
 export type TaskStatus = 
   | 'not_started'
@@ -152,3 +202,108 @@ export type ResourceType =
   | 'change_order'
   | 'punch_item'
   | 'milestone'
+
+// ============================================================================
+// ENHANCED SHOP DRAWING TYPES
+// ============================================================================
+
+// Enhanced shop drawing type with new workflow fields
+export interface EnhancedShopDrawing extends ShopDrawing {
+  // New fields from migration
+  scope_item_id?: string | null
+  approval_stage?: ShopDrawingApprovalStage
+  category?: ShopDrawingCategory
+  trade?: ConstructionTrade
+  priority?: PriorityLevel
+  internal_reviewer_id?: string | null
+  internal_review_date?: string | null
+  internal_approved?: boolean
+  client_reviewer_name?: string | null
+  client_review_date?: string | null
+  client_approved?: boolean
+  final_approval_date?: string | null
+  rejection_reason?: string | null
+  requires_resubmission?: boolean
+  estimated_review_days?: number
+  actual_review_days?: number | null
+  drawing_type?: string | null
+  sheet_count?: number
+  contractor_name?: string | null
+  consultant_name?: string | null
+}
+
+// Shop drawing comment type
+export interface ShopDrawingComment {
+  id: string
+  shop_drawing_id: string
+  user_id: string
+  comment_type: 'internal' | 'client' | 'system'
+  comment: string
+  is_resolved?: boolean
+  parent_comment_id?: string | null
+  attachment_url?: string | null
+  markup_data?: Record<string, any> | null
+  created_at?: string
+  updated_at?: string
+}
+
+// Shop drawing revision type
+export interface ShopDrawingRevision {
+  id: string
+  shop_drawing_id: string
+  revision_number: string
+  revision_description?: string | null
+  file_url?: string | null
+  file_name?: string | null
+  file_size?: number | null
+  uploaded_by: string
+  is_current?: boolean
+  superseded_by?: string | null
+  approval_stage?: ShopDrawingApprovalStage
+  created_at?: string
+}
+
+// Dashboard view type for shop drawings
+export interface ShopDrawingDashboard {
+  id: string
+  project_id: string | null
+  project_name: string | null
+  drawing_number: string | null
+  title: string
+  approval_stage: ShopDrawingApprovalStage | null
+  category: ShopDrawingCategory | null
+  trade: ConstructionTrade | null
+  priority: PriorityLevel | null
+  due_date: string | null
+  submitted_at: string | null
+  internal_approved: boolean | null
+  client_approved: boolean | null
+  actual_review_days: number | null
+  estimated_review_days: number | null
+  submitted_by_name: string | null
+  internal_reviewer_name: string | null
+  scope_item_title: string | null
+  unresolved_comments: number
+  current_revision: string | null
+  current_file_url: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+// Insert types for new tables
+export type ShopDrawingCommentInsert = Omit<ShopDrawingComment, 'id' | 'created_at' | 'updated_at'>
+export type ShopDrawingRevisionInsert = Omit<ShopDrawingRevision, 'id' | 'created_at'>
+
+// Update types for new tables
+export type ShopDrawingCommentUpdate = Partial<Omit<ShopDrawingComment, 'id' | 'created_at'>>
+export type ShopDrawingRevisionUpdate = Partial<Omit<ShopDrawingRevision, 'id' | 'created_at'>>
+
+// Enhanced permission types for shop drawings
+export type ShopDrawingPermission =
+  | 'view_shop_drawings'
+  | 'create_shop_drawings'
+  | 'review_shop_drawings'
+  | 'comment_shop_drawings'
+  | 'admin_shop_drawings'
+  | 'internal_review_drawings'
+  | 'client_review_drawings'

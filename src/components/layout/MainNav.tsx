@@ -21,9 +21,9 @@ import {
   Settings,
   Users,
   Menu,
-  Bell,
   Search
 } from 'lucide-react'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' as const, icon: LayoutDashboard },
@@ -76,11 +76,7 @@ export function MainNav({ className }: MainNavProps) {
         </Button>
 
         {/* Notifications */}
-        <Button variant="ghost" size="sm" className="mobile-touch-target relative">
-          <Bell className="h-4 w-4" />
-          {/* Notification badge */}
-          <span className="absolute -top-1 -right-1 h-2 w-2 bg-red-500 rounded-full" />
-        </Button>
+        <NotificationBell className="mobile-touch-target" />
 
         {/* Mobile Menu */}
         <div className="md:hidden">

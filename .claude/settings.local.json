@@ -15,8 +15,35 @@
       "Bash(npm run dev:*)",
       "Bash(robocopy:*)",
       "Bash(xcopy:*)",
-      "Bash(git remote add:*)"
+      "Bash(git remote add:*)",
+      "mcp__postgres__analyze_db_health",
+      "mcp__postgres__get_top_queries",
+      "mcp__postgres__get_object_details",
+      "mcp__postgres__execute_sql",
+      "mcp__postgres__explain_query",
+      "mcp__postgres__analyze_query_indexes",
+      "WebFetch(domain:github.com)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__execute_sql",
+      "mcp__supabase__list_migrations",
+      "Bash(npm run type-check:*)",
+      "mcp__supabase__generate_typescript_types",
+      "Bash(git push:*)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "mcp__supabase__get_logs",
+      "mcp__supabase__get_advisors",
+      "Bash(npx tsc:*)",
+      "Bash(taskkill:*)",
+      "mcp__filesystem__read_file",
+      "mcp__filesystem__write_file"
     ],
     "deny": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }

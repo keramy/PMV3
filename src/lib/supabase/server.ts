@@ -29,7 +29,7 @@ export async function createClient() {
               // Optimized cookie settings for construction team sessions
               const cookieOptions = {
                 ...options,
-                httpOnly: false, // Allow client access for auth state sync
+                httpOnly: true, // CRITICAL: Must be true for security
                 secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax' as const,
                 maxAge: options?.maxAge || 60 * 60 * 24 * 7, // 7 days for field workers

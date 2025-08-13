@@ -3,8 +3,9 @@
  * Optimized for construction site performance and offline scenarios
  */
 
-import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { getClient } from '@/lib/supabase/client'
 import { createClient } from '@/lib/supabase/server'
+import { createLogger } from '@/lib/logger'
 import { 
   createTypedQuery, 
   withTransformErrorHandling,
@@ -13,6 +14,8 @@ import {
   transformUserProfile,
   transformToRawUserProfile
 } from '@/lib/database-helpers'
+
+const logger = createLogger('database-queries')
 import type { 
   Database,
   UserProfile,
@@ -48,7 +51,8 @@ import type { Permission } from '@/types/auth'
  */
 export async function getCurrentUserProfile(): Promise<AppUserProfile | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    const client = getClient()
+    const { data: { user } } = await client.auth.getUser()
     if (!user) return null
 
     // Use type-safe query builder
@@ -63,13 +67,13 @@ export async function getCurrentUserProfile(): Promise<AppUserProfile | null> {
     )
 
     if (!result.success) {
-      console.warn('🔍 Failed to fetch user profile:', result.error?.message)
+      logger.warn('Failed to fetch user profile', { error: result.error })
       return null
     }
 
     return result.data
   } catch (error) {
-    console.error('🔍 Error fetching user profile:', error)
+    logger.error('Error fetching user profile', { error })
     return null
   }
 }
@@ -85,7 +89,7 @@ export async function hasPermission(permission: Permission): Promise<boolean> {
 
     return profile.permissions.includes(permission)
   } catch (error) {
-    console.error('🔒 Error checking permission:', error)
+    logger.error('Error checking permission', { error })
     return false
   }
 }
@@ -107,13 +111,13 @@ export async function getUserProfile(userId: string): Promise<AppUserProfile | n
     )
 
     if (!result.success) {
-      console.error('🔍 Error fetching user profile:', result.error?.message)
+      logger.error('Error fetching user profile', { error: result.error })
       return null
     }
 
     return result.data
   } catch (error) {
-    console.error('🔍 Error fetching user profile:', error)
+    logger.error('Error fetching user profile', { error })
     return null
   }
 }
@@ -172,7 +176,7 @@ export async function getCompanyProjects(
     )
 
     if (!result.success) {
-      console.error('🏗️ Error fetching projects:', result.error?.message)
+      logger.error('Error fetching projects', { error: result.error })
       return { data: [], pagination: { page, limit, total: 0, totalPages: 0 } }
     }
 
@@ -186,7 +190,7 @@ export async function getCompanyProjects(
       }
     }
   } catch (error) {
-    console.error('🏗️ Error fetching projects:', error)
+    logger.error('Error fetching projects', { error })
     return { data: [], pagination: { page, limit, total: 0, totalPages: 0 } }
   }
 }
@@ -250,13 +254,13 @@ export async function getProjectDetails(projectId: string) {
     )
 
     if (!result.success) {
-      console.error('🏗️ Error fetching project details:', result.error?.message)
+      logger.error('Error fetching project details', { error: result.error })
       return null
     }
 
     return result.data
   } catch (error) {
-    console.error('🏗️ Error fetching project details:', error)
+    logger.error('Error fetching project details', { error })
     return null
   }
 }
@@ -332,13 +336,13 @@ export async function getTasks(options: {
     )
 
     if (!result.success) {
-      console.error('📋 Error fetching tasks:', result.error?.message)
+      logger.error('Error fetching tasks', { error: result.error })
       return []
     }
 
     return result.data
   } catch (error) {
-    console.error('📋 Error fetching tasks:', error)
+    logger.error('Error fetching tasks', { error })
     return []
   }
 }
@@ -374,13 +378,13 @@ export async function getOverdueTasks(projectId?: string) {
     )
 
     if (!result.success) {
-      console.error('⚠️ Error fetching overdue tasks:', result.error?.message)
+      logger.error('Error fetching overdue tasks', { error: result.error })
       return []
     }
 
     return result.data
   } catch (error) {
-    console.error('⚠️ Error fetching overdue tasks:', error)
+    logger.error('Error fetching overdue tasks', { error })
     return []
   }
 }
@@ -428,13 +432,13 @@ export async function getScopeItems(projectId: string, category?: string) {
     )
 
     if (!result.success) {
-      console.error('🏗️ Error fetching scope items:', result.error?.message)
+      logger.error('Error fetching scope items', { error: result.error })
       return []
     }
 
     return result.data
   } catch (error) {
-    console.error('🏗️ Error fetching scope items:', error)
+    logger.error('Error fetching scope items', { error })
     return []
   }
 }
@@ -480,13 +484,13 @@ export async function getShopDrawings(projectId: string, status?: string) {
     )
 
     if (!result.success) {
-      console.error('📐 Error fetching shop drawings:', result.error?.message)
+      logger.error('Error fetching shop drawings', { error: result.error })
       return []
     }
 
     return result.data
   } catch (error) {
-    console.error('📐 Error fetching shop drawings:', error)
+    logger.error('Error fetching shop drawings', { error })
     return []
   }
 }
@@ -532,13 +536,13 @@ export async function getRFIs(projectId: string, status?: string) {
     )
 
     if (!result.success) {
-      console.error('❓ Error fetching RFIs:', result.error?.message)
+      logger.error('Error fetching RFIs', { error: result.error })
       return []
     }
 
     return result.data
   } catch (error) {
-    console.error('❓ Error fetching RFIs:', error)
+    logger.error('Error fetching RFIs', { error })
     return []
   }
 }
@@ -583,13 +587,13 @@ export async function getMaterialSpecs(projectId: string, status?: string) {
     )
 
     if (!result.success) {
-      console.error('🔧 Error fetching material specs:', result.error?.message)
+      logger.error('Error fetching material specs', { error: result.error })
       return []
     }
 
     return result.data
   } catch (error) {
-    console.error('🔧 Error fetching material specs:', error)
+    logger.error('Error fetching material specs', { error })
     return []
   }
 }
@@ -686,7 +690,7 @@ export async function getProjectStats(projectId: string) {
       }
     }
   } catch (error) {
-    console.error('📊 Error fetching project stats:', error)
+    logger.error('Error fetching project stats', { error })
     return null
   }
 }
@@ -701,10 +705,11 @@ export async function getProjectStats(projectId: string) {
  */
 export async function checkDatabaseConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from('user_profiles').select('id').limit(1)
+    const client = getClient()
+    const { error } = await client.from('user_profiles').select('id').limit(1)
     return !error
   } catch (error) {
-    console.warn('🔌 Database connection check failed:', error)
+    logger.warn('Database connection check failed', { error })
     return false
   }
 }
@@ -715,7 +720,8 @@ export async function checkDatabaseConnection(): Promise<boolean> {
 export async function measureConnectionLatency(): Promise<number> {
   const start = Date.now()
   try {
-    await supabase.from('user_profiles').select('id').limit(1)
+    const client = getClient()
+    await client.from('user_profiles').select('id').limit(1)
     return Date.now() - start
   } catch (error) {
     return -1 // Connection failed

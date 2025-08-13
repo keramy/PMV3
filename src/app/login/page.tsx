@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getClient } from '@/lib/supabase'
+import { getClient } from '@/lib/supabase/client'
 import { createTypedQuery, eqFilter } from '@/lib/database-helpers'
 
 export default function LoginPage() {
@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [result, setResult] = useState<any>(null)
 
   const handleLogin = async () => {
+    console.log('🔍 Login attempt started')
+    
     if (!email || !password) {
       setResult({ error: 'Please fill in both email and password' })
       return
@@ -19,12 +21,21 @@ export default function LoginPage() {
     try {
       setLoading(true)
       setResult(null)
-
-      // Sign in with email and password
+      
+      console.log('🔍 Getting Supabase client...')
       const supabase = getClient()
+      console.log('🔍 Supabase client obtained, attempting login...')
+      
+      // Sign in with email and password
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
+      })
+      
+      console.log('🔍 Login attempt result:', { 
+        user: data.user ? data.user.email : null, 
+        session: !!data.session,
+        error: error?.message 
       })
 
       if (error) {
@@ -41,7 +52,7 @@ export default function LoginPage() {
           .eq('id', data.user.id)
           .single()
 
-        setResult({
+        const successResult = {
           success: true,
           user: {
             id: data.user.id,
@@ -54,11 +65,30 @@ export default function LoginPage() {
           session: {
             accessToken: data.session?.access_token ? 'Present' : 'Missing',
             refreshToken: data.session?.refresh_token ? 'Present' : 'Missing'
-          }
-        })
+          },
+          redirecting: true,
+          message: 'Login successful! Redirecting to dashboard...'
+        }
+
+        setResult(successResult)
 
         console.log('Login successful:', data)
         console.log('User profile:', profile)
+        
+        // Redirect to dashboard after successful login
+        setTimeout(() => {
+          console.log('Redirecting to dashboard...')
+          try {
+            window.location.href = '/dashboard'
+          } catch (error) {
+            console.error('Redirect failed:', error)
+            setResult({
+              ...successResult,
+              redirectError: 'Auto-redirect failed. Please click the button below.',
+              showManualRedirect: true
+            })
+          }
+        }, 2000)
       }
 
     } catch (err) {
@@ -202,9 +232,37 @@ export default function LoginPage() {
           marginTop: '20px'
         }}>
           <h3>Result:</h3>
-          <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px', maxHeight: '400px', overflow: 'auto' }}>
-            {JSON.stringify(result, null, 2)}
-          </pre>
+          
+          {result.success && result.redirecting && (
+            <div style={{ marginBottom: '15px' }}>
+              <p style={{ fontSize: '16px', marginBottom: '10px' }}>
+                ✅ {result.message || 'Login successful! Redirecting...'}
+              </p>
+              <a 
+                href="/dashboard"
+                style={{
+                  display: 'inline-block',
+                  padding: '10px 20px',
+                  backgroundColor: '#007bff',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              >
+                Go to Dashboard Now
+              </a>
+            </div>
+          )}
+          
+          <details>
+            <summary style={{ cursor: 'pointer', marginBottom: '10px' }}>
+              Show Full Details
+            </summary>
+            <pre style={{ whiteSpace: 'pre-wrap', fontSize: '12px', maxHeight: '400px', overflow: 'auto' }}>
+              {JSON.stringify(result, null, 2)}
+            </pre>
+          </details>
         </div>
       )}
 

@@ -296,6 +296,94 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          assignment_notifications: boolean | null
+          comment_notifications: boolean | null
+          created_at: string | null
+          due_date_notifications: boolean | null
+          in_app_enabled: boolean | null
+          mention_notifications: boolean | null
+          status_change_notifications: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assignment_notifications?: boolean | null
+          comment_notifications?: boolean | null
+          created_at?: string | null
+          due_date_notifications?: boolean | null
+          in_app_enabled?: boolean | null
+          mention_notifications?: boolean | null
+          status_change_notifications?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assignment_notifications?: boolean | null
+          comment_notifications?: boolean | null
+          created_at?: string | null
+          due_date_notifications?: boolean | null
+          in_app_enabled?: boolean | null
+          mention_notifications?: boolean | null
+          status_change_notifications?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          id: string
+          message: string
+          read_at: string | null
+          title: string
+          type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          message: string
+          read_at?: string | null
+          title: string
+          type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          id?: string
+          message?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_members: {
         Row: {
           created_at: string | null
@@ -851,10 +939,62 @@ export type Database = {
           },
         ]
       }
+      task_comments: {
+        Row: {
+          attachments: Json | null
+          comment: string
+          comment_type: string | null
+          created_at: string | null
+          id: string
+          mentions: string[] | null
+          task_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          attachments?: Json | null
+          comment: string
+          comment_type?: string | null
+          created_at?: string | null
+          id?: string
+          mentions?: string[] | null
+          task_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          attachments?: Json | null
+          comment?: string
+          comment_type?: string | null
+          created_at?: string | null
+          id?: string
+          mentions?: string[] | null
+          task_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           actual_hours: number | null
           assigned_to: string | null
+          attachments: Json | null
           completion_date: string | null
           created_at: string | null
           created_by: string | null
@@ -875,6 +1015,7 @@ export type Database = {
         Insert: {
           actual_hours?: number | null
           assigned_to?: string | null
+          attachments?: Json | null
           completion_date?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -895,6 +1036,7 @@ export type Database = {
         Update: {
           actual_hours?: number | null
           assigned_to?: string | null
+          attachments?: Json | null
           completion_date?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -1036,7 +1178,28 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      create_notification: {
+        Args: {
+          target_user_id: string
+          notification_type: string
+          notification_title: string
+          notification_message: string
+          notification_data?: Json
+        }
+        Returns: string
+      }
+      get_unread_notification_count: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      mark_all_notifications_as_read: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      mark_notifications_as_read: {
+        Args: { target_user_id: string; notification_ids: string[] }
+        Returns: number
+      }
     }
     Enums: {
       material_priority: "low" | "medium" | "high" | "critical"

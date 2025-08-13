@@ -3,7 +3,7 @@
  * Wrapper functions to handle type mismatches between generated and expected types
  */
 
-import { supabase } from '@/lib/supabase'
+import { getClient } from '@/lib/supabase/client'
 
 // Generic query wrapper that bypasses strict typing
 export async function queryTable<T>(
@@ -11,6 +11,7 @@ export async function queryTable<T>(
   query: (q: any) => any
 ): Promise<T | null> {
   try {
+    const supabase = getClient()
     const baseQuery = supabase.from(table as any)
     const { data, error } = await query(baseQuery)
     

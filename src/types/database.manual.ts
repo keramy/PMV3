@@ -133,8 +133,8 @@ export interface MaterialSpec {
 // TASK MANAGEMENT TYPES
 // ============================================================================
 
-export type TaskPriority = 'low' | 'medium' | 'high' | 'critical'
-export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'completed' | 'cancelled'
+export type TaskPriority = 'normal' | 'high' | 'urgent'
+export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'completed'
 
 export interface Task {
   id: string
@@ -150,6 +150,11 @@ export interface Task {
   completed_at?: string
   estimated_hours?: number
   actual_hours?: number
+  progress_percentage: number
+  tags: string[]
+  attachments: any[]
+  parent_task_id?: string
+  completion_date?: string
   created_at: string
   updated_at: string
 }
@@ -157,9 +162,49 @@ export interface Task {
 export interface TaskComment {
   id: string
   task_id: string
+  user_id: string
   comment: string
-  created_by: string
+  comment_type: 'comment' | 'status_change' | 'assignment' | 'attachment'
+  mentions: string[]
+  attachments: any[]
   created_at: string
+  updated_at: string
+}
+
+// ============================================================================
+// NOTIFICATION SYSTEM TYPES
+// ============================================================================
+
+export type NotificationType = 
+  | 'task_assignment'
+  | 'task_mention'
+  | 'task_status_change'
+  | 'task_due_reminder'
+  | 'task_comment'
+  | 'project_update'
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  message: string
+  data: Record<string, any>
+  read_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface NotificationPreferences {
+  user_id: string
+  in_app_enabled: boolean
+  mention_notifications: boolean
+  assignment_notifications: boolean
+  status_change_notifications: boolean
+  due_date_notifications: boolean
+  comment_notifications: boolean
+  created_at: string
+  updated_at: string
 }
 
 // ============================================================================
@@ -319,8 +364,18 @@ export interface Database {
       }
       task_comments: {
         Row: TaskComment
-        Insert: Omit<TaskComment, 'id' | 'created_at'>
-        Update: Partial<Omit<TaskComment, 'id' | 'created_at'>>
+        Insert: Omit<TaskComment, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<TaskComment, 'id' | 'created_at' | 'updated_at'>>
+      }
+      notifications: {
+        Row: Notification
+        Insert: Omit<Notification, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<Notification, 'id' | 'created_at' | 'updated_at'>>
+      }
+      notification_preferences: {
+        Row: NotificationPreferences
+        Insert: Omit<NotificationPreferences, 'created_at' | 'updated_at'>
+        Update: Partial<Omit<NotificationPreferences, 'user_id' | 'created_at' | 'updated_at'>>
       }
       shop_drawings: {
         Row: ShopDrawing

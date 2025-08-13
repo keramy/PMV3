@@ -305,8 +305,8 @@ export function Dashboard() {
     .slice(0, 5) // Show only top 5 projects
 
   const handleProjectClick = (projectId: string) => {
-    // Navigate to project workspace
-    router.push(`/projects/${projectId}`)
+    // Navigate to UI Preview project workspace
+    router.push(`/ui-preview/projects/${projectId}`)
   }
 
   return (

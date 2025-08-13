@@ -15,6 +15,21 @@ const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Enhanced modern badge variants inspired by the provided design
+        modern_success: 
+          "border-transparent bg-emerald-100 text-emerald-700 shadow-sm hover:shadow-md px-3 py-1.5 rounded-lg font-medium",
+        modern_warning: 
+          "border-transparent bg-amber-100 text-amber-700 shadow-sm hover:shadow-md px-3 py-1.5 rounded-lg font-medium",
+        modern_info: 
+          "border-transparent bg-blue-100 text-blue-700 shadow-sm hover:shadow-md px-3 py-1.5 rounded-lg font-medium",
+        modern_danger: 
+          "border-transparent bg-red-100 text-red-700 shadow-sm hover:shadow-md px-3 py-1.5 rounded-lg font-medium",
+        modern_neutral: 
+          "border-transparent bg-gray-100 text-gray-700 shadow-sm hover:shadow-md px-3 py-1.5 rounded-lg font-medium",
+        modern_teal: 
+          "border-transparent bg-teal-100 text-teal-700 shadow-sm hover:shadow-md px-3 py-1.5 rounded-lg font-medium",
+        modern_purple: 
+          "border-transparent bg-purple-100 text-purple-700 shadow-sm hover:shadow-md px-3 py-1.5 rounded-lg font-medium",
       },
     },
     defaultVariants: {

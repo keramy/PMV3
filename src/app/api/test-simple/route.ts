@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getClient } from '@/lib/supabase/client'
 
 export async function GET() {
   const results: any[] = []
@@ -31,6 +31,7 @@ export async function GET() {
     
     try {
       // Try the simplest possible query
+      const supabase = getClient()
       const { data, error } = await supabase
         .from('user_profiles')
         .select('id')
@@ -75,6 +76,7 @@ export async function GET() {
 
     for (const table of tables) {
       try {
+        const supabase = getClient()
         const { data, error } = await (supabase as any)
           .from(table)
           .select('*')

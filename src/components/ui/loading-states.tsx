@@ -481,3 +481,332 @@ export function ConstructionError({
     </div>
   )
 }
+
+// Simple loading spinner component
+export function LoadingSpinner({ 
+  className, 
+  message = "Loading...",
+  size = "default"
+}: { 
+  className?: string 
+  message?: string 
+  size?: "sm" | "default" | "lg"
+}) {
+  const sizeClasses = {
+    sm: "h-4 w-4",
+    default: "h-8 w-8", 
+    lg: "h-12 w-12"
+  }
+  
+  return (
+    <div className={cn(
+      'flex flex-col items-center justify-center p-8',
+      className
+    )}>
+      <div className={cn(
+        "animate-spin rounded-full border-b-2 border-primary mb-4",
+        sizeClasses[size]
+      )} />
+      <p className="text-sm text-muted-foreground">{message}</p>
+    </div>
+  )
+}
+
+// Shop drawings loading state
+export function ShopDrawingsListSkeleton({ count = 5 }: { count?: number }) {
+  return (
+    <div className="space-y-4">
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i} className="construction-card">
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <ConstructionSkeleton className="h-8 w-8 rounded-lg" />
+                <div className="space-y-1">
+                  <ConstructionSkeleton className="h-3 w-20" />
+                  <ConstructionSkeleton className="h-6 w-12" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Filters */}
+      <Card className="construction-card">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <ConstructionSkeleton className="h-5 w-32" />
+            <div className="flex space-x-2">
+              <ConstructionSkeleton className="h-8 w-16" />
+              <ConstructionSkeleton className="h-8 w-24" />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <ConstructionSkeleton key={i} className="h-9 w-full" />
+            ))}
+          </div>
+          <div className="flex justify-between">
+            <ConstructionSkeleton className="h-4 w-32" />
+            <ConstructionSkeleton className="h-4 w-24" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Drawings List */}
+      <div className="space-y-4">
+        {Array.from({ length: count }).map((_, i) => (
+          <Card key={i} className="construction-card">
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-4">
+                <ConstructionSkeleton className="h-5 w-5 rounded flex-shrink-0 mt-1" />
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <ConstructionSkeleton className="h-5 w-64" />
+                      <ConstructionSkeleton className="h-4 w-32" />
+                    </div>
+                    <div className="flex space-x-2">
+                      <ConstructionSkeleton className="h-5 w-16 rounded-full" />
+                      <ConstructionSkeleton className="h-5 w-12 rounded-full" />
+                    </div>
+                  </div>
+                  <ConstructionSkeleton className="h-4 w-full" />
+                  <div className="flex space-x-2">
+                    <ConstructionSkeleton className="h-5 w-16 rounded-full" />
+                    <ConstructionSkeleton className="h-5 w-12 rounded-full" />
+                    <ConstructionSkeleton className="h-5 w-10 rounded-full" />
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="flex space-x-4">
+                      <ConstructionSkeleton className="h-3 w-24" />
+                      <ConstructionSkeleton className="h-3 w-20" />
+                      <ConstructionSkeleton className="h-3 w-16" />
+                    </div>
+                    <ConstructionSkeleton className="h-3 w-16" />
+                  </div>
+                </div>
+                <div className="flex space-x-1">
+                  <ConstructionSkeleton className="h-8 w-8 rounded" />
+                  <ConstructionSkeleton className="h-8 w-8 rounded" />
+                  <ConstructionSkeleton className="h-8 w-8 rounded" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// SPECIALIZED DASHBOARD SKELETON COMPONENTS
+// ============================================================================
+
+/**
+ * Activity Feed Skeleton - matches ActivityFeed.tsx patterns
+ */
+export function ActivityFeedSkeleton({ items = 5 }: { items?: number }) {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: items }).map((_, i) => (
+        <div key={i} className="flex gap-3 p-4 rounded-lg border bg-gray-50">
+          <ConstructionSkeleton className="w-8 h-8 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <div className="flex justify-between">
+              <ConstructionSkeleton className="h-4 w-48" />
+              <ConstructionSkeleton className="h-3 w-16" />
+            </div>
+            <ConstructionSkeleton className="h-3 w-full" />
+            <div className="flex gap-4">
+              <ConstructionSkeleton className="h-3 w-20" />
+              <ConstructionSkeleton className="h-3 w-32" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Compact Activity Feed Skeleton - matches CompactActivityFeed patterns
+ */
+export function CompactActivityFeedSkeleton({ items = 3 }: { items?: number }) {
+  return (
+    <div className="space-y-2">
+      {Array.from({ length: items }).map((_, i) => (
+        <div key={i} className="flex gap-2 p-2 rounded border">
+          <ConstructionSkeleton className="w-4 h-4 rounded" />
+          <div className="flex-1 space-y-1">
+            <ConstructionSkeleton className="h-3 w-full" />
+            <ConstructionSkeleton className="h-2 w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Metric Card Skeleton - matches MetricsCards.tsx patterns
+ */
+export function MetricCardSkeleton({ className }: { className?: string }) {
+  return (
+    <Card className={className}>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2 flex-1">
+            <ConstructionSkeleton className="h-4 w-20" />
+            <ConstructionSkeleton className="h-8 w-16" />
+            <ConstructionSkeleton className="h-3 w-24" />
+          </div>
+          <ConstructionSkeleton className="h-12 w-12 rounded-lg" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * Dashboard Metrics Grid Skeleton - matches MetricsCards layout
+ */
+export function DashboardMetricsSkeleton({ 
+  columns = 4,
+  className 
+}: { 
+  columns?: number
+  className?: string 
+}) {
+  return (
+    <div className={cn(
+      'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4',
+      className
+    )}>
+      {Array.from({ length: columns }).map((_, i) => (
+        <MetricCardSkeleton key={i} />
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Project Status Card Skeleton - matches ProjectStatusCard patterns
+ */
+export function ProjectStatusCardSkeleton({ className }: { className?: string }) {
+  return (
+    <Card className={className}>
+      <CardHeader>
+        <ConstructionSkeleton className="h-6 w-32" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <ConstructionSkeleton className="h-4 w-full" />
+          <ConstructionSkeleton className="h-4 w-3/4" />
+          <ConstructionSkeleton className="h-4 w-1/2" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ============================================================================
+// GENERIC REUSABLE LOADING WRAPPERS
+// ============================================================================
+
+/**
+ * Loading wrapper with automatic fallback handling
+ */
+interface LoadingWrapperProps {
+  isLoading: boolean
+  error?: string | null
+  isEmpty?: boolean
+  loadingComponent?: React.ReactNode
+  errorComponent?: React.ReactNode
+  emptyComponent?: React.ReactNode
+  children: React.ReactNode
+  className?: string
+}
+
+export function LoadingWrapper({
+  isLoading,
+  error,
+  isEmpty = false,
+  loadingComponent,
+  errorComponent,
+  emptyComponent,
+  children,
+  className
+}: LoadingWrapperProps) {
+  if (isLoading) {
+    return <div className={className}>{loadingComponent || <LoadingSpinner />}</div>
+  }
+
+  if (error) {
+    return (
+      <div className={className}>
+        {errorComponent || (
+          <ConstructionError 
+            error={new Error(error)} 
+            context="data"
+          />
+        )}
+      </div>
+    )
+  }
+
+  if (isEmpty) {
+    return <div className={className}>{emptyComponent}</div>
+  }
+
+  return <div className={className}>{children}</div>
+}
+
+/**
+ * Card Loading Wrapper - for content within cards
+ */
+export function CardLoadingWrapper({
+  isLoading,
+  error,
+  isEmpty,
+  title,
+  icon,
+  children,
+  className,
+  loadingComponent,
+  errorComponent,
+  emptyComponent
+}: LoadingWrapperProps & {
+  title?: string
+  icon?: React.ReactNode
+}) {
+  return (
+    <Card className={className}>
+      {title && (
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="font-semibold">{title}</span>
+          </div>
+        </CardHeader>
+      )}
+      <CardContent>
+        <LoadingWrapper
+          isLoading={isLoading}
+          error={error}
+          isEmpty={isEmpty}
+          loadingComponent={loadingComponent || <LoadingSpinner size="sm" />}
+          errorComponent={errorComponent}
+          emptyComponent={emptyComponent}
+        >
+          {children}
+        </LoadingWrapper>
+      </CardContent>
+    </Card>
+  )
+}

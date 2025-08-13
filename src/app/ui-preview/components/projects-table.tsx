@@ -361,7 +361,7 @@ export function ProjectsTable() {
     })
 
   const handleProjectClick = (projectId: string) => {
-    router.push(`/projects/${projectId}`)
+    router.push(`/ui-preview/projects/${projectId}`)
   }
 
   return (

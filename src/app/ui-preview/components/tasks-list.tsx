@@ -175,93 +175,330 @@ export function TasksList() {
     return `Due in ${days} days`
   }
 
+  const getTasksByStatus = () => {
+    return {
+      pending: tasks.filter(t => t.status === 'pending'),
+      in_progress: tasks.filter(t => t.status === 'in_progress'),
+      completed: tasks.filter(t => t.status === 'completed'),
+      overdue: tasks.filter(t => t.status === 'overdue')
+    }
+  }
+
+  const tasksByStatus = getTasksByStatus()
+
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Tasks</h2>
-          <p className="text-sm text-muted-foreground">Manage project tasks and assignments</p>
+    <div className="space-y-6">
+      {/* Enhanced Header with Statistics */}
+      <div className="bg-gradient-to-r from-gray-50 to-white p-6 rounded-xl border shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+              <CheckCircle2 className="h-6 w-6 text-blue-600" />
+              Project Tasks
+            </h2>
+            <p className="text-sm text-gray-600 mt-1">Visual kanban board with priority tracking</p>
+            
+            {/* Quick Stats */}
+            <div className="flex flex-wrap items-center gap-4 mt-3 text-sm">
+              <span className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                <span className="text-gray-600">To Do:</span>
+                <span className="font-bold text-gray-700">{tasksByStatus.pending.length}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span className="text-gray-600">In Progress:</span>
+                <span className="font-bold text-blue-700">{tasksByStatus.in_progress.length}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span className="text-gray-600">Overdue:</span>
+                <span className="font-bold text-red-700">{tasksByStatus.overdue.length}</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-gray-600">Completed:</span>
+                <span className="font-bold text-green-700">{tasksByStatus.completed.length}</span>
+              </span>
+            </div>
+          </div>
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 h-auto font-medium shadow-sm">
+            <Plus className="mr-2 h-5 w-5" />
+            Create Task
+          </Button>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Task
-        </Button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="flex gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search tasks..."
-            className="pl-9"
-          />
+      {/* Enhanced Search & Filters */}
+      <div className="bg-white rounded-xl border shadow-sm p-6">
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Input
+              placeholder="Search tasks by title, assignee, or project..."
+              className="pl-12 h-12 text-base border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+            />
+          </div>
+          
+          {/* Quick Filter Buttons */}
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" className="h-12 px-4 border-2 hover:bg-red-50 hover:border-red-300">
+              <AlertTriangle className="h-4 w-4 mr-2 text-red-600" />
+              Overdue ({tasksByStatus.overdue.length})
+            </Button>
+            <Button variant="outline" className="h-12 px-4 border-2 hover:bg-orange-50 hover:border-orange-300">
+              <Flag className="h-4 w-4 mr-2 text-orange-600" />
+              High Priority ({tasks.filter(t => t.priority === 'critical' || t.priority === 'high').length})
+            </Button>
+          </div>
         </div>
-        <Button variant="outline">All Priorities</Button>
-        <Button variant="outline">All Status</Button>
       </div>
 
-      {/* Tasks List */}
-      <div className="space-y-3">
-        {tasks.map((task) => (
-          <Card key={task.id} className={task.completed ? 'opacity-60' : ''}>
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <Checkbox 
-                  checked={task.completed}
-                  className="mt-1"
-                />
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
+      {/* Visual Kanban Board */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* To Do Column */}
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-gray-100 p-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-gray-600" />
+                <h3 className="font-bold text-gray-800">To Do</h3>
+              </div>
+              <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-300">
+                {tasksByStatus.pending.length}
+              </Badge>
+            </div>
+          </div>
+          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+            {tasksByStatus.pending.map((task) => (
+              <Card key={task.id} className="border-l-4 border-l-gray-400 hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
-                        <h3 className={`text-sm font-medium ${task.completed ? 'line-through' : ''}`}>
-                          {task.title}
-                        </h3>
                         {getPriorityBadge(task.priority)}
                       </div>
-                      <p className="text-xs text-muted-foreground">{task.description}</p>
-                      <p className="text-xs text-muted-foreground">Project: {task.project}</p>
+                      <Checkbox checked={task.completed} className="mt-1" />
                     </div>
-                    <div className="text-right space-y-1">
-                      {getStatusBadge(task.status)}
+                    
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1">{task.title}</h4>
+                      <p className="text-xs text-gray-600 mb-2">{task.description}</p>
+                      <p className="text-xs text-blue-600 font-medium">{task.project}</p>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-4">
+                    
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Avatar className="h-6 w-6">
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-xs bg-gray-100">
                             {task.assignee.split(' ').map(n => n[0]).join('')}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-muted-foreground">{task.assignee}</span>
+                        <span className="text-xs text-gray-600">{task.assignee.split(' ')[0]}</span>
                       </div>
                       
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>{getDaysUntilDue(task.dueDate)}</span>
-                      </div>
-                      
-                      {task.comments > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MessageSquare className="h-3 w-3" />
-                          <span>{task.comments}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Calendar className="h-3 w-3" />
+                          <span>{getDaysUntilDue(task.dueDate)}</span>
                         </div>
-                      )}
+                        {task.comments > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <MessageSquare className="h-3 w-3" />
+                            <span>{task.comments}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* In Progress Column */}
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-blue-100 p-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Timer className="h-5 w-5 text-blue-600" />
+                <h3 className="font-bold text-blue-800">In Progress</h3>
+              </div>
+              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                {tasksByStatus.in_progress.length}
+              </Badge>
+            </div>
+          </div>
+          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+            {tasksByStatus.in_progress.map((task) => (
+              <Card key={task.id} className="border-l-4 border-l-blue-400 hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        {getPriorityBadge(task.priority)}
+                      </div>
+                      <Checkbox checked={task.completed} className="mt-1" />
                     </div>
                     
-                    <Button variant="ghost" size="sm">
-                      View Details
-                    </Button>
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1">{task.title}</h4>
+                      <p className="text-xs text-gray-600 mb-2">{task.description}</p>
+                      <p className="text-xs text-blue-600 font-medium">{task.project}</p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs bg-blue-100">
+                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-gray-600">{task.assignee.split(' ')[0]}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-xs text-gray-500">
+                          <Calendar className="h-3 w-3" />
+                          <span>{getDaysUntilDue(task.dueDate)}</span>
+                        </div>
+                        {task.comments > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <MessageSquare className="h-3 w-3" />
+                            <span>{task.comments}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Overdue Column */}
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-red-100 p-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <h3 className="font-bold text-red-800">Overdue</h3>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
+                {tasksByStatus.overdue.length}
+              </Badge>
+            </div>
+          </div>
+          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+            {tasksByStatus.overdue.map((task) => (
+              <Card key={task.id} className="border-l-4 border-l-red-400 hover:shadow-md transition-shadow bg-red-50/50">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        {getPriorityBadge(task.priority)}
+                      </div>
+                      <Checkbox checked={task.completed} className="mt-1" />
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1">{task.title}</h4>
+                      <p className="text-xs text-gray-600 mb-2">{task.description}</p>
+                      <p className="text-xs text-blue-600 font-medium">{task.project}</p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs bg-red-100">
+                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-gray-600">{task.assignee.split(' ')[0]}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-xs text-red-600 font-medium">
+                          <Calendar className="h-3 w-3" />
+                          <span>{getDaysUntilDue(task.dueDate)}</span>
+                        </div>
+                        {task.comments > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <MessageSquare className="h-3 w-3" />
+                            <span>{task.comments}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+
+        {/* Completed Column */}
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-green-100 p-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <h3 className="font-bold text-green-800">Completed</h3>
+              </div>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
+                {tasksByStatus.completed.length}
+              </Badge>
+            </div>
+          </div>
+          <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
+            {tasksByStatus.completed.map((task) => (
+              <Card key={task.id} className="border-l-4 border-l-green-400 hover:shadow-md transition-shadow opacity-75">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        {getPriorityBadge(task.priority)}
+                      </div>
+                      <Checkbox checked={task.completed} className="mt-1" />
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-900 mb-1 line-through">{task.title}</h4>
+                      <p className="text-xs text-gray-600 mb-2">{task.description}</p>
+                      <p className="text-xs text-blue-600 font-medium">{task.project}</p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs bg-green-100">
+                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs text-gray-600">{task.assignee.split(' ')[0]}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                          <CheckCircle className="h-3 w-3" />
+                          <span>Done</span>
+                        </div>
+                        {task.comments > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <MessageSquare className="h-3 w-3" />
+                            <span>{task.comments}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )

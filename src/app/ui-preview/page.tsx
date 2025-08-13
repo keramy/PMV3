@@ -13,6 +13,9 @@ import { ChevronRight } from 'lucide-react'
 
 export default function UIPreviewPage() {
   const [activeView, setActiveView] = useState('dashboard')
+  
+  // Debug active view changes
+  console.log('Current active view:', activeView)
 
   return (
     <div className="flex h-screen bg-background">

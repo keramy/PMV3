@@ -4,7 +4,8 @@
  * Provides enhanced type definitions and query builders
  */
 
-import { supabase, supabaseAdmin } from '@/lib/supabase'
+import { getClient } from '@/lib/supabase/client'
+import { createLogger } from '@/lib/logger'
 import type { 
   Database,
   Tables,
@@ -18,6 +19,8 @@ import type {
 } from '@/types/database'
 import type { Permission } from '@/types/auth'
 import type { PostgrestFilterBuilder, PostgrestQueryBuilder } from '@supabase/postgrest-js'
+
+const logger = createLogger('database-helpers')
 
 // ============================================================================
 // TYPE-SAFE COLUMN KEY EXTRACTORS
@@ -58,7 +61,7 @@ export class TypedQueryBuilder {
 
   constructor(tableName: keyof Database['public']['Tables'] | string, useAdmin = false) {
     this.tableName = tableName as string
-    const client = useAdmin ? supabaseAdmin : supabase
+    const client = getClient() // Note: admin functionality removed for now, using only client
     this.query = (client as any).from(tableName)
   }
 
@@ -421,7 +424,7 @@ export const jsonTransformer = {
     try {
       return JSON.parse(jsonString) as T
     } catch (error) {
-      console.warn('Failed to parse JSON field:', error)
+      logger.warn('Failed to parse JSON field', { error, jsonString })
       return null
     }
   },
@@ -430,7 +433,7 @@ export const jsonTransformer = {
     try {
       return JSON.stringify(data)
     } catch (error) {
-      console.warn('Failed to stringify JSON field:', error)
+      logger.warn('Failed to stringify JSON field', { error, data })
       return null
     }
   }
@@ -449,7 +452,7 @@ export const arrayTransformer = {
         const cleaned = arrayField.replace(/[{}]/g, '')
         return cleaned.split(',').filter(item => item.trim().length > 0) as T[]
       } catch (error) {
-        console.warn('Failed to parse array field:', error)
+        logger.warn('Failed to parse array field', { error, arrayField })
         return []
       }
     }
@@ -582,7 +585,7 @@ export async function withErrorHandling<T>(
         hint: error.hint
       }
       
-      console.error(`Database error in ${context}:`, dbError)
+      logger.error(`Database error in ${context}`, { error: dbError })
       
       return {
         data: null,
@@ -601,7 +604,7 @@ export async function withErrorHandling<T>(
       message: error instanceof Error ? error.message : 'Unknown exception'
     }
     
-    console.error(`Exception in ${context}:`, error)
+    logger.error(`Exception in ${context}`, { error })
     
     return {
       data: null,
@@ -629,7 +632,7 @@ export async function withArrayErrorHandling<T>(
         hint: error.hint
       }
       
-      console.error(`Database error in ${context}:`, dbError)
+      logger.error(`Database error in ${context}`, { error: dbError })
       
       return {
         data: [],
@@ -650,7 +653,7 @@ export async function withArrayErrorHandling<T>(
       message: error instanceof Error ? error.message : 'Unknown exception'
     }
     
-    console.error(`Exception in ${context}:`, error)
+    logger.error(`Exception in ${context}`, { error })
     
     return {
       data: [],
@@ -691,7 +694,7 @@ export async function withTransformErrorHandling<TRaw, TApp>(
       message: `Data transformation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
     
-    console.error(`Transformation error in ${context}:`, error)
+    logger.error(`Transformation error in ${context}`, { error })
     
     return {
       data: null,
@@ -733,7 +736,7 @@ export async function withArrayTransformErrorHandling<TRaw, TApp>(
       message: `Data transformation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
     
-    console.error(`Transformation error in ${context}:`, error)
+    logger.error(`Transformation error in ${context}`, { error })
     
     return {
       data: [],
@@ -877,7 +880,8 @@ export async function insertRecord<T extends TableName>(
   
   return withErrorHandling(async () => {
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    let query = (supabase as any).from(tableName).insert(data)
+    const client = getClient()
+    let query = (client as any).from(tableName).insert(data)
     
     if (options.select) {
       query = query.select(options.select)
@@ -906,7 +910,8 @@ export async function updateRecord<T extends TableName>(
   
   return withErrorHandling(async () => {
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    let query = (supabase as any).from(tableName).update(data).eq('id', id)
+    const client = getClient()
+    let query = (client as any).from(tableName).update(data).eq('id', id)
     
     if (options.select) {
       query = query.select(options.select)
@@ -927,7 +932,8 @@ export async function deleteRecord<T extends TableName>(
   
   return withErrorHandling(async () => {
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    return (supabase as any).from(tableName).delete().eq('id', id)
+    const client = getClient()
+    return (client as any).from(tableName).delete().eq('id', id)
   }, context)
 }
 
@@ -946,7 +952,8 @@ export async function findById<T extends TableName>(
   return withErrorHandling(async () => {
     const select = options.select || createStandardSelect(tableName)
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    return (supabase as any).from(tableName).select(select).eq('id', id).single()
+    const client = getClient()
+    return (client as any).from(tableName).select(select).eq('id', id).single()
   }, context)
 }
 
@@ -968,7 +975,8 @@ export async function findMany<T extends TableName>(
   return withArrayErrorHandling(async () => {
     const select = options.select || createStandardSelect(tableName)
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    let query = (supabase as any).from(tableName).select(select, { count: 'exact' })
+    const client = getClient()
+    let query = (client as any).from(tableName).select(select, { count: 'exact' })
     
     // Apply filters
     if (options.filters) {
@@ -1008,7 +1016,8 @@ export async function countRecords<T extends TableName>(
   
   return withErrorHandling(async () => {
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    let query = (supabase as any).from(tableName).select('*', { count: 'exact', head: true })
+    const client = getClient()
+    let query = (client as any).from(tableName).select('*', { count: 'exact', head: true })
     
     if (filters) {
       for (const filter of filters) {

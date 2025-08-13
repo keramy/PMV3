@@ -21,6 +21,16 @@ import { AlertTriangle } from 'lucide-react'
 export default function DashboardPage() {
   const { user, profile, loading } = useAuth()
   const queryClient = useQueryClient()
+  
+  // Debug logging for dashboard
+  useEffect(() => {
+    console.log('🔍 Dashboard Page - Auth State:', {
+      user: user ? { id: user.id, email: user.email } : null,
+      profile: profile ? { id: profile.id, email: profile.email } : null,
+      loading,
+      isAuthenticated: !!user
+    })
+  }, [user, profile, loading])
 
   // Initialize dashboard caching and sync when user is authenticated
   useEffect(() => {
@@ -63,8 +73,12 @@ export default function DashboardPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
+        {/* Loading animation background */}
+        <div className="absolute inset-0 bg-gradient-mesh opacity-20" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-400/10 to-purple-600/10 rounded-full filter blur-3xl animate-pulse" />
+        
+        <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
           {/* Header skeleton */}
           <div className="mb-8 space-y-2">
             <Skeleton className="h-8 w-64" />
@@ -99,10 +113,12 @@ export default function DashboardPage() {
     )
   }
 
-  // Error state
+  // Error state with debug info
   if (!user || !profile) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center relative overflow-hidden">
+        {/* Error state background */}
+        <div className="absolute inset-0 bg-gradient-mesh opacity-20" />
         <Card className="w-full max-w-md">
           <CardContent className="p-12 text-center">
             <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-destructive" />
@@ -110,8 +126,17 @@ export default function DashboardPage() {
             <p className="text-muted-foreground mb-4">
               Please log in to access your construction dashboard
             </p>
+            
+            {/* Debug info */}
+            <div className="text-xs text-gray-600 bg-gray-100 p-2 rounded mb-4">
+              <p>Debug Info:</p>
+              <p>User: {user ? `${user.email} (${user.id})` : 'null'}</p>
+              <p>Profile: {profile ? `${profile.email} (${profile.id})` : 'null'}</p>
+              <p>Loading: {loading.toString()}</p>
+            </div>
+            
             <a 
-              href="/auth/signin" 
+              href="/login" 
               className="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
             >
               Sign In
@@ -123,8 +148,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 relative overflow-hidden">
+      {/* Animated background mesh */}
+      <div className="absolute inset-0 bg-gradient-mesh opacity-30" />
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-r from-blue-400/20 to-purple-600/20 rounded-full filter blur-3xl animate-pulse" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-r from-cyan-400/20 to-blue-600/20 rounded-full filter blur-3xl animate-pulse delay-1000" />
+      
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         <RoleSpecificDashboard userProfile={profile} />
       </div>
     </div>

@@ -1,42 +1,511 @@
-import { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = {
-  title: 'Projects | Formula PM V3',
-  description: 'Manage all construction projects',
-}
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { 
+  Search,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Plus,
+  Filter,
+  Calendar,
+  DollarSign,
+  Building2,
+  Eye,
+  Edit,
+  Trash2
+} from 'lucide-react'
 
 export default function ProjectsPage() {
+  const router = useRouter()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [sortField, setSortField] = useState<string>('')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+
+  // Mock projects data - same as dashboard but with more projects
+  const allProjects = [
+    {
+      id: 'proj-001',
+      name: 'Akbank Head Office Renovation',
+      client: 'Akbank',
+      status: 'in_progress',
+      budget: 2800000,
+      spent: 1820000,
+      start_date: '2025-01-15',
+      end_date: '2025-06-30',
+      progress_percentage: 65,
+      project_manager: 'Mehmet Yılmaz'
+    },
+    {
+      id: 'proj-002', 
+      name: 'Garanti BBVA Tech Center MEP',
+      client: 'Garanti BBVA',
+      status: 'in_progress',
+      budget: 4200000,
+      spent: 1890000,
+      start_date: '2024-11-01',
+      end_date: '2025-08-15',
+      progress_percentage: 45,
+      project_manager: 'Ayşe Demir'
+    },
+    {
+      id: 'proj-003',
+      name: 'Marina Bay Tower Construction',
+      client: 'Marina Development',
+      status: 'planning',
+      budget: 8500000,
+      spent: 0,
+      start_date: '2025-03-01',
+      end_date: '2026-01-15',
+      progress_percentage: 15,
+      project_manager: 'Can Özkan'
+    },
+    {
+      id: 'proj-004',
+      name: 'Tech Hub Renovation Phase 2',
+      client: 'Tech Hub Istanbul',
+      status: 'completed',
+      budget: 1250000,
+      spent: 1225000,
+      start_date: '2024-08-01',
+      end_date: '2024-12-20',
+      progress_percentage: 100,
+      project_manager: 'Zeynep Kaya'
+    },
+    {
+      id: 'proj-005',
+      name: 'Sabanci Center Office Fit-out',
+      client: 'Sabanci Holding',
+      status: 'on_hold',
+      budget: 950000,
+      spent: 285000,
+      start_date: '2025-02-01',
+      end_date: '2025-07-10',
+      progress_percentage: 30,
+      project_manager: 'Emre Şahin'
+    },
+    {
+      id: 'proj-006',
+      name: 'Formula HQ Showroom',
+      client: 'Formula PM',
+      status: 'in_progress',
+      budget: 680000,
+      spent: 510000,
+      start_date: '2025-01-10',
+      end_date: '2025-04-25',
+      progress_percentage: 75,
+      project_manager: 'Selin Aydın'
+    },
+    {
+      id: 'proj-007',
+      name: 'Yapı Kredi Bank Branch Network',
+      client: 'Yapı Kredi',
+      status: 'planning',
+      budget: 3200000,
+      spent: 0,
+      start_date: '2025-04-01',
+      end_date: '2025-11-30',
+      progress_percentage: 8,
+      project_manager: 'Burak Yıldız'
+    },
+    {
+      id: 'proj-008',
+      name: 'Zorlu Center Retail Expansion',
+      client: 'Zorlu Holding',
+      status: 'in_progress',
+      budget: 5600000,
+      spent: 2240000,
+      start_date: '2024-10-15',
+      end_date: '2025-05-20',
+      progress_percentage: 40,
+      project_manager: 'Derya Arslan'
+    },
+    {
+      id: 'proj-009',
+      name: 'Koç University Lab Building',
+      client: 'Koç University',
+      status: 'in_progress',
+      budget: 7200000,
+      spent: 3600000,
+      start_date: '2024-09-01',
+      end_date: '2025-12-15',
+      progress_percentage: 50,
+      project_manager: 'Kerem Özdemir'
+    },
+    {
+      id: 'proj-010',
+      name: 'Turkcell Data Center Cooling',
+      client: 'Turkcell',
+      status: 'completed',
+      budget: 2100000,
+      spent: 2050000,
+      start_date: '2024-06-01',
+      end_date: '2024-11-30',
+      progress_percentage: 100,
+      project_manager: 'Gül Yılmaz'
+    }
+  ]
+
+  // Utility functions
+  const getStatusBadge = (status: string) => {
+    const config = {
+      in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+      completed: { label: 'Completed', className: 'bg-green-100 text-green-800 border-green-200' },
+      planning: { label: 'Planning', className: 'bg-orange-100 text-orange-800 border-orange-200' },
+      on_hold: { label: 'On Hold', className: 'bg-gray-100 text-gray-800 border-gray-200' }
+    }
+    
+    const cfg = config[status as keyof typeof config]
+    return (
+      <Badge variant="outline" className={cfg.className}>
+        {cfg.label}
+      </Badge>
+    )
+  }
+
+  const formatCurrency = (amount: number) => {
+    return `₺${(amount / 1000000).toFixed(2)}M`
+  }
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  }
+
+  const getDaysUntilDeadline = (endDate: string) => {
+    const end = new Date(endDate)
+    const now = new Date()
+    const diff = end.getTime() - now.getTime()
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+    
+    if (days < 0) return { text: `${Math.abs(days)} days overdue`, className: 'text-red-600' }
+    if (days === 0) return { text: 'Due today', className: 'text-orange-600' }
+    if (days === 1) return { text: '1 day left', className: 'text-orange-600' }
+    if (days <= 7) return { text: `${days} days left`, className: 'text-orange-600' }
+    return { text: `${days} days left`, className: 'text-gray-600' }
+  }
+
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortField(field)
+      setSortDirection('asc')
+    }
+  }
+
+  const getSortIcon = (field: string) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-1 h-3 w-3" />
+    return sortDirection === 'asc' ? <ArrowUp className="ml-1 h-3 w-3" /> : <ArrowDown className="ml-1 h-3 w-3" />
+  }
+
+  // Filter and sort projects
+  const filteredAndSortedProjects = allProjects
+    .filter(project => {
+      const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           project.client.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = statusFilter === 'all' || project.status === statusFilter
+      return matchesSearch && matchesStatus
+    })
+    .sort((a, b) => {
+      if (!sortField) return 0
+      
+      let aValue: any = a[sortField as keyof typeof a]
+      let bValue: any = b[sortField as keyof typeof b]
+      
+      if (sortField === 'budget' || sortField === 'spent' || sortField === 'progress_percentage') {
+        aValue = Number(aValue)
+        bValue = Number(bValue)
+      }
+      
+      if (sortField === 'start_date' || sortField === 'end_date') {
+        aValue = new Date(aValue).getTime()
+        bValue = new Date(bValue).getTime()
+      }
+
+      if (sortDirection === 'asc') {
+        return aValue > bValue ? 1 : -1
+      } else {
+        return aValue < bValue ? 1 : -1
+      }
+    })
+
+  const handleProjectClick = (projectId: string) => {
+    router.push(`/projects/${projectId}`)
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with Actions */}
-        <div className="flex justify-between items-center mb-8">
+    <div className="min-h-screen bg-gray-50 -m-6 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
             <p className="text-gray-600 mt-2">
               Manage your construction projects from start to finish
             </p>
           </div>
-          <button className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors mobile-touch-target">
-            + New Project
-          </button>
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="mr-2 h-4 w-4" />
+            New Project
+          </Button>
         </div>
 
-        {/* Projects Grid/List */}
-        <div className="construction-card">
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🏗️</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No Projects Yet
-            </h3>
-            <p className="text-gray-500 mb-6">
-              Create your first construction project to get started with Formula PM V3
-            </p>
-            <button className="bg-primary-600 text-white px-6 py-3 rounded-lg hover:bg-primary-700 transition-colors">
-              Create First Project
-            </button>
-          </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-white border border-gray-200 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Projects</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{allProjects.length}</div>
+              <p className="text-xs text-muted-foreground">All time</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border border-gray-200 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Active Projects</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {allProjects.filter(p => p.status === 'in_progress').length}
+              </div>
+              <p className="text-xs text-muted-foreground">Currently in progress</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border border-gray-200 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Total Budget</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ₺{(allProjects.reduce((sum, p) => sum + p.budget, 0) / 1000000).toFixed(1)}M
+              </div>
+              <p className="text-xs text-muted-foreground">Across all projects</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border border-gray-200 shadow-md">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">Avg Progress</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {Math.round(allProjects.reduce((sum, p) => sum + p.progress_percentage, 0) / allProjects.length)}%
+              </div>
+              <p className="text-xs text-muted-foreground">Overall completion</p>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Filters and Search */}
+        <Card className="bg-white border border-gray-200 shadow-md">
+          <CardContent className="p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search projects or clients..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[180px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="planning">Planning</SelectItem>
+                  <SelectItem value="on_hold">On Hold</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Projects Table */}
+        <Card className="bg-white border border-gray-200 shadow-md">
+          <CardHeader>
+            <CardTitle>All Projects ({filteredAndSortedProjects.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('name')}
+                      >
+                        Project Name
+                        {getSortIcon('name')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('client')}
+                      >
+                        Client
+                        {getSortIcon('client')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('status')}
+                      >
+                        Status
+                        {getSortIcon('status')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('budget')}
+                      >
+                        Budget
+                        {getSortIcon('budget')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('spent')}
+                      >
+                        Spent
+                        {getSortIcon('spent')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('end_date')}
+                      >
+                        Deadline
+                        {getSortIcon('end_date')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        className="h-auto p-0 font-medium hover:bg-transparent"
+                        onClick={() => handleSort('progress_percentage')}
+                      >
+                        Progress
+                        {getSortIcon('progress_percentage')}
+                      </Button>
+                    </TableHead>
+                    <TableHead>PM</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedProjects.map((project) => {
+                    const dueInfo = getDaysUntilDeadline(project.end_date)
+                    return (
+                      <TableRow key={project.id}>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            className="h-auto p-0 font-medium text-left hover:bg-transparent text-blue-600 hover:text-blue-800 hover:underline"
+                            onClick={() => handleProjectClick(project.id)}
+                          >
+                            {project.name}
+                          </Button>
+                        </TableCell>
+                        <TableCell className="text-sm">{project.client}</TableCell>
+                        <TableCell>{getStatusBadge(project.status)}</TableCell>
+                        <TableCell className="font-medium">{formatCurrency(project.budget)}</TableCell>
+                        <TableCell className="text-sm">
+                          <span className={project.spent > project.budget * 0.9 ? 'text-red-600 font-medium' : ''}>
+                            {formatCurrency(project.spent)}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm">{formatDate(project.end_date)}</TableCell>
+                        <TableCell>
+                          <span className={`text-sm font-medium ${dueInfo.className}`}>
+                            {dueInfo.text}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Progress value={project.progress_percentage} className="w-16" />
+                            <span className="text-xs text-muted-foreground min-w-[35px]">
+                              {project.progress_percentage}%
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">{project.project_manager}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleProjectClick(project.id)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-800">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
+              {filteredAndSortedProjects.length === 0 && (
+                <div className="text-center py-12">
+                  <Building2 className="mx-auto h-12 w-12 text-gray-400" />
+                  <h3 className="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Try adjusting your search or filter to find what you're looking for.
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

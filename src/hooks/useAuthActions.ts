@@ -5,10 +5,11 @@
 
 'use client'
 
-import { supabase } from '@/lib/supabase'
+import { getClient } from '@/lib/supabase/client'
 
 export function useAuthActions() {
   const signIn = async (email: string, password: string) => {
+    const supabase = getClient()
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -17,11 +18,13 @@ export function useAuthActions() {
   }
 
   const signOut = async () => {
+    const supabase = getClient()
     const { error } = await supabase.auth.signOut()
     return { error }
   }
 
   const signUp = async (email: string, password: string, fullName: string) => {
+    const supabase = getClient()
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

@@ -51,3 +51,4 @@ next-env.d.ts
 
 # OS generated files
 Thumbs.db
+.mcp.json

@@ -7,7 +7,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+import { MetricCardSkeleton, ProjectStatusCardSkeleton } from '@/components/ui/loading-states'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -46,20 +46,7 @@ interface MetricCardProps {
 
 function MetricCard({ title, value, subtitle, trend, icon, color, isLoading }: MetricCardProps) {
   if (isLoading) {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2 flex-1">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-8 w-16" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-            <Skeleton className="h-12 w-12 rounded-lg" />
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return <MetricCardSkeleton />
   }
 
   const colorClasses = {
@@ -229,20 +216,7 @@ export function ProjectStatusCard({
   isLoading: boolean 
 }) {
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-32" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </div>
-        </CardContent>
-      </Card>
-    )
+    return <ProjectStatusCardSkeleton />
   }
 
   if (!metrics) {
