@@ -186,22 +186,6 @@ export const POST = apiMiddleware.validate(
         tags: validatedData.tags || [],
         attachments: validatedData.attachments || [],
         project_id: validatedData.project_id
-      }, {
-        select: `
-          *,
-          assignee:user_profiles!tasks_assigned_to_fkey(
-            id, 
-            first_name, 
-            last_name, 
-            email, 
-            avatar_url
-          ),
-          project:projects(
-            id, 
-            name, 
-            code
-          )
-        `
       })
 
       const newTask = result.data
@@ -241,7 +225,7 @@ export const POST = apiMiddleware.validate(
           })
 
           // Send assignment notification
-          const projectName = (newTask.project as any)?.name || 'Unknown Project'
+          const projectName = 'Project' // TODO: fetch project name separately if needed
           const taskAssignmentData: TaskAssignmentData = {
             task_id: newTask.id,
             task_title: newTask.title,

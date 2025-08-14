@@ -59,6 +59,7 @@ export interface MaterialSpec {
   total_cost?: number
   supplier?: string
   notes?: string
+  image_url?: string           // NEW: Image URL for visual reference
   
   // Approval workflow
   created_by: string           // Who proposed this spec
@@ -100,6 +101,7 @@ export interface MaterialSpecFormData {
   unit_cost?: number
   supplier?: string
   notes?: string
+  image_url?: string           // NEW: Image URL for upload
   scope_item_id?: string
 }
 

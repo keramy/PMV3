@@ -47,7 +47,7 @@ const CHART_COLORS = {
   warning: '#d97706',
   danger: '#dc2626',
   info: '#0891b2',
-  gray: '#6b7280'
+  gray: '#374151'
 }
 
 const PIE_COLORS = [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.danger]
@@ -82,7 +82,7 @@ export function ProjectProgressChart({
             Project Progress Overview
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-80 flex items-center justify-center text-muted-foreground">
+        <CardContent className="h-80 flex items-center justify-center text-gray-700">
           <div className="text-center">
             <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
             <p>No project data available</p>

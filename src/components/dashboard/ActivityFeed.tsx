@@ -101,18 +101,18 @@ function ActivityItem({ activity }: { activity: ActivityFeedItem }) {
             </p>
             {getPriorityBadge(activity.priority)}
           </div>
-          <span className="text-xs text-gray-500 flex-shrink-0">
+          <span className="text-xs text-gray-700 flex-shrink-0">
             {formatTime(activity.timestamp)}
           </span>
         </div>
         
         {activity.description && (
-          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+          <p className="text-sm text-gray-800 mb-2 line-clamp-2">
             {activity.description}
           </p>
         )}
         
-        <div className="flex items-center gap-4 text-xs text-gray-500">
+        <div className="flex items-center gap-4 text-xs text-gray-700">
           <div className="flex items-center gap-1">
             <User className="h-3 w-3" />
             <span>{activity.user_name}</span>
@@ -254,7 +254,7 @@ export function ActivityFeed({ activities, isLoading, onRefresh, isRefreshing }:
               <div key={date}>
                 <div className="flex items-center gap-2 mb-3">
                   <h4 className="text-sm font-medium text-gray-900">{date}</h4>
-                  <div className="flex-1 h-px bg-gray-200" />
+                  <div className="flex-1 h-px bg-gray-400" />
                   <Badge variant="outline" className="text-xs">
                     {dateActivities.length}
                   </Badge>
@@ -310,7 +310,7 @@ export function CompactActivityFeed({ activities, isLoading }: { activities?: Ac
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium truncate">{activity.title}</p>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className="text-xs text-gray-700 truncate">
                 {activity.user_name} • {formatDistanceToNow(activity.timestamp)}
               </p>
             </div>

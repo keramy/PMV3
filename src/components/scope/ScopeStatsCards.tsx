@@ -39,7 +39,7 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
     if (percentage >= 80) return 'text-green-600'
     if (percentage >= 60) return 'text-blue-600'
     if (percentage >= 40) return 'text-yellow-600'
-    return 'text-gray-500'
+    return 'text-gray-700'
   }
 
   return (
@@ -47,12 +47,12 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
       {/* Total Items Card */}
       <Card className="construction-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Items</CardTitle>
-          <Layers className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium text-gray-800">Total Items</CardTitle>
+          <Layers className="h-4 w-4 text-gray-600" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{statistics.total_items}</div>
-          <div className="flex items-center space-x-2 text-xs text-muted-foreground mt-1">
+          <div className="flex items-center space-x-2 text-xs text-gray-700 mt-1">
             <Package className="h-3 w-3" />
             <span>Scope items in project</span>
           </div>
@@ -62,15 +62,15 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
       {/* Completion Progress Card */}
       <Card className="construction-card">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
-          <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium text-gray-800">Overall Progress</CardTitle>
+          <TrendingUp className="h-4 w-4 text-gray-600" />
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             {Object.entries(statistics.by_category).map(([category, stats]) => (
               <div key={category} className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
+                  <span className="text-gray-700">
                     {SCOPE_CATEGORIES[category as keyof typeof SCOPE_CATEGORIES]?.label || category}
                   </span>
                   <span className={`font-medium ${getCompletionColor(stats.completion_percentage)}`}>
@@ -95,7 +95,7 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <div className="h-2 w-2 bg-green-500 rounded-full" />
-                <span className="text-sm text-muted-foreground">Completed</span>
+                <span className="text-sm text-gray-700">Completed</span>
               </div>
               <span className="text-sm font-medium text-green-600">
                 {statistics.by_status.completed || 0}
@@ -105,7 +105,7 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <div className="h-2 w-2 bg-blue-500 rounded-full" />
-                <span className="text-sm text-muted-foreground">In Progress</span>
+                <span className="text-sm text-gray-700">In Progress</span>
               </div>
               <span className="text-sm font-medium text-blue-600">
                 {statistics.by_status.in_progress || 0}
@@ -115,7 +115,7 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <div className="h-2 w-2 bg-yellow-500 rounded-full" />
-                <span className="text-sm text-muted-foreground">Planning</span>
+                <span className="text-sm text-gray-700">Planning</span>
               </div>
               <span className="text-sm font-medium text-yellow-600">
                 {statistics.by_status.planning || 0}
@@ -126,7 +126,7 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <div className="h-2 w-2 bg-red-500 rounded-full" />
-                  <span className="text-sm text-muted-foreground">Blocked</span>
+                  <span className="text-sm text-gray-700">Blocked</span>
                 </div>
                 <Badge variant="destructive" className="text-xs">
                   {statistics.by_status.blocked}
@@ -149,18 +149,18 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
               <div className="text-2xl font-bold">
                 {formatCurrency(statistics.financial.total_budget)}
               </div>
-              <p className="text-xs text-muted-foreground">Total budget</p>
+              <p className="text-xs text-gray-700">Total budget</p>
             </div>
             
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Avg. item cost:</span>
+              <span className="text-gray-700">Avg. item cost:</span>
               <span className="font-medium">
                 {formatCurrency(statistics.financial.average_item_cost)}
               </span>
             </div>
             
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Highest cost:</span>
+              <span className="text-gray-700">Highest cost:</span>
               <span className="font-medium">
                 {formatCurrency(statistics.financial.highest_cost_item)}
               </span>

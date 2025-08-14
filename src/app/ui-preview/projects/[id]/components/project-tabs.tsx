@@ -1,7 +1,9 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import type { Key } from 'react-aria-components'
+import { Tabs } from '@/components/application/tabs/tabs'
+import { NativeSelect } from '@/components/base/select/select-native'
 import { 
   LayoutDashboard,
   ClipboardList,
@@ -16,70 +18,71 @@ interface ProjectTabsProps {
 }
 
 export function ProjectTabs({ activeTab, onTabChange }: ProjectTabsProps) {
+  // Mock data for badges - in real app, these would come from API/props
+  const mockCounts = {
+    overview: 0,
+    scope: 0,
+    drawings: 2, // 2 items need attention
+    materials: 1, // 1 pending PM approval
+    tasks: 3 // 3 overdue tasks
+  }
+
   const tabs = [
     {
       id: 'overview',
       label: 'Overview',
       icon: LayoutDashboard,
-      description: 'Project summary & metrics'
+      badge: mockCounts.overview
     },
     {
       id: 'scope',
       label: 'Scope',
       icon: ClipboardList,
-      description: 'Scope items & assignments'
+      badge: mockCounts.scope
     },
     {
       id: 'drawings',
       label: 'Drawings',
       icon: FileText,
-      description: 'Shop drawings approval'
+      badge: mockCounts.drawings
     },
     {
       id: 'materials',
       label: 'Materials',
       icon: Package,
-      description: 'Material specifications'
+      badge: mockCounts.materials
     },
     {
       id: 'tasks',
       label: 'Tasks',
       icon: CheckSquare,
-      description: 'Project task management'
+      badge: mockCounts.tasks
     }
   ]
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-      <div className="flex items-center overflow-x-auto">
-        {tabs.map((tab) => {
-          const Icon = tab.icon
-          const isActive = activeTab === tab.id
-          
-          return (
-            <Button
-              key={tab.id}
-              variant="ghost"
-              className={cn(
-                'flex-shrink-0 flex items-center gap-3 px-6 py-4 rounded-none border-b-2 transition-all',
-                'hover:bg-gray-50 hover:text-gray-900',
-                isActive 
-                  ? 'border-blue-600 text-blue-600 bg-blue-50/50' 
-                  : 'border-transparent text-gray-600'
-              )}
-              onClick={() => onTabChange(tab.id)}
-            >
-              <Icon className="h-5 w-5" />
-              <div className="flex flex-col items-start">
-                <span className="text-sm font-medium">{tab.label}</span>
-                <span className="text-xs text-muted-foreground">
-                  {tab.description}
-                </span>
-              </div>
-            </Button>
-          )
-        })}
+    <>
+      {/* Mobile Select - Hidden on desktop */}
+      <NativeSelect
+        aria-label="Project Tabs"
+        value={activeTab}
+        onChange={(event) => onTabChange(event.target.value)}
+        options={tabs.map((tab) => ({ 
+          label: tab.label, 
+          value: tab.id,
+          badge: tab.badge 
+        }))}
+        className="w-full md:hidden mb-4"
+      />
+
+      {/* Desktop Tabs - Hidden on mobile */}
+      <div className="hidden md:block">
+        <Tabs
+          tabs={tabs}
+          selectedKey={activeTab}
+          onSelectionChange={onTabChange}
+        />
       </div>
-    </div>
+    </>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Sidebar } from './components/sidebar'
 import { Dashboard } from './components/dashboard'
 import { ProjectsTable } from './components/projects-table'
@@ -10,39 +11,55 @@ import { TasksList } from './components/tasks-list'
 import { ScopeTable } from './components/scope-table'
 import { Button } from '@/components/ui/button'
 import { ChevronRight } from 'lucide-react'
+import { MainBreadcrumb } from '@/components/ui/breadcrumb'
+
+// Helper function to get initial view from URL parameters
+function getInitialView(searchParams: URLSearchParams): string {
+  const viewParam = searchParams.get('view')
+  if (viewParam) {
+    const validViews = ['dashboard', 'projects', 'scope', 'shop-drawings', 'material-specs', 'tasks']
+    if (validViews.includes(viewParam)) {
+      return viewParam
+    }
+  }
+  return 'dashboard'
+}
 
 export default function UIPreviewPage() {
-  const [activeView, setActiveView] = useState('dashboard')
+  const searchParams = useSearchParams()
+  const [activeView, setActiveView] = useState(() => getInitialView(searchParams))
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
   
-  // Debug active view changes
-  console.log('Current active view:', activeView)
+  // Update activeView when URL parameters change
+  useEffect(() => {
+    const newView = getInitialView(searchParams)
+    if (newView !== activeView) {
+      setActiveView(newView)
+    }
+  }, [searchParams, activeView])
+  
+  // Debug active view changes (remove in production)
+  // console.log('Current active view:', activeView)
+
+  const handleToggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed)
+  }
 
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
-      <Sidebar activeView={activeView} setActiveView={setActiveView} />
+      <Sidebar 
+        activeView={activeView} 
+        setActiveView={setActiveView}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
+      />
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="border-b bg-background px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Formula PM</span>
-              <ChevronRight className="h-4 w-4" />
-              <span className="font-medium text-foreground">
-                {activeView === 'dashboard' && 'Dashboard'}
-                {activeView === 'projects' && 'Projects'}
-                {activeView === 'shop-drawings' && 'Shop Drawings'}
-                {activeView === 'material-specs' && 'Material Specifications'}
-                {activeView === 'tasks' && 'Tasks'}
-                {activeView === 'scope' && 'Scope Management'}
-              </span>
-            </div>
-            <Button variant="outline" size="sm" className="text-xs">
-              Admin View
-            </Button>
-          </div>
+        {/* Header with Breadcrumb */}
+        <header className="border-b bg-background px-6 py-4">
+          <MainBreadcrumb currentView={activeView} />
         </header>
         
         {/* Content Area */}

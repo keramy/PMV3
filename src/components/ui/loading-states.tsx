@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   BarChart3
 } from 'lucide-react'
+import { LogoLoading } from '@/components/ui/logo'
 
 // Base skeleton component optimized for construction UI
 export function ConstructionSkeleton({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -482,6 +483,36 @@ export function ConstructionError({
   )
 }
 
+// Formula PM branded loading component
+export function FormulaLoading({ 
+  message = "Loading Formula PM...",
+  description,
+  size = "lg",
+  className 
+}: {
+  message?: string
+  description?: string
+  size?: "sm" | "md" | "lg"
+  className?: string
+}) {
+  return (
+    <div className={cn(
+      'flex flex-col items-center justify-center p-12',
+      className
+    )}>
+      <LogoLoading size={size} />
+      <h3 className="text-xl font-semibold text-gray-900 mb-2 mt-4">
+        {message}
+      </h3>
+      {description && (
+        <p className="text-gray-700 text-center max-w-sm">
+          {description}
+        </p>
+      )}
+    </div>
+  )
+}
+
 // Simple loading spinner component
 export function LoadingSpinner({ 
   className, 
@@ -507,7 +538,7 @@ export function LoadingSpinner({
         "animate-spin rounded-full border-b-2 border-primary mb-4",
         sizeClasses[size]
       )} />
-      <p className="text-sm text-muted-foreground">{message}</p>
+      <p className="text-sm text-gray-800">{message}</p>
     </div>
   )
 }
@@ -615,7 +646,7 @@ export function ActivityFeedSkeleton({ items = 5 }: { items?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: items }).map((_, i) => (
-        <div key={i} className="flex gap-3 p-4 rounded-lg border bg-gray-50">
+        <div key={i} className="flex gap-3 p-4 rounded-lg border bg-gray-100">
           <ConstructionSkeleton className="w-8 h-8 rounded-full" />
           <div className="flex-1 space-y-2">
             <div className="flex justify-between">

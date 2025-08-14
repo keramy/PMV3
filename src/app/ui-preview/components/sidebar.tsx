@@ -7,16 +7,21 @@ import {
   FileText, 
   Package, 
   CheckSquare, 
-  ClipboardList 
+  ClipboardList,
+  Menu,
+  X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { LogoIcon, LogoText } from '@/components/ui/logo'
 
 interface SidebarProps {
   activeView: string
   setActiveView: (view: string) => void
+  isCollapsed: boolean
+  onToggleCollapse: () => void
 }
 
-export function Sidebar({ activeView, setActiveView }: SidebarProps) {
+export function Sidebar({ activeView, setActiveView, isCollapsed, onToggleCollapse }: SidebarProps) {
   const menuItems = [
     {
       id: 'dashboard',
@@ -57,22 +62,44 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
   ]
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-background">
+    <div className={cn(
+      "flex h-full flex-col border-r bg-background transition-all duration-300",
+      isCollapsed ? "w-16" : "w-64"
+    )}>
       {/* Header */}
-      <div className="border-b p-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <span className="text-sm font-bold">PM</span>
-          </div>
-          <div>
-            <h2 className="text-sm font-semibold">Formula PM</h2>
-            <p className="text-xs text-muted-foreground">v3.0</p>
-          </div>
+      <div className="relative border-b px-4 py-4">
+        {/* Toggle Button - Always in top-right corner */}
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={onToggleCollapse}
+          className="absolute top-2 right-2 h-8 w-8 p-0 z-10"
+        >
+          {isCollapsed ? (
+            <Menu className="h-4 w-4" />
+          ) : (
+            <X className="h-4 w-4" />
+          )}
+        </Button>
+
+        {/* Logo Content - Centered vertically */}
+        <div className={cn(
+          "flex items-center justify-center min-h-[32px]",
+          !isCollapsed && "pr-10"
+        )}>
+          {!isCollapsed ? (
+            <div className="flex items-center gap-2">
+              <LogoText size="sm" />
+              <span className="text-xs text-gray-700">v3.0</span>
+            </div>
+          ) : (
+            <LogoIcon size="sm" />
+          )}
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 space-y-0.5 p-2">
         {menuItems.map((item) => {
           const Icon = item.icon
           const isActive = activeView === item.id
@@ -82,21 +109,19 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
               key={item.id}
               variant={isActive ? 'secondary' : 'ghost'}
               className={cn(
-                'w-full justify-start gap-3 px-3',
+                "justify-start gap-3",
+                isCollapsed ? "w-full px-2" : "w-full px-3",
                 isActive && 'bg-secondary'
               )}
               onClick={() => {
-                console.log('Tab clicked:', item.id)
-                setActiveView(item.id)
+                // Update URL with view parameter and let the page handle the state update
+                window.location.href = `/ui-preview?view=${item.id}`
               }}
             >
-              <Icon className="h-4 w-4" />
-              <div className="flex flex-col items-start">
-                <span className="text-sm">{item.label}</span>
-                <span className="text-xs text-muted-foreground">
-                  {item.description}
-                </span>
-              </div>
+              <Icon className="h-4 w-4 flex-shrink-0" />
+              {!isCollapsed && (
+                <span className="text-sm font-medium">{item.label}</span>
+              )}
             </Button>
           )
         })}
@@ -104,15 +129,23 @@ export function Sidebar({ activeView, setActiveView }: SidebarProps) {
 
       {/* Footer */}
       <div className="border-t p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-medium">
-            KT
+        {!isCollapsed ? (
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-medium">
+              KT
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-medium">Kerem Test</p>
+              <p className="text-xs text-muted-foreground">Admin</p>
+            </div>
           </div>
-          <div className="flex-1">
-            <p className="text-sm font-medium">Kerem Test</p>
-            <p className="text-xs text-muted-foreground">Admin</p>
+        ) : (
+          <div className="flex justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-xs font-medium">
+              KT
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

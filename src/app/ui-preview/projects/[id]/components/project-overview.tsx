@@ -166,8 +166,8 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
                         {task.priority}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">{task.description}</p>
-                    <p className="text-xs text-gray-500">Assigned to: {task.assignee}</p>
+                    <p className="text-sm text-gray-800 mb-2">{task.description}</p>
+                    <p className="text-xs text-gray-700">Assigned to: {task.assignee}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <div className="text-right">
@@ -190,10 +190,10 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
       {/* Enhanced Key Metrics Cards - Larger with Better Hierarchy */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {/* Scope Items */}
-        <Card className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
+        <Card className="bg-white border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-700">Scope Items</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-800">Scope Items</CardTitle>
               <div className="p-3 bg-blue-100 rounded-xl">
                 <ClipboardList className="h-6 w-6 text-blue-600" />
               </div>
@@ -211,18 +211,18 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
                 <span className="font-bold text-yellow-600 text-lg">{projectMetrics.scopeItems.inProgress}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-500 font-medium">Pending</span>
-                <span className="font-bold text-gray-500 text-lg">{projectMetrics.scopeItems.pending}</span>
+                <span className="text-gray-700 font-medium">Pending</span>
+                <span className="font-bold text-gray-700 text-lg">{projectMetrics.scopeItems.pending}</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
         {/* Shop Drawings */}
-        <Card className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
+        <Card className="bg-white border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-700">Shop Drawings</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-800">Shop Drawings</CardTitle>
               <div className="p-3 bg-green-100 rounded-xl">
                 <FileText className="h-6 w-6 text-green-600" />
               </div>
@@ -244,10 +244,10 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
         </Card>
 
         {/* Tasks */}
-        <Card className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
+        <Card className="bg-white border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-700">Tasks</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-800">Tasks</CardTitle>
               <div className="p-3 bg-purple-100 rounded-xl">
                 <CheckSquare className="h-6 w-6 text-purple-600" />
               </div>
@@ -273,10 +273,10 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
         </Card>
 
         {/* Materials */}
-        <Card className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
+        <Card className="bg-white border border-gray-400 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-[1.02]">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-gray-700">Materials</CardTitle>
+              <CardTitle className="text-base font-semibold text-gray-800">Materials</CardTitle>
               <div className="p-3 bg-orange-100 rounded-xl">
                 <Package className="h-6 w-6 text-orange-600" />
               </div>
@@ -302,7 +302,7 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Recent Activity - Left Column (2/3) - Streamlined Design */}
         <div className="lg:col-span-2">
-          <Card className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-shadow h-full">
+          <Card className="bg-white border border-gray-400 shadow-lg hover:shadow-xl transition-shadow h-full">
             <CardHeader className="pb-6">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-xl flex items-center gap-3">
@@ -318,7 +318,7 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
             </CardHeader>
             <CardContent className="space-y-4">
               {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-4 p-4 rounded-xl border border-gray-100 hover:bg-gray-50 hover:border-gray-200 hover:shadow-sm transition-all duration-200">
+                <div key={index} className="flex items-start gap-4 p-4 rounded-xl border border-gray-200 hover:bg-gray-200 hover:border-gray-400 hover:shadow-sm transition-all duration-200">
                   <Avatar className="h-10 w-10 ring-2 ring-white shadow-md">
                     <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700">
                       {activity.user.split(' ').map(n => n[0]).join('')}
@@ -328,14 +328,14 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
                     <div className="flex items-start justify-between">
                       <p className="text-sm leading-relaxed">
                         <span className="font-semibold text-gray-900">{activity.user}</span>{' '}
-                        <span className="text-gray-600">{activity.action}</span>
+                        <span className="text-gray-800">{activity.action}</span>
                       </p>
                       <div className="flex items-center gap-2 ml-4">
                         {getActivityIcon(activity.type)}
-                        <span className="text-xs text-gray-500 font-medium">{activity.time}</span>
+                        <span className="text-xs text-gray-700 font-medium">{activity.time}</span>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700 font-medium bg-gray-50 px-3 py-2 rounded-lg border">
+                    <p className="text-sm text-gray-800 font-medium bg-gray-100 px-3 py-2 rounded-lg border">
                       {activity.item}
                     </p>
                   </div>
@@ -358,10 +358,10 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
 
         {/* Enhanced Quick Actions - Right Column (1/3) */}
         <div className="lg:col-span-1">
-          <Card className="bg-white border border-gray-200 shadow-lg hover:shadow-xl transition-shadow h-full">
+          <Card className="bg-white border border-gray-400 shadow-lg hover:shadow-xl transition-shadow h-full">
             <CardHeader className="pb-6">
               <CardTitle className="text-xl flex items-center gap-3">
-                <div className="p-2 bg-gray-100 rounded-lg">
+                <div className="p-2 bg-gray-200 rounded-lg">
                   <TrendingUp className="h-6 w-6 text-gray-600" />
                 </div>
                 Quick Actions
@@ -422,13 +422,13 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
               </Button>
 
               {/* Project Context Actions */}
-              <div className="pt-4 border-t border-gray-100">
-                <p className="text-sm font-medium text-gray-600 mb-3">Project Tools</p>
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-sm font-medium text-gray-800 mb-3">Project Tools</p>
                 <div className="grid grid-cols-2 gap-3">
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="flex flex-col items-center p-4 h-auto hover:bg-gray-50 border-gray-200"
+                    className="flex flex-col items-center p-4 h-auto hover:bg-gray-200 border-gray-400"
                   >
                     <Calendar className="h-5 w-5 text-gray-600 mb-1" />
                     <span className="text-xs">Timeline</span>
@@ -436,7 +436,7 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
                   <Button 
                     size="sm" 
                     variant="outline" 
-                    className="flex flex-col items-center p-4 h-auto hover:bg-gray-50 border-gray-200"
+                    className="flex flex-col items-center p-4 h-auto hover:bg-gray-200 border-gray-400"
                   >
                     <Users className="h-5 w-5 text-gray-600 mb-1" />
                     <span className="text-xs">Team</span>

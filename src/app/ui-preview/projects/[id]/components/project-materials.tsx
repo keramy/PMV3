@@ -13,7 +13,7 @@ export function ProjectMaterials({ projectId }: ProjectMaterialsProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Material Specifications</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-700">
             Material specs and PM approval workflow for this project
           </p>
         </div>

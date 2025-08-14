@@ -24,6 +24,7 @@ import {
   Search
 } from 'lucide-react'
 import { NotificationBell } from '@/components/notifications/NotificationBell'
+import { Logo } from '@/components/ui/logo'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' as const, icon: LayoutDashboard },
@@ -42,9 +43,8 @@ export function MainNav({ className }: MainNavProps) {
   return (
     <nav className={cn("flex items-center justify-between", className)}>
       {/* Logo */}
-      <Link href="/dashboard" className="flex items-center space-x-2">
-        <Building2 className="h-6 w-6 text-primary" />
-        <span className="font-bold text-lg">Formula PM</span>
+      <Link href="/dashboard" className="flex items-center">
+        <Logo variant="auto" size="md" />
       </Link>
 
       {/* Desktop Navigation - Hidden on mobile */}
@@ -71,7 +71,7 @@ export function MainNav({ className }: MainNavProps) {
       {/* Actions */}
       <div className="flex items-center space-x-2">
         {/* Search - Desktop only */}
-        <Button variant="ghost" size="sm" className="hidden md:flex mobile-touch-target">
+        <Button variant="ghost" size="sm" className="hidden md:flex mobile-touch-target hover:bg-gray-200">
           <Search className="h-4 w-4" />
         </Button>
 
@@ -82,7 +82,7 @@ export function MainNav({ className }: MainNavProps) {
         <div className="md:hidden">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="mobile-touch-target">
+              <Button variant="ghost" size="sm" className="mobile-touch-target hover:bg-gray-200">
                 <Menu className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

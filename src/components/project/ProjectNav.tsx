@@ -431,7 +431,7 @@ export function ProjectNav({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
-                  <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
+                  <div className="px-2 py-1 text-xs font-medium text-gray-700">
                     Additional Features
                   </div>
                   <DropdownMenuSeparator />

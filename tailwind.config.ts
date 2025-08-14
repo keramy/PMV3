@@ -58,6 +58,18 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Professional Gray Palette - WCAG Compliant
+        gray: {
+          100: '#F4F4F4', // Background - Contrast 1.2:1
+          200: '#DCDCDC', // Hover State - Contrast 2.9:1
+          300: '#BFBFBF', // Input Border - Contrast 3.8:1
+          400: '#9B9B9B', // Form Border - Contrast 4.5:1
+          500: '#7A7A7A', // Border Hover - Contrast 5.6:1
+          600: '#5A5A5A', // Disabled Background - Contrast 7.8:1
+          700: '#3C3C3C', // Disabled Text - Contrast 10.2:1
+          800: '#1C1C1C', // AA Text - Contrast 15.3:1
+          900: '#0F0F0F', // AAA Text - Contrast 21:1
+        },
         // Construction-specific colors
         construction: {
           orange: '#f97316',

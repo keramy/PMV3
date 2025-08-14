@@ -14,6 +14,7 @@ import { createShopDrawingSchema, updateShopDrawingSchema, paginationSchema, fil
 import { createLogger } from '@/lib/logger'
 import type { ShopDrawingStatistics } from '@/types/shop-drawings'
 import { SHOP_DRAWING_PERMISSIONS } from '@/types/shop-drawings'
+import { hasPermission } from '@/lib/permissions'
 import { z } from 'zod'
 
 const logger = createLogger('shop-drawings-api')
@@ -158,7 +159,7 @@ export const POST = apiMiddleware.validate(
       .eq('id', user.id)
       .single()
 
-    if (!profile?.permissions?.some((p: string) => p === SHOP_DRAWING_PERMISSIONS.CREATE)) {
+    if (!profile || !hasPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.CREATE)) {
       return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
       const db = createApiDatabase(user)
@@ -166,25 +167,12 @@ export const POST = apiMiddleware.validate(
       // Create shop drawing
       const result = await db.insert('shop_drawings', {
         project_id: validatedData.project_id,
+        drawing_number: validatedData.drawing_number,
         title: validatedData.title,
         description: validatedData.description,
-        category: validatedData.category,
-        trade: validatedData.trade,
-        priority: validatedData.priority,
         due_date: validatedData.due_date,
-        scope_item_id: validatedData.scope_item_id,
-        drawing_number: validatedData.drawing_number,
-        specification_section: validatedData.specification_section,
-        notes: validatedData.notes,
         submitted_by: user.id,
         status: 'pending_submittal'
-      }, {
-        select: `
-          *,
-          project:projects(id, name),
-          submitted_by_user:user_profiles!submitted_by(id, first_name, last_name, job_title),
-          scope_item:scope_items(id, title, category)
-        `
       })
 
       // Log the creation activity
@@ -197,7 +185,6 @@ export const POST = apiMiddleware.validate(
           action: 'created',
           details: {
             title: result.data.title,
-            category: result.data.category,
             drawing_number: result.data.drawing_number
           }
         })

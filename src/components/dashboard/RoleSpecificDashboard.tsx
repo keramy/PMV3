@@ -90,7 +90,7 @@ function QuickActions({ permissions }: { permissions: Permission[] }) {
     <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-2xl">
       <div className="flex items-center gap-3 mb-6">
         <div className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400" />
-        <h3 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+        <h3 className="text-lg font-semibold bg-gradient-to-r from-gray-900 to-gray-800 bg-clip-text text-transparent">
           Quick Actions
         </h3>
       </div>
@@ -153,7 +153,7 @@ function ProjectManagerDashboard({ userProfile }: { userProfile: AppUserProfile 
           <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-2xl">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-3 h-8 rounded-full bg-gradient-to-b from-blue-500 to-cyan-500" />
-              <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <h2 className="text-xl font-semibold bg-gradient-to-r from-gray-900 to-gray-800 bg-clip-text text-transparent">
                 Project Progress Overview
               </h2>
             </div>
@@ -290,9 +290,9 @@ function FieldOperationsDashboard({ userProfile }: { userProfile: AppUserProfile
               
               <div className="relative z-10 flex items-center justify-between">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-700/80">{metric.title}</p>
-                  <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">{metric.value}</p>
-                  <p className="text-xs text-gray-600/80">{metric.subtitle}</p>
+                  <p className="text-sm font-medium text-gray-800">{metric.title}</p>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-800 bg-clip-text text-transparent">{metric.value}</p>
+                  <p className="text-xs text-gray-700">{metric.subtitle}</p>
                 </div>
                 <div className={`p-4 rounded-2xl bg-gradient-to-br ${metric.gradient} text-white shadow-lg group-hover:shadow-xl transition-shadow`}>
                   {metric.icon}
@@ -331,7 +331,7 @@ function FieldOperationsDashboard({ userProfile }: { userProfile: AppUserProfile
                     
                     <div className="flex-1 space-y-1">
                       <p className="font-medium text-gray-900">Install drywall - Unit {i}A</p>
-                      <div className="flex items-center gap-3 text-xs text-gray-600">
+                      <div className="flex items-center gap-3 text-xs text-gray-700">
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           Due: 2:00 PM
@@ -562,14 +562,14 @@ export function RoleSpecificDashboard({ userProfile }: RoleSpecificDashboardProp
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg shadow-green-500/30" />
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-gray-900 to-gray-900 bg-clip-text text-transparent">
                   {dashboardTitle}
                 </h1>
               </div>
-              <p className="text-lg text-gray-600/80 font-medium">
+              <p className="text-lg text-gray-800 font-medium">
                 Welcome back, <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent font-semibold">{userProfile.full_name}</span>
               </p>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-700">
                 {new Date().toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   year: 'numeric', 

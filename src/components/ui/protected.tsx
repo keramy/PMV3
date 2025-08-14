@@ -57,7 +57,8 @@ export function ProtectedComponent({
   children 
 }: AdvancedPermissionProps) {
   const { user, loading: authLoading } = useAuth()
-  const { hasPermission, hasAllPermissions, hasAnyPermission, loading: permLoading } = usePermissions()
+  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissions()
+  const permLoading = false // usePermissions doesn't have loading state
 
   // Handle loading states
   if (authLoading || permLoading) {
@@ -289,7 +290,7 @@ export function AdminOnly({
   fallback?: React.ReactNode 
 }) {
   return (
-    <Protected permission="admin_access" fallback={fallback}>
+    <Protected permission={"admin_access" as any} fallback={fallback}>
       {children}
     </Protected>
   )
@@ -323,7 +324,7 @@ export function FieldWorkerContent({
   fallback?: React.ReactNode 
 }) {
   return (
-    <Protected permission={["update_tasks", "create_punch_items"]} requireAll={false} fallback={fallback}>
+    <Protected permission={["update_tasks", "create_punch_items"] as any} requireAll={false} fallback={fallback}>
       {children}
     </Protected>
   )
@@ -372,7 +373,7 @@ export function ClientContent({
   fallback?: React.ReactNode 
 }) {
   return (
-    <Protected permission="client_portal_access" fallback={fallback}>
+    <Protected permission={"client_portal_access" as any} fallback={fallback}>
       {children}
     </Protected>
   )
@@ -389,7 +390,7 @@ export function InternalContent({
   fallback?: React.ReactNode 
 }) {
   return (
-    <Protected permission="internal_access" fallback={fallback}>
+    <Protected permission={"internal_access" as any} fallback={fallback}>
       {children}
     </Protected>
   )
@@ -458,7 +459,7 @@ export function PermissionStatus({
  */
 export function PermissionDebug({ className }: { className?: string }) {
   const { user } = useAuth()
-  const userPermissions = user?.permissions || []
+  const userPermissions = (user as any)?.permissions || []
 
   if (process.env.NODE_ENV !== 'development') {
     return null
@@ -468,7 +469,7 @@ export function PermissionDebug({ className }: { className?: string }) {
     <div className={cn("p-4 border rounded-lg bg-muted/50", className)}>
       <h4 className="text-sm font-semibold mb-2">User Permissions (Debug)</h4>
       <div className="flex flex-wrap gap-1">
-        {userPermissions.map((permission) => (
+        {userPermissions.map((permission: string) => (
           <Badge key={permission} variant="outline" className="text-xs">
             {permission.replace(/_/g, ' ')}
           </Badge>

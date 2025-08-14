@@ -356,7 +356,7 @@ export function WorkflowStatusIndicator({
         className={cn(
           'construction-badge',
           {
-            'text-gray-700 bg-gray-50 border-gray-200': config.color === 'gray',
+            'text-gray-800 bg-gray-100 border-gray-400': config.color === 'gray',
             'text-blue-700 bg-blue-50 border-blue-200': config.color === 'blue',
             'text-yellow-700 bg-yellow-50 border-yellow-200': config.color === 'yellow',
             'text-green-700 bg-green-50 border-green-200': config.color === 'green',
@@ -448,7 +448,7 @@ export function PriorityIndicator({
         className={cn(
           'construction-badge',
           {
-            'text-gray-700 bg-gray-50 border-gray-200': config.color === 'gray',
+            'text-gray-800 bg-gray-100 border-gray-400': config.color === 'gray',
             'text-blue-700 bg-blue-50 border-blue-200': config.color === 'blue',
             'text-orange-700 bg-orange-50 border-orange-200': config.color === 'orange',
             'text-red-700 bg-red-50 border-red-200': config.color === 'red',
@@ -527,10 +527,10 @@ export function ProjectStatusCard({
         {/* Progress bar */}
         <div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-muted-foreground">Progress</span>
+            <span className="text-gray-700">Progress</span>
             <span className="font-medium">{progressPercent.toFixed(0)}%</span>
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
+          <div className="w-full bg-gray-200 rounded-full h-2">
             <div 
               className="bg-primary rounded-full h-2 transition-all duration-300"
               style={{ width: `${progressPercent}%` }}
@@ -543,7 +543,7 @@ export function ProjectStatusCard({
           <div className="grid grid-cols-2 gap-4 pt-2">
             {project.budget && (
               <div className="space-y-1">
-                <div className="flex items-center text-muted-foreground text-sm">
+                <div className="flex items-center text-gray-700 text-sm">
                   <DollarSign className="h-3 w-3 mr-1" />
                   Budget
                 </div>
@@ -552,7 +552,7 @@ export function ProjectStatusCard({
                   {project.spent && (
                     <span className={cn(
                       'text-sm ml-1',
-                      budgetPercent > 100 ? 'text-red-600' : 'text-muted-foreground'
+                      budgetPercent > 100 ? 'text-red-600' : 'text-gray-700'
                     )}>
                       ({budgetPercent.toFixed(0)}% used)
                     </span>
@@ -563,7 +563,7 @@ export function ProjectStatusCard({
             
             {project.teamSize && (
               <div className="space-y-1">
-                <div className="flex items-center text-muted-foreground text-sm">
+                <div className="flex items-center text-gray-700 text-sm">
                   <Users className="h-3 w-3 mr-1" />
                   Team
                 </div>
@@ -573,7 +573,7 @@ export function ProjectStatusCard({
             
             {project.endDate && (
               <div className="space-y-1 col-span-2">
-                <div className="flex items-center text-muted-foreground text-sm">
+                <div className="flex items-center text-gray-700 text-sm">
                   <Calendar className="h-3 w-3 mr-1" />
                   Target Completion
                 </div>

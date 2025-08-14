@@ -107,9 +107,9 @@ export function AppShell({
     return (
       <div className="min-h-screen bg-background animate-pulse" 
            suppressHydrationWarning>
-        <div className="h-14 bg-muted" />
+        <div className="h-14 bg-gray-400" />
         <div className="container mx-auto p-4">
-          <div className="h-64 bg-muted rounded-lg" />
+          <div className="h-64 bg-gray-400 rounded-lg" />
         </div>
       </div>
     )

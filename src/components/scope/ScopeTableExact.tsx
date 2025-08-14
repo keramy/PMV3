@@ -230,14 +230,18 @@ export function ScopeTableExact({
 
   // Get unique values for filters from real data
   const uniqueCategories = Array.from(new Set(scopeItems.map(item => item.category).filter(Boolean)))
-  const uniqueSubcontractors = Array.from(
-    new Map(scopeItems.map(item => [item.subcontractor_id, { 
-      id: item.subcontractor_id, 
-      name: item.subcontractor?.name || item.assigned_user ? `${item.assigned_user.first_name} ${item.assigned_user.last_name}` : 'Unassigned',
-      trade: item.subcontractor?.trade || '',
-      contact_person: item.subcontractor?.contact_person || '' 
-    }]).filter(([id]) => id)).values()
-  )
+  const subcontractorMap = new Map()
+  scopeItems.forEach(item => {
+    if (item.assigned_to) {
+      subcontractorMap.set(item.assigned_to, { 
+        id: item.assigned_to, 
+        name: (item as any).assigned_user ? `${(item as any).assigned_user.first_name} ${(item as any).assigned_user.last_name}` : 'Unassigned',
+        trade: '',
+ 
+      })
+    }
+  })
+  const uniqueSubcontractors = Array.from(subcontractorMap.values())
 
   // Filter scope items based on all filters
   const filteredScopeItems = scopeItems.filter(item => {
@@ -250,7 +254,6 @@ export function ScopeTableExact({
     
     const matchesCategory = selectedCategories.length === 0 || (item.category && selectedCategories.includes(item.category))
     const matchesSubcontractor = selectedSubcontractors.length === 0 || 
-      (item.subcontractor_id && selectedSubcontractors.includes(item.subcontractor_id)) ||
       (item.assigned_to && selectedSubcontractors.includes(item.assigned_to))
     
     return matchesSearch && matchesCategory && matchesSubcontractor
@@ -530,7 +533,7 @@ export function ScopeTableExact({
                       />
                       <label htmlFor={`subcontractor-${subcontractor.id}`} className="text-sm cursor-pointer flex-1">
                         <div className="font-medium">{subcontractor.name}</div>
-                        <div className="text-xs text-muted-foreground">{subcontractor.trade} • {subcontractor.contact_person}</div>
+                        <div className="text-xs text-muted-foreground">{subcontractor.trade}</div>
                       </label>
                     </div>
                   ))}
@@ -575,16 +578,16 @@ export function ScopeTableExact({
               </span>
               <div className="w-px h-4 bg-gray-300"></div>
               <span className="font-medium text-gray-700">
-                Total Cost: <span className="text-orange-600 font-bold">{formatCurrency(filteredScopeItems.reduce((sum, item) => sum + (item.actual_cost || 0), 0))}</span>
+                Total Cost: <span className="text-orange-600 font-bold">{formatCurrency(filteredScopeItems.reduce((sum, item) => sum + (item.total_cost || 0), 0))}</span>
               </span>
               <div className="w-px h-4 bg-gray-300"></div>
               <span className="font-medium text-gray-700">
                 Net Profit: <span className={`font-bold ${
-                  filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.actual_cost), 0) >= 0 
+                  filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.total_cost * 0.8), 0) >= 0 
                     ? 'text-green-600' 
                     : 'text-red-600'
                 }`}>
-                  {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.actual_cost), 0))}
+                  {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.total_cost * 0.8), 0))}
                 </span>
               </span>
             </div>
@@ -673,7 +676,7 @@ export function ScopeTableExact({
                     <TableCell className="py-3">
                       <div className="flex justify-center">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${getCategoryColor(item.category).split(' ')[0]} ${getCategoryColor(item.category).split(' ')[1]} cursor-pointer`} 
-                             title={`${item.subcontractor?.name || item.assigned_user ? `${item.assigned_user?.first_name} ${item.assigned_user?.last_name}` : 'Unassigned'}\n${item.subcontractor?.trade || ''}\n${item.subcontractor?.contact_person || ''}\n${item.subcontractor?.phone || ''}`}>
+                             title={`${item.subcontractor?.name || item.assigned_user ? `${item.assigned_user?.first_name} ${item.assigned_user?.last_name}` : 'Unassigned'}\n${item.subcontractor?.trade || ''}`}>
                           {(item.subcontractor?.name || item.assigned_user ? `${item.assigned_user?.first_name} ${item.assigned_user?.last_name}` : 'UN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                       </div>
@@ -734,7 +737,7 @@ export function ScopeTableExact({
 
                           {/* Profit Analysis Section (30%) */}
                           <div className="flex-1 lg:flex-[2]">
-                            <div className={`bg-white rounded-lg p-3 border-l-4 ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('green') ? 'border-l-green-500' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('yellow') ? 'border-l-yellow-500' : 'border-l-red-500'} border border-gray-200`}>
+                            <div className={`bg-white rounded-lg p-3 border-l-4 ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)).includes('green') ? 'border-l-green-500' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)).includes('yellow') ? 'border-l-yellow-500' : 'border-l-red-500'} border border-gray-200`}>
                               <div className="space-y-2">
                                 <div className="flex justify-between text-xs text-gray-600">
                                   <span>Sales:</span>
@@ -742,27 +745,27 @@ export function ScopeTableExact({
                                 </div>
                                 <div className="flex justify-between text-xs text-gray-600">
                                   <span>Cost:</span>
-                                  <span className="font-medium">{formatCurrency(item.actual_cost)}</span>
+                                  <span className="font-medium">{formatCurrency(item.total_cost * 0.8)}</span>
                                 </div>
                                 <div className="border-t pt-2">
                                   <div className="flex justify-between items-center">
                                     <span className="text-sm font-medium">Profit:</span>
                                     <div className="text-right">
-                                      <div className={`font-bold ${calculateProfitPercentage(item.total_cost, item.actual_cost) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                        {formatCurrency(calculateProfit(item.total_cost, item.actual_cost))}
+                                      <div className={`font-bold ${calculateProfitPercentage(item.total_cost, item.total_cost * 0.8) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                        {formatCurrency(calculateProfit(item.total_cost, item.total_cost * 0.8))}
                                       </div>
-                                      <div className={`text-lg font-bold ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('green') ? 'text-green-700' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('yellow') ? 'text-yellow-700' : 'text-red-700'}`}>
-                                        {calculateProfitPercentage(item.total_cost, item.actual_cost).toFixed(1)}%
+                                      <div className={`text-lg font-bold ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)).includes('green') ? 'text-green-700' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)).includes('yellow') ? 'text-yellow-700' : 'text-red-700'}`}>
+                                        {calculateProfitPercentage(item.total_cost, item.total_cost * 0.8).toFixed(1)}%
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-center pt-1">
-                                  <span className={`text-xs px-2 py-1 rounded ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost))} font-medium flex items-center gap-1`}>
-                                    {getProfitHealthIcon(calculateProfitPercentage(item.total_cost, item.actual_cost))}
-                                    {getProfitHealth(calculateProfitPercentage(item.total_cost, item.actual_cost)) === 'healthy' ? 'Healthy Margin' : 
-                                     getProfitHealth(calculateProfitPercentage(item.total_cost, item.actual_cost)) === 'acceptable' ? 'Acceptable Margin' : 
-                                     calculateProfitPercentage(item.total_cost, item.actual_cost) < 0 ? 'Loss - Review!' : 'Thin Margin'}
+                                  <span className={`text-xs px-2 py-1 rounded ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8))} font-medium flex items-center gap-1`}>
+                                    {getProfitHealthIcon(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8))}
+                                    {getProfitHealth(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)) === 'healthy' ? 'Healthy Margin' : 
+                                     getProfitHealth(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)) === 'acceptable' ? 'Acceptable Margin' : 
+                                     calculateProfitPercentage(item.total_cost, item.total_cost * 0.8) < 0 ? 'Loss - Review!' : 'Thin Margin'}
                                   </span>
                                 </div>
                               </div>

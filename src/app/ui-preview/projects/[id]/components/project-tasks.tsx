@@ -13,7 +13,7 @@ export function ProjectTasks({ projectId }: ProjectTasksProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Project Tasks</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-700">
             Task management and tracking for this project
           </p>
         </div>

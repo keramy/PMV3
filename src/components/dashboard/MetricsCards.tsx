@@ -54,7 +54,7 @@ function MetricCard({ title, value, subtitle, trend, icon, color, isLoading }: M
     success: 'bg-green-100 text-green-600',
     warning: 'bg-yellow-100 text-yellow-600',
     danger: 'bg-red-100 text-red-600',
-    info: 'bg-gray-100 text-gray-600'
+    info: 'bg-gray-200 text-gray-600'
   }
 
   return (
@@ -62,7 +62,7 @@ function MetricCard({ title, value, subtitle, trend, icon, color, isLoading }: M
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-sm font-medium text-gray-700">{title}</p>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-bold text-foreground">
                 {typeof value === 'number' ? value.toLocaleString() : value}
@@ -77,7 +77,7 @@ function MetricCard({ title, value, subtitle, trend, icon, color, isLoading }: M
               )}
             </div>
             {subtitle && (
-              <p className="text-xs text-muted-foreground">{subtitle}</p>
+              <p className="text-xs text-gray-700">{subtitle}</p>
             )}
           </div>
           <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
@@ -244,21 +244,21 @@ export function ProjectStatusCard({
       <CardContent>
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Active Projects</span>
+            <span className="text-sm text-gray-700">Active Projects</span>
             <Badge variant="outline" className="text-blue-600 border-blue-200">
               {metrics.activeProjects}
             </Badge>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">On Schedule</span>
+            <span className="text-sm text-gray-700">On Schedule</span>
             <Badge variant="outline" className="text-green-600 border-green-200">
               {metrics.onTimeProjects}
             </Badge>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Delayed</span>
+            <span className="text-sm text-gray-700">Delayed</span>
             <Badge variant="outline" className="text-red-600 border-red-200">
               {metrics.delayedProjects}
             </Badge>
@@ -269,7 +269,7 @@ export function ProjectStatusCard({
               <span className="text-sm font-medium">Portfolio Health</span>
               <span className="text-sm font-bold">{completionRate}%</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div className="w-full bg-gray-400 rounded-full h-2">
               <div 
                 className={`h-2 rounded-full ${completionRate >= 80 ? 'bg-green-500' : completionRate >= 60 ? 'bg-yellow-500' : 'bg-red-500'}`}
                 style={{ width: `${Math.min(completionRate, 100)}%` }}

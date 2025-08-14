@@ -9,195 +9,133 @@ import {
   CheckSquare, 
   ClipboardList,
   Menu,
-  X,
-  ChevronLeft
+  X
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { LogoIcon, LogoText } from '@/components/ui/logo'
+import { useRouter } from 'next/navigation'
 
 interface ProjectSidebarProps {
   isCollapsed: boolean
   onToggleCollapse: () => void
-  onBackToMain: () => void
-  projectName: string
 }
 
 export function ProjectSidebar({ 
   isCollapsed, 
-  onToggleCollapse, 
-  onBackToMain, 
-  projectName 
+  onToggleCollapse
 }: ProjectSidebarProps) {
+  const router = useRouter()
+
+  // Main navigation items
+  const mainMenuItems = [
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: LayoutDashboard,
+      description: 'Overview & metrics',
+      path: '/ui-preview'
+    },
+    {
+      id: 'projects',
+      label: 'Projects',
+      icon: Building2,
+      description: 'All projects overview',
+      path: '/ui-preview'
+    },
+    {
+      id: 'scope',
+      label: 'Scope Management',
+      icon: ClipboardList,
+      description: 'Project scope items',
+      path: '/ui-preview'
+    },
+    {
+      id: 'shop-drawings',
+      label: 'Shop Drawings',
+      icon: FileText,
+      description: 'Whose Turn system',
+      path: '/ui-preview'
+    },
+    {
+      id: 'material-specs',
+      label: 'Material Specs',
+      icon: Package,
+      description: 'PM approval workflow',
+      path: '/ui-preview'
+    },
+    {
+      id: 'tasks',
+      label: 'Tasks',
+      icon: CheckSquare,
+      description: 'Task management',
+      path: '/ui-preview'
+    }
+  ]
+
+
+  const handleMainNavigation = (item: typeof mainMenuItems[0]) => {
+    // Navigate with URL parameter to ensure correct view is displayed
+    window.location.href = `${item.path}?view=${item.id}`
+  }
   return (
     <div className={cn(
       "flex h-full flex-col border-r bg-background transition-all duration-300",
       isCollapsed ? "w-16" : "w-64"
     )}>
       {/* Header */}
-      <div className="border-b p-4">
-        {!isCollapsed ? (
-          <>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <span className="text-sm font-bold">PM</span>
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold">Formula PM</h2>
-                  <p className="text-xs text-muted-foreground">v3.0</p>
-                </div>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={onToggleCollapse}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+      <div className="relative border-b px-4 py-4">
+        {/* Toggle Button - Always in top-right corner */}
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={onToggleCollapse}
+          className="absolute top-2 right-2 h-8 w-8 p-0 z-10"
+        >
+          {isCollapsed ? (
+            <Menu className="h-4 w-4" />
+          ) : (
+            <X className="h-4 w-4" />
+          )}
+        </Button>
+
+        {/* Logo Content - Centered vertically */}
+        <div className={cn(
+          "flex items-center justify-center min-h-[32px]",
+          !isCollapsed && "pr-10"
+        )}>
+          {!isCollapsed ? (
+            <div className="flex items-center gap-2">
+              <LogoText size="sm" />
+              <span className="text-xs text-gray-700">v3.0</span>
             </div>
-            
-            {/* Back to Main Navigation */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onBackToMain}
-              className="w-full justify-start gap-2 text-xs"
-            >
-              <ChevronLeft className="h-3 w-3" />
-              Back to Main
-            </Button>
-            
-            {/* Current Project */}
-            <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-blue-600" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-blue-900 truncate">
-                    Current Project
-                  </p>
-                  <p className="text-xs text-blue-700 truncate">
-                    {projectName}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex flex-col items-center space-y-2">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={onToggleCollapse}
-              className="h-8 w-8 p-0"
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <span className="text-xs font-bold">PM</span>
-            </div>
-          </div>
-        )}
+          ) : (
+            <LogoIcon size="sm" />
+          )}
+        </div>
       </div>
 
-      {/* Navigation - Project Context */}
-      <nav className="flex-1 space-y-1 p-2">
-        <div className={cn(
-          "text-xs font-medium text-muted-foreground mb-2",
-          isCollapsed && "text-center"
-        )}>
-          {!isCollapsed ? "Project Navigation" : "•"}
-        </div>
-        
-        {/* Quick Actions */}
-        <Button
-          variant="ghost"
-          className={cn(
-            "justify-start gap-3",
-            isCollapsed ? "w-full px-2" : "w-full px-3"
-          )}
-        >
-          <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
-          {!isCollapsed && (
-            <div className="flex flex-col items-start">
-              <span className="text-sm">Overview</span>
-              <span className="text-xs text-muted-foreground">
-                Project dashboard
-              </span>
-            </div>
-          )}
-        </Button>
+      {/* Navigation */}
+      <nav className="flex-1 space-y-0.5 p-2 overflow-y-auto">
+        {mainMenuItems.map((item) => {
+          const Icon = item.icon
+          return (
+            <Button
+              key={item.id}
+              variant="ghost"
+              className={cn(
+                "justify-start gap-3",
+                isCollapsed ? "w-full px-2" : "w-full px-3"
+              )}
+              onClick={() => handleMainNavigation(item)}
+            >
+              <Icon className="h-4 w-4 flex-shrink-0" />
+              {!isCollapsed && (
+                <span className="text-sm font-medium">{item.label}</span>
+              )}
+            </Button>
+          )
+        })}
 
-        <Button
-          variant="ghost"
-          className={cn(
-            "justify-start gap-3",
-            isCollapsed ? "w-full px-2" : "w-full px-3"
-          )}
-        >
-          <ClipboardList className="h-4 w-4 flex-shrink-0" />
-          {!isCollapsed && (
-            <div className="flex flex-col items-start">
-              <span className="text-sm">Scope Items</span>
-              <span className="text-xs text-muted-foreground">
-                Project scope
-              </span>
-            </div>
-          )}
-        </Button>
-
-        <Button
-          variant="ghost"
-          className={cn(
-            "justify-start gap-3",
-            isCollapsed ? "w-full px-2" : "w-full px-3"
-          )}
-        >
-          <FileText className="h-4 w-4 flex-shrink-0" />
-          {!isCollapsed && (
-            <div className="flex flex-col items-start">
-              <span className="text-sm">Drawings</span>
-              <span className="text-xs text-muted-foreground">
-                Shop drawings
-              </span>
-            </div>
-          )}
-        </Button>
-
-        <Button
-          variant="ghost"
-          className={cn(
-            "justify-start gap-3",
-            isCollapsed ? "w-full px-2" : "w-full px-3"
-          )}
-        >
-          <Package className="h-4 w-4 flex-shrink-0" />
-          {!isCollapsed && (
-            <div className="flex flex-col items-start">
-              <span className="text-sm">Materials</span>
-              <span className="text-xs text-muted-foreground">
-                Material specs
-              </span>
-            </div>
-          )}
-        </Button>
-
-        <Button
-          variant="ghost"
-          className={cn(
-            "justify-start gap-3",
-            isCollapsed ? "w-full px-2" : "w-full px-3"
-          )}
-        >
-          <CheckSquare className="h-4 w-4 flex-shrink-0" />
-          {!isCollapsed && (
-            <div className="flex flex-col items-start">
-              <span className="text-sm">Tasks</span>
-              <span className="text-xs text-muted-foreground">
-                Task management
-              </span>
-            </div>
-          )}
-        </Button>
       </nav>
 
       {/* Footer */}
@@ -209,7 +147,7 @@ export function ProjectSidebar({
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">Kerem Test</p>
-              <p className="text-xs text-muted-foreground">Admin</p>
+              <p className="text-xs text-gray-800">Admin</p>
             </div>
           </div>
         ) : (

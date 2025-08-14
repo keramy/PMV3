@@ -281,7 +281,7 @@ export function ProjectsTable() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Avatar className="h-8 w-8 border-2 border-background">
-                <AvatarFallback className="bg-gray-100 text-gray-600 text-xs font-medium">
+                <AvatarFallback className="bg-gray-200 text-gray-800 text-xs font-medium">
                   +{remainingCount}
                 </AvatarFallback>
               </Avatar>
@@ -312,7 +312,7 @@ export function ProjectsTable() {
     if (days === 0) return { text: 'Due today', className: 'text-orange-600' }
     if (days === 1) return { text: '1 day left', className: 'text-orange-600' }
     if (days <= 7) return { text: `${days} days left`, className: 'text-orange-600' }
-    return { text: `${days} days left`, className: 'text-gray-600' }
+    return { text: `${days} days left`, className: 'text-gray-800' }
   }
 
   const handleSort = (field: string) => {
@@ -380,7 +380,7 @@ export function ProjectsTable() {
         </div>
 
       {/* Filters and Search */}
-      <Card className="bg-white border border-gray-200 shadow-md">
+      <Card className="bg-white border border-gray-400 shadow-md">
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative w-full md:w-80">
@@ -410,7 +410,7 @@ export function ProjectsTable() {
       </Card>
 
       {/* Projects Table */}
-      <Card className="bg-white border border-gray-200 shadow-md">
+      <Card className="bg-white border border-gray-400 shadow-md">
         <CardHeader>
           <CardTitle>All Projects ({filteredAndSortedProjects.length})</CardTitle>
         </CardHeader>
@@ -419,66 +419,66 @@ export function ProjectsTable() {
             <Table>
               <TableHeader>
                 <TableRow className="border-b">
-                  <TableHead className="py-4 font-semibold text-gray-700">
+                  <TableHead className="py-4 font-semibold text-gray-800">
                     <Button
                       variant="ghost"
-                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-800 hover:text-gray-900"
                       onClick={() => handleSort('name')}
                     >
                       Project Name
                       {getSortIcon('name')}
                     </Button>
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-gray-700">
+                  <TableHead className="py-4 font-semibold text-gray-800">
                     <Button
                       variant="ghost"
-                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-800 hover:text-gray-900"
                       onClick={() => handleSort('client')}
                     >
                       Client
                       {getSortIcon('client')}
                     </Button>
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-gray-700">
+                  <TableHead className="py-4 font-semibold text-gray-800">
                     <Button
                       variant="ghost"
-                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-800 hover:text-gray-900"
                       onClick={() => handleSort('status')}
                     >
                       Status
                       {getSortIcon('status')}
                     </Button>
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-gray-700">
+                  <TableHead className="py-4 font-semibold text-gray-800">
                     <Button
                       variant="ghost"
-                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-800 hover:text-gray-900"
                       onClick={() => handleSort('end_date')}
                     >
                       Deadline
                       {getSortIcon('end_date')}
                     </Button>
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-gray-700">Duration</TableHead>
-                  <TableHead className="py-4 font-semibold text-gray-700">
+                  <TableHead className="py-4 font-semibold text-gray-800">Duration</TableHead>
+                  <TableHead className="py-4 font-semibold text-gray-800">
                     <Button
                       variant="ghost"
-                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-700 hover:text-gray-900"
+                      className="h-auto p-0 font-semibold hover:bg-transparent text-gray-800 hover:text-gray-900"
                       onClick={() => handleSort('progress_percentage')}
                     >
                       Progress
                       {getSortIcon('progress_percentage')}
                     </Button>
                   </TableHead>
-                  <TableHead className="py-4 font-semibold text-gray-700">Team</TableHead>
-                  <TableHead className="py-4 font-semibold text-gray-700">Actions</TableHead>
+                  <TableHead className="py-4 font-semibold text-gray-800">Team</TableHead>
+                  <TableHead className="py-4 font-semibold text-gray-800">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredAndSortedProjects.map((project) => {
                   const dueInfo = getDaysUntilDeadline(project.end_date)
                   return (
-                    <TableRow key={project.id} className="hover:bg-gray-50/50">
+                    <TableRow key={project.id} className="hover:bg-gray-100/50">
                       <TableCell className="py-4">
                         <Button
                           variant="ghost"
@@ -488,9 +488,9 @@ export function ProjectsTable() {
                           {project.name}
                         </Button>
                       </TableCell>
-                      <TableCell className="text-sm text-gray-600 py-4">{project.client}</TableCell>
+                      <TableCell className="text-sm text-gray-800 py-4">{project.client}</TableCell>
                       <TableCell className="py-4">{getStatusBadge(project.status)}</TableCell>
-                      <TableCell className="text-sm text-gray-600 py-4">{formatDate(project.end_date)}</TableCell>
+                      <TableCell className="text-sm text-gray-800 py-4">{formatDate(project.end_date)}</TableCell>
                       <TableCell className="py-4">
                         <span className={`text-sm font-medium ${dueInfo.className}`}>
                           {dueInfo.text}
@@ -515,7 +515,7 @@ export function ProjectsTable() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-50">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-gray-200">
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:text-red-800 hover:bg-red-50">
@@ -530,9 +530,9 @@ export function ProjectsTable() {
               </Table>
             {filteredAndSortedProjects.length === 0 && (
               <div className="text-center py-12">
-                <Building2 className="mx-auto h-12 w-12 text-gray-400" />
+                <Building2 className="mx-auto h-12 w-12 text-gray-600" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-sm text-gray-700">
                   Try adjusting your search or filter to find what you're looking for.
                 </p>
               </div>

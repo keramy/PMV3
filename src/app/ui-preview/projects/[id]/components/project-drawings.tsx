@@ -13,7 +13,7 @@ export function ProjectDrawings({ projectId }: ProjectDrawingsProps) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Shop Drawings</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-gray-700">
             Shop drawings and approval workflow for this project
           </p>
         </div>

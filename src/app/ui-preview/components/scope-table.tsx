@@ -131,12 +131,51 @@ export function ScopeTable() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ScopeItemWithSubcontractor | null>(null)
 
-  // Scope items data aligned with FUTURE database schema using subcontractors
+  // TODO: Replace with real API integration
+  /*
+  const { data: scopeData, isLoading, error } = useQuery({
+    queryKey: ['scope-items', {
+      project_id: selectedProject === 'all' ? null : selectedProject,
+      search: searchTerm,
+      categories: selectedCategories,
+      subcontractors: selectedSubcontractors,
+      page: currentPage,
+      limit: itemsPerPage
+    }],
+    queryFn: async () => {
+      const params = new URLSearchParams()
+      if (selectedProject !== 'all') params.set('project_id', selectedProject)
+      if (searchTerm) params.set('search', searchTerm)
+      if (selectedCategories.length > 0) params.set('categories', selectedCategories.join(','))
+      if (selectedSubcontractors.length > 0) params.set('assigned_to', selectedSubcontractors.join(','))
+      params.set('page', currentPage.toString())
+      params.set('limit', itemsPerPage.toString())
+      
+      const response = await fetch(`/api/scope?${params}`)
+      if (!response.ok) throw new Error('Failed to fetch scope items')
+      return response.json()
+    }
+  })
+
+  const scopeItems = scopeData?.items || []
+  const statistics = scopeData?.statistics || {}
+  
+  useEffect(() => {
+    if (scopeData?.pagination) {
+      setTotalPages(scopeData.pagination.totalPages)
+    }
+  }, [scopeData])
+
+  if (isLoading) return <ScopeTableLoadingSkeleton />
+  if (error) return <ErrorBoundary error={error} />
+  */
+
+  // Scope items data aligned with FUTURE database schema using subcontractors (MOCK DATA - REMOVE WHEN API CONNECTED)
   // Current DB: scope_items.assigned_to -> user_profiles (V2 pattern)
   // Future DB: scope_items.subcontractor_id -> subcontractors (V3 pattern)
   // Standardized field naming: subcontractor_contact_person (matches DB subcontractors.contact_person)
   // Ready for database migration to subcontractor-based assignments
-  const scopeItems: ScopeItemWithSubcontractor[] = [
+  const scopeItems = [
     {
       id: 'SCOPE001',
       project_id: 'proj-001',
@@ -182,7 +221,6 @@ export function ScopeTable() {
     {
       id: 'SCOPE002',
       project_id: 'proj-001',
-      project_name: 'Akbank Head Office Renovation',
       title: 'Kitchen Base Cabinets Installation',
       description: 'Base cabinet system with drawer organizers',
       category: 'millwork',
@@ -197,10 +235,6 @@ export function ScopeTable() {
       cost_variance: -130,
       cost_variance_percentage: -5.70,
       subcontractor_id: 'sub-001',
-      subcontractor_name: 'Premium Woodworks LLC',
-      subcontractor_trade: 'millwork',
-      subcontractor_contact_person: 'John Smith',
-      subcontractor_phone: '+1 555-0123',
       notes: 'Includes soft-close drawers and doors',
       created_by: 'user-002',
       created_at: '2024-01-15T10:00:00Z',
@@ -209,7 +243,6 @@ export function ScopeTable() {
     {
       id: 'SCOPE003',
       project_id: 'proj-001',
-      project_name: 'Akbank Head Office Renovation',
       title: 'Reception Desk - Custom Build',
       description: 'Executive reception desk with integrated technology',
       category: 'millwork',
@@ -225,7 +258,6 @@ export function ScopeTable() {
       cost_variance_percentage: 0,
       subcontractor_id: 'sub-002',
       subcontractor_name: 'Elite Custom Millwork',
-      subcontractor_trade: 'millwork',
       subcontractor_contact_person: 'Sarah Johnson',
       subcontractor_phone: '+1 555-0234',
       notes: 'Executive-level custom reception desk with cable management',
@@ -236,7 +268,6 @@ export function ScopeTable() {
     {
       id: 'SCOPE004',
       project_id: 'proj-003',
-      project_name: 'Marina Bay Tower Construction',
       title: 'HVAC System Installation',
       description: 'VRF system installation for tower floors 15-20',
       category: 'hvac',
@@ -263,7 +294,6 @@ export function ScopeTable() {
     {
       id: 'SCOPE005',
       project_id: 'proj-003',
-      project_name: 'Marina Bay Tower Construction',
       title: 'Structural Steel Frame',
       description: 'High-rise structural steel framework',
       category: 'construction',
@@ -290,7 +320,6 @@ export function ScopeTable() {
     {
       id: 'SCOPE006',
       project_id: 'proj-002',
-      project_name: 'Garanti BBVA Tech Center MEP',
       title: 'Server Room Cooling',
       description: 'Precision cooling system for data center',
       category: 'mechanical',
@@ -317,7 +346,6 @@ export function ScopeTable() {
     {
       id: 'SCOPE007',
       project_id: 'proj-002',
-      project_name: 'Garanti BBVA Tech Center MEP',
       title: 'Electrical Distribution',
       description: 'Main electrical distribution system',
       category: 'electrical',
@@ -360,7 +388,6 @@ export function ScopeTable() {
       cost_variance_percentage: 8.93,
       subcontractor_id: 'sub-002',
       subcontractor_name: 'Elite Custom Millwork',
-      subcontractor_trade: 'millwork',
       subcontractor_contact_person: 'Sarah Johnson',
       subcontractor_phone: '+1 555-0234',
       notes: 'Open workspace design with modern tech integration',
@@ -386,10 +413,6 @@ export function ScopeTable() {
       cost_variance: -800,
       cost_variance_percentage: -5.33,
       subcontractor_id: 'sub-001',
-      subcontractor_name: 'Premium Woodworks LLC',
-      subcontractor_trade: 'millwork',
-      subcontractor_contact_person: 'John Smith',
-      subcontractor_phone: '+1 555-0123',
       notes: 'Interactive display units with LED lighting',
       created_by: 'user-002',
       created_at: '2024-01-18T10:00:00Z',
@@ -470,7 +493,7 @@ export function ScopeTable() {
       plumbing: 'bg-teal-100 text-teal-800 border-teal-300 hover:bg-teal-200',
       hvac: 'bg-purple-100 text-purple-800 border-purple-300 hover:bg-purple-200'
     }
-    return colors[category] || 'bg-gray-100 text-gray-800 border-gray-300 hover:bg-gray-200'
+    return colors[category] || 'bg-gray-200 text-gray-800 border-gray-400 hover:bg-gray-400'
   }
 
   const getCategoryIcon = (category: string) => {
@@ -501,7 +524,7 @@ export function ScopeTable() {
       plumbing: 'border-l-4 border-l-teal-400',
       hvac: 'border-l-4 border-l-purple-400'
     }
-    return accents[category] || 'border-l-4 border-l-gray-300'
+    return accents[category] || 'border-l-4 border-l-gray-400'
   }
 
   // Budget status styling for cost tracking
@@ -662,26 +685,26 @@ export function ScopeTable() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-white p-6 rounded-lg border shadow-sm">
+      <div className="flex items-center justify-between bg-gradient-to-r from-gray-100 to-white p-6 rounded-lg border shadow-sm">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
             <ClipboardList className="h-6 w-6 text-blue-600" />
             Scope Management
             {totalPages > 1 && (
-              <span className="text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded">
+              <span className="text-sm font-normal text-gray-700 bg-gray-200 px-2 py-1 rounded">
                 Page {currentPage} of {totalPages}
               </span>
             )}
           </h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm text-gray-800 mt-1">
             Project scope items and deliverables
             {totalPages > 1 && (
-              <span className="text-gray-500"> • {totalFilteredItems} total items</span>
+              <span className="text-gray-700"> • {totalFilteredItems} total items</span>
             )}
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" size="sm" onClick={toggleAllRows} className="hover:bg-gray-100 transition-colors">
+          <Button variant="outline" size="sm" onClick={toggleAllRows} className="hover:bg-gray-200 transition-colors">
             <ChevronsUpDown className="mr-2 h-4 w-4" />
             {expandAll ? 'Collapse All' : 'Expand All'}
           </Button>
@@ -707,10 +730,10 @@ export function ScopeTable() {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search - Most Important First */}
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-600" />
               <Input
                 placeholder="Search scope items..."
-                className="pl-12 h-12 text-base border-2 border-gray-200 focus:border-blue-500 rounded-lg"
+                className="pl-12 h-12 text-base border-2 border-gray-400 focus:border-blue-500 rounded-lg"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -761,7 +784,7 @@ export function ScopeTable() {
                     {/* Categories Grid - Better Touch Targets */}
                     <div className="grid grid-cols-2 gap-2">
                       {uniqueCategories.map((category) => (
-                        <div key={category} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div key={category} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 transition-colors">
                           <Checkbox
                             id={`category-${category}`}
                             checked={selectedCategories.includes(category)}
@@ -827,7 +850,7 @@ export function ScopeTable() {
                     {/* Subcontractors List - Better Mobile UX */}
                     <div className="space-y-2 max-h-64 overflow-y-auto">
                       {uniqueSubcontractors.map((subcontractor) => (
-                        <div key={subcontractor.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                        <div key={subcontractor.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-100 transition-colors">
                           <Checkbox
                             id={`subcontractor-${subcontractor.id}`}
                             checked={selectedSubcontractors.includes(subcontractor.id)}
@@ -842,7 +865,7 @@ export function ScopeTable() {
                           />
                           <label htmlFor={`subcontractor-${subcontractor.id}`} className="text-sm cursor-pointer flex-1 select-none">
                             <div className="font-semibold text-gray-900">{subcontractor.name}</div>
-                            <div className="text-xs text-gray-500 mt-1 capitalize">
+                            <div className="text-xs text-gray-700 mt-1 capitalize">
                               {subcontractor.trade} • {subcontractor.contact_person}
                             </div>
                           </label>
@@ -883,14 +906,14 @@ export function ScopeTable() {
                 {/* Essential Financial Metrics - Prioritized */}
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <span className="flex items-center gap-1">
-                    <span className="text-gray-600">Revenue:</span>
+                    <span className="text-gray-800">Revenue:</span>
                     <span className="text-blue-700 font-bold text-base">
                       {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + item.total_cost, 0))}
                     </span>
                   </span>
                   
                   <span className="flex items-center gap-1">
-                    <span className="text-gray-600">Profit:</span>
+                    <span className="text-gray-800">Profit:</span>
                     <span className={`font-bold text-base ${
                       filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.actual_cost), 0) >= 0 
                         ? 'text-green-700' 
@@ -901,7 +924,7 @@ export function ScopeTable() {
                   </span>
                   
                   <span className="flex items-center gap-1">
-                    <span className="text-gray-600">Margin:</span>
+                    <span className="text-gray-800">Margin:</span>
                     <span className="text-purple-700 font-bold text-base">
                       {filteredScopeItems.length > 0 
                         ? (filteredScopeItems.reduce((sum, item) => sum + calculateProfitPercentage(item.total_cost, item.actual_cost), 0) / filteredScopeItems.length).toFixed(1)
@@ -944,7 +967,7 @@ export function ScopeTable() {
       <div className="rounded-xl border shadow-md bg-white overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gradient-to-r from-gray-50 to-white border-b-2 border-gray-200">
+            <TableRow className="bg-gradient-to-r from-gray-100 to-white border-b-2 border-gray-400">
               <TableHead className="w-16 py-4"></TableHead>
               <TableHead className="w-24 font-bold text-gray-800 py-4">ID</TableHead>
               <TableHead className="w-28 font-bold text-gray-800 py-4">Category</TableHead>
@@ -963,7 +986,7 @@ export function ScopeTable() {
               return (
                 <React.Fragment key={item.id}>
                   <TableRow 
-                    className={`group hover:bg-gray-50/80 transition-all duration-200 ${getRowAccentColor(item.category)} ${getCostPriority(item.total_cost) === 'cost-high' ? 'bg-gradient-to-r from-yellow-50/30 to-transparent' : ''} ${isExpanded ? 'bg-blue-50/40' : ''} cursor-pointer`}
+                    className={`group hover:bg-gray-100/80 transition-all duration-200 ${getRowAccentColor(item.category)} ${getCostPriority(item.total_cost) === 'cost-high' ? 'bg-gradient-to-r from-yellow-50/30 to-transparent' : ''} ${isExpanded ? 'bg-blue-50/40' : ''} cursor-pointer`}
                     onClick={() => toggleRow(item.id)}
                   >
                     <TableCell className="py-4">
@@ -975,11 +998,11 @@ export function ScopeTable() {
                         {isExpanded ? (
                           <ChevronDown className="h-5 w-5 text-blue-600 transform transition-transform duration-200" />
                         ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-500 transform transition-transform duration-200 group-hover:text-blue-600" />
+                          <ChevronRight className="h-5 w-5 text-gray-700 transform transition-transform duration-200 group-hover:text-blue-600" />
                         )}
                       </Button>
                     </TableCell>
-                    <TableCell className="font-mono text-sm py-4 font-medium text-gray-600">{item.id}</TableCell>
+                    <TableCell className="font-mono text-sm py-4 font-medium text-gray-800">{item.id}</TableCell>
                     <TableCell className="py-4">
                       <Badge 
                         className={`${getCategoryColor(item.category)} font-semibold transition-colors border text-sm px-3 py-2`}
@@ -990,7 +1013,7 @@ export function ScopeTable() {
                     </TableCell>
                     <TableCell className="font-semibold py-4 text-gray-900">{item.title}</TableCell>
                     <TableCell className="text-center font-bold py-4 text-base">{item.quantity}</TableCell>
-                    <TableCell className="text-sm py-4 font-medium text-gray-600">{item.unit}</TableCell>
+                    <TableCell className="text-sm py-4 font-medium text-gray-800">{item.unit}</TableCell>
                     <TableCell className="text-right py-4 font-mono text-base font-medium text-gray-800">{formatCurrency(item.unit_cost)}</TableCell>
                     <TableCell className="text-right py-4 font-mono text-lg font-bold text-blue-700">
                       {formatCurrency(item.total_cost)}
@@ -1007,28 +1030,28 @@ export function ScopeTable() {
                       <div className="flex justify-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full hover:bg-gray-100 hover:border-gray-300 transition-colors">
+                            <Button variant="outline" size="icon" className="h-10 w-10 rounded-full hover:bg-gray-200 hover:border-gray-400 transition-colors">
                               <MoreHorizontal className="h-5 w-5" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48 p-2">
                             <DropdownMenuItem 
                               className="flex items-center gap-3 hover:bg-blue-50 cursor-pointer p-3 rounded-lg"
-                              onClick={() => handleView(item)}
+                              onClick={() => handleView(item as any)}
                             >
                               <Eye className="h-5 w-5 text-blue-600" />
                               <span className="font-medium">View Details</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="flex items-center gap-3 hover:bg-emerald-50 cursor-pointer p-3 rounded-lg"
-                              onClick={() => handleEdit(item)}
+                              onClick={() => handleEdit(item as any)}
                             >
                               <Edit className="h-5 w-5 text-emerald-600" />
                               <span className="font-medium">Edit Item</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               className="flex items-center gap-3 hover:bg-red-50 text-red-600 cursor-pointer p-3 rounded-lg"
-                              onClick={() => handleDelete(item)}
+                              onClick={() => handleDelete(item as any)}
                             >
                               <Trash2 className="h-5 w-5" />
                               <span className="font-medium">Delete Item</span>
@@ -1040,15 +1063,15 @@ export function ScopeTable() {
                   </TableRow>
                   {isExpanded && (
                     <TableRow>
-                      <TableCell colSpan={10} className={`bg-gray-50 py-4 ${getRowAccentColor(item.category)}`}>
+                      <TableCell colSpan={10} className={`bg-gray-100 py-4 ${getRowAccentColor(item.category)}`}>
                         <div className="flex flex-col lg:flex-row gap-4 px-4">
                           {/* Main Details Section (60%) */}
                           <div className="flex-1 lg:flex-[3] space-y-3">
                             <div>
                               <p className="text-sm font-medium text-gray-900 mb-1">{item.description}</p>
-                              <p className="text-sm text-gray-600">{item.specification}</p>
+                              <p className="text-sm text-gray-800">{item.specification}</p>
                             </div>
-                            <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <div className="flex items-center gap-4 text-xs text-gray-700">
                               <span>Project: {item.project_name}</span>
                               {item.notes && (
                                 <span className="flex items-center gap-1">
@@ -1062,11 +1085,11 @@ export function ScopeTable() {
                           <div className="flex-1 lg:flex-[2]">
                             <div className={`bg-white rounded-lg p-3 border-l-4 ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('green') ? 'border-l-green-500' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('yellow') ? 'border-l-yellow-500' : 'border-l-red-500'} border border-gray-200`}>
                               <div className="space-y-2">
-                                <div className="flex justify-between text-xs text-gray-600">
+                                <div className="flex justify-between text-xs text-gray-800">
                                   <span>Sales:</span>
                                   <span className="font-medium">{formatCurrency(item.total_cost)}</span>
                                 </div>
-                                <div className="flex justify-between text-xs text-gray-600">
+                                <div className="flex justify-between text-xs text-gray-800">
                                   <span>Cost:</span>
                                   <span className="font-medium">{formatCurrency(item.actual_cost)}</span>
                                 </div>
@@ -1101,11 +1124,11 @@ export function ScopeTable() {
                               size="sm" 
                               variant="outline" 
                               className="text-xs h-8"
-                              onClick={() => handleView(item)}
+                              onClick={() => handleView(item as any)}
                             >
                               View Details
                             </Button>
-                            <div className="text-xs text-gray-500 lg:mt-2">
+                            <div className="text-xs text-gray-700 lg:mt-2">
                               {new Date(item.created_at).toLocaleDateString()}
                             </div>
                           </div>
@@ -1124,7 +1147,7 @@ export function ScopeTable() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between bg-white px-6 py-4 border-t">
           {/* Items info */}
-          <div className="flex items-center gap-4 text-sm text-gray-600">
+          <div className="flex items-center gap-4 text-sm text-gray-800">
             <span>
               Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
               <span className="font-medium">{Math.min(endIndex, totalFilteredItems)}</span> of{' '}
@@ -1188,19 +1211,19 @@ export function ScopeTable() {
                 } else if (currentPage <= 4) {
                   // Show first 5 pages + ... + last page
                   if (i < 5) pageNumber = i + 1
-                  else if (i === 5) return <span key="ellipsis1" className="px-2 text-gray-400">...</span>
+                  else if (i === 5) return <span key="ellipsis1" className="px-2 text-gray-600">...</span>
                   else pageNumber = totalPages
                 } else if (currentPage >= totalPages - 3) {
                   // Show first page + ... + last 5 pages
                   if (i === 0) pageNumber = 1
-                  else if (i === 1) return <span key="ellipsis2" className="px-2 text-gray-400">...</span>
+                  else if (i === 1) return <span key="ellipsis2" className="px-2 text-gray-600">...</span>
                   else pageNumber = totalPages - (6 - i)
                 } else {
                   // Show first page + ... + current-1, current, current+1 + ... + last page
                   if (i === 0) pageNumber = 1
-                  else if (i === 1) return <span key="ellipsis3" className="px-2 text-gray-400">...</span>
+                  else if (i === 1) return <span key="ellipsis3" className="px-2 text-gray-600">...</span>
                   else if (i >= 2 && i <= 4) pageNumber = currentPage + (i - 3)
-                  else if (i === 5) return <span key="ellipsis4" className="px-2 text-gray-400">...</span>
+                  else if (i === 5) return <span key="ellipsis4" className="px-2 text-gray-600">...</span>
                   else pageNumber = totalPages
                 }
                 
@@ -1255,7 +1278,7 @@ export function ScopeTable() {
               </Badge>
             </DialogTitle>
             <DialogDescription>
-              Scope Item: {selectedItem?.id} • Project: {selectedItem?.project_name}
+              Scope Item: {selectedItem?.id} • Project: {selectedItem?.project_id}
             </DialogDescription>
           </DialogHeader>
           
@@ -1264,32 +1287,32 @@ export function ScopeTable() {
               {/* Basic Information */}
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="font-semibold text-sm text-gray-800 mb-3 flex items-center gap-2">
                     <ClipboardList className="h-4 w-4" />
                     Basic Information
                   </h4>
                   <div className="space-y-3 text-sm">
                     <div>
-                      <span className="text-gray-500">Description:</span>
+                      <span className="text-gray-700">Description:</span>
                       <p className="mt-1">{selectedItem.description}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Specification:</span>
+                      <span className="text-gray-700">Specification:</span>
                       <p className="mt-1">{selectedItem.specification}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="text-gray-500">Quantity:</span>
+                        <span className="text-gray-700">Quantity:</span>
                         <p className="font-medium">{selectedItem.quantity} {selectedItem.unit}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500">Unit Price:</span>
+                        <span className="text-gray-700">Unit Price:</span>
                         <p className="font-medium">{formatCurrency(selectedItem.unit_cost)}</p>
                       </div>
                     </div>
                     <div>
-                      <span className="text-gray-500">Notes:</span>
-                      <p className="mt-1 text-xs text-gray-600">{selectedItem.notes || 'No additional notes'}</p>
+                      <span className="text-gray-700">Notes:</span>
+                      <p className="mt-1 text-xs text-gray-800">{selectedItem.notes || 'No additional notes'}</p>
                     </div>
                   </div>
                 </div>
@@ -1298,31 +1321,31 @@ export function ScopeTable() {
               {/* Financial Analysis */}
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="font-semibold text-sm text-gray-800 mb-3 flex items-center gap-2">
                     <span className="text-blue-600">💰</span>
                     Financial Overview
                   </h4>
                   <div className="space-y-4 text-sm">
                     {/* Revenue */}
                     <div className="bg-blue-50 p-3 rounded-lg">
-                      <span className="text-gray-600 text-xs uppercase tracking-wide">Total Revenue</span>
+                      <span className="text-gray-800 text-xs uppercase tracking-wide">Total Revenue</span>
                       <p className="text-xl font-bold text-blue-700">{formatCurrency(selectedItem.total_cost)}</p>
                     </div>
                     
                     {/* Costs */}
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Initial Budget:</span>
+                        <span className="text-gray-700">Initial Budget:</span>
                         <span className="font-medium">{formatCurrency(selectedItem.initial_cost)}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Actual Cost:</span>
+                        <span className="text-gray-700">Actual Cost:</span>
                         <span className={`font-medium ${selectedItem.cost_variance > 0 ? 'text-red-600' : selectedItem.cost_variance < 0 ? 'text-green-600' : 'text-blue-600'}`}>
                           {formatCurrency(selectedItem.actual_cost)}
                         </span>
                       </div>
                       <div className="flex justify-between pt-2 border-t">
-                        <span className="text-gray-500">Cost Variance:</span>
+                        <span className="text-gray-700">Cost Variance:</span>
                         <div className="text-right">
                           <span className={`font-medium ${selectedItem.cost_variance > 0 ? 'text-red-600' : selectedItem.cost_variance < 0 ? 'text-green-600' : 'text-blue-600'}`}>
                             {selectedItem.cost_variance > 0 ? '+' : ''}{formatCurrency(selectedItem.cost_variance)}
@@ -1357,13 +1380,13 @@ export function ScopeTable() {
               {/* Subcontractor & Project Info */}
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-semibold text-sm text-gray-700 mb-3 flex items-center gap-2">
+                  <h4 className="font-semibold text-sm text-gray-800 mb-3 flex items-center gap-2">
                     <User className="h-4 w-4" />
                     Assignment Details
                   </h4>
                   <div className="space-y-4 text-sm">
                     {/* Subcontractor Info */}
-                    <div className="bg-gray-50 p-3 rounded-lg">
+                    <div className="bg-gray-100 p-3 rounded-lg">
                       <div className="flex items-start gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${getCategoryColor(selectedItem.category).split(' ')[0]} ${getCategoryColor(selectedItem.category).split(' ')[1]}`}>
                           {(selectedItem.subcontractor?.name || 'UN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
@@ -1373,7 +1396,7 @@ export function ScopeTable() {
                           <div className={`text-sm capitalize ${getCategoryColor(selectedItem.category).split(' ')[1]} font-medium`}>
                             {selectedItem.subcontractor?.trade || ''}
                           </div>
-                          <div className="text-xs text-gray-500 mt-2 space-y-1">
+                          <div className="text-xs text-gray-700 mt-2 space-y-1">
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3" />
                               {selectedItem.subcontractor?.contact_person || ''}
@@ -1390,11 +1413,11 @@ export function ScopeTable() {
                     {/* Timeline */}
                     <div className="space-y-2">
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Created:</span>
+                        <span className="text-gray-700">Created:</span>
                         <span className="text-xs">{new Date(selectedItem.created_at).toLocaleDateString()}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Last Updated:</span>
+                        <span className="text-gray-700">Last Updated:</span>
                         <span className="text-xs">{new Date(selectedItem.updated_at).toLocaleDateString()}</span>
                       </div>
                     </div>
@@ -1448,7 +1471,7 @@ export function ScopeTable() {
               {/* Basic Information Form */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Title</label>
+                  <label className="text-sm font-medium text-gray-800 mb-1 block">Title</label>
                   <Input 
                     defaultValue={selectedItem.title}
                     placeholder="Scope item title"
@@ -1456,7 +1479,7 @@ export function ScopeTable() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Category</label>
+                  <label className="text-sm font-medium text-gray-800 mb-1 block">Category</label>
                   <Select defaultValue={selectedItem.category}>
                     <SelectTrigger>
                       <SelectValue />
@@ -1474,7 +1497,7 @@ export function ScopeTable() {
               </div>
               
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Description</label>
+                <label className="text-sm font-medium text-gray-800 mb-1 block">Description</label>
                 <Input 
                   defaultValue={selectedItem.description}
                   placeholder="Detailed description of the scope item"
@@ -1483,7 +1506,7 @@ export function ScopeTable() {
               </div>
               
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Specification</label>
+                <label className="text-sm font-medium text-gray-800 mb-1 block">Specification</label>
                 <Input 
                   defaultValue={selectedItem.specification}
                   placeholder="Technical specifications and requirements"
@@ -1494,7 +1517,7 @@ export function ScopeTable() {
               {/* Quantity and Pricing */}
               <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Quantity</label>
+                  <label className="text-sm font-medium text-gray-800 mb-1 block">Quantity</label>
                   <Input 
                     type="number"
                     defaultValue={selectedItem.quantity}
@@ -1504,7 +1527,7 @@ export function ScopeTable() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Unit</label>
+                  <label className="text-sm font-medium text-gray-800 mb-1 block">Unit</label>
                   <Input 
                     defaultValue={selectedItem.unit}
                     placeholder="EA, SF, LF, etc."
@@ -1512,7 +1535,7 @@ export function ScopeTable() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Unit Price</label>
+                  <label className="text-sm font-medium text-gray-800 mb-1 block">Unit Price</label>
                   <Input 
                     type="number"
                     defaultValue={selectedItem.unit_cost}
@@ -1522,24 +1545,24 @@ export function ScopeTable() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1 block">Total Price</label>
-                  <div className="bg-gray-50 px-3 py-2 rounded-md text-sm font-semibold text-blue-700">
+                  <label className="text-sm font-medium text-gray-800 mb-1 block">Total Price</label>
+                  <div className="bg-gray-100 px-3 py-2 rounded-md text-sm font-semibold text-blue-700">
                     {formatCurrency(selectedItem.total_cost)}
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Auto-calculated</p>
+                  <p className="text-xs text-gray-700 mt-1">Auto-calculated</p>
                 </div>
               </div>
               
               {/* Cost Management (Admin Only) */}
               <div className="border-t pt-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-medium text-gray-800 mb-3 flex items-center gap-2">
                   <span className="text-orange-600">💰</span>
                   Cost Management
                   <Badge variant="secondary" className="text-xs">Admin Only</Badge>
                 </h4>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">Initial Budget</label>
+                    <label className="text-sm font-medium text-gray-800 mb-1 block">Initial Budget</label>
                     <Input 
                       type="number"
                       defaultValue={selectedItem.initial_cost}
@@ -1549,7 +1572,7 @@ export function ScopeTable() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1 block">Actual Cost</label>
+                    <label className="text-sm font-medium text-gray-800 mb-1 block">Actual Cost</label>
                     <Input 
                       type="number"
                       defaultValue={selectedItem.actual_cost}
@@ -1561,14 +1584,14 @@ export function ScopeTable() {
                 </div>
                 
                 {/* Profit Preview */}
-                <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div className="mt-4 p-3 bg-gray-100 rounded-lg">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-600">Estimated Profit:</span>
+                    <span className="text-gray-800">Estimated Profit:</span>
                     <div className="text-right">
                       <span className={`font-semibold ${calculateProfitPercentage(selectedItem.total_cost, selectedItem.actual_cost) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                         {formatCurrency(calculateProfit(selectedItem.total_cost, selectedItem.actual_cost))}
                       </span>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-700">
                         {calculateProfitPercentage(selectedItem.total_cost, selectedItem.actual_cost).toFixed(1)}% margin
                       </div>
                     </div>
@@ -1578,7 +1601,7 @@ export function ScopeTable() {
               
               {/* Assignment */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Assigned Subcontractor</label>
+                <label className="text-sm font-medium text-gray-800 mb-1 block">Assigned Subcontractor</label>
                 <Select defaultValue={selectedItem.subcontractor_id}>
                   <SelectTrigger>
                     <SelectValue />
@@ -1595,11 +1618,11 @@ export function ScopeTable() {
               
               {/* Notes */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Notes</label>
+                <label className="text-sm font-medium text-gray-800 mb-1 block">Notes</label>
                 <textarea 
                   defaultValue={selectedItem.notes || ''}
                   placeholder="Additional notes and comments..."
-                  className="w-full min-h-20 px-3 py-2 border border-gray-300 rounded-md text-sm resize-y"
+                  className="w-full min-h-20 px-3 py-2 border border-gray-400 rounded-md text-sm resize-y"
                   rows={3}
                 />
               </div>
@@ -1677,7 +1700,7 @@ export function ScopeTable() {
               
               {/* Confirmation Input */}
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                <label className="text-sm font-medium text-gray-800 mb-2 block">
                   To confirm deletion, type the scope item ID: <span className="font-mono text-red-600">{selectedItem.id}</span>
                 </label>
                 <Input 

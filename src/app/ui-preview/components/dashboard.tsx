@@ -53,7 +53,49 @@ export function Dashboard() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const router = useRouter()
 
-  // KPI data matching screenshot design
+  // TODO: Replace with real project context
+  // const { currentProjectId } = useProject()
+  const currentProjectId = 'all' // 'all' for company-wide dashboard
+
+  // TODO: Replace mock data with API integration
+  /*
+  const { data: kpiData, isLoading: kpiLoading, error: kpiError } = useQuery({
+    queryKey: ['dashboard-metrics', currentProjectId],
+    queryFn: () => fetch(`/api/dashboard/metrics?project_id=${currentProjectId}`)
+      .then(res => res.json()),
+    refetchInterval: 5 * 60 * 1000 // Refresh every 5 minutes
+  })
+
+  const { data: activityData, isLoading: activityLoading } = useQuery({
+    queryKey: ['dashboard-activity', currentProjectId],
+    queryFn: () => fetch(`/api/dashboard/activity?project_id=${currentProjectId}&limit=10`)
+      .then(res => res.json()),
+    refetchInterval: 30 * 1000 // Refresh every 30 seconds
+  })
+
+  const { data: projectsData, isLoading: projectsLoading } = useQuery({
+    queryKey: ['dashboard-projects', currentProjectId],
+    queryFn: () => fetch(`/api/projects?status=active&limit=5&sort=updated_at`)
+      .then(res => res.json())
+  })
+
+  const { data: tasksData, isLoading: tasksLoading } = useQuery({
+    queryKey: ['dashboard-critical-tasks'],
+    queryFn: () => fetch('/api/tasks/critical?limit=5')
+      .then(res => res.json())
+  })
+
+  if (kpiLoading || activityLoading || projectsLoading || tasksLoading) {
+    return <DashboardLoadingSkeleton />
+  }
+
+  const kpiCards = kpiData?.metrics || []
+  const recentActivity = activityData?.activities || []
+  const projects = projectsData?.projects || []
+  const criticalTasks = tasksData?.tasks || []
+  */
+
+  // KPI data matching screenshot design (MOCK DATA - REMOVE WHEN API CONNECTED)
   const kpiCards = [
     {
       title: 'Total Portfolio Value',
@@ -88,12 +130,12 @@ export function Dashboard() {
       description: 'Project completion rate',
       change: '14% completed',
       icon: Activity,
-      color: 'bg-gray-100 text-gray-700',
+      color: 'bg-gray-100 text-gray-800',
       trend: 'up'
     }
   ]
 
-  // Recent activity data
+  // Recent activity data (MOCK DATA - REMOVE WHEN API CONNECTED)
   const recentActivity = [
     {
       user: 'Yusuf Saglam',
@@ -129,7 +171,7 @@ export function Dashboard() {
     }
   ]
 
-  // Critical tasks
+  // Critical tasks (MOCK DATA - REMOVE WHEN API CONNECTED)
   const criticalTasks = [
     {
       title: 'Electrical Panel Review',
@@ -151,7 +193,7 @@ export function Dashboard() {
     }
   ]
 
-  // Projects data - using Turkish construction projects
+  // Projects data - using Turkish construction projects (MOCK DATA - REMOVE WHEN API CONNECTED)
   const projects = [
     {
       id: 'proj-001',
@@ -224,7 +266,7 @@ export function Dashboard() {
       in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-800 border-blue-200' },
       completed: { label: 'Completed', className: 'bg-green-100 text-green-800 border-green-200' },
       planning: { label: 'Planning', className: 'bg-orange-100 text-orange-800 border-orange-200' },
-      on_hold: { label: 'On Hold', className: 'bg-gray-100 text-gray-800 border-gray-200' }
+      on_hold: { label: 'On Hold', className: 'bg-gray-100 text-gray-800 border-gray-400' }
     }
     
     const cfg = config[status as keyof typeof config]
@@ -305,44 +347,41 @@ export function Dashboard() {
     .slice(0, 5) // Show only top 5 projects
 
   const handleProjectClick = (projectId: string) => {
-    // Navigate to UI Preview project workspace
+    // TODO: Navigate to real project workspace
+    // router.push(`/projects/${projectId}/workspace`)
+    
+    // TEMPORARY: Navigate to UI Preview project workspace
     router.push(`/ui-preview/projects/${projectId}`)
   }
 
   return (
-    <div className="space-y-8 bg-gray-50 min-h-full -m-6 p-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Welcome back! Here's your project overview.</p>
-      </div>
-
+    <div className="space-y-8 bg-gray-100 min-h-full -m-6 p-6">
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
         {kpiCards.map((kpi, index) => {
           const Icon = kpi.icon
           return (
-            <Card key={index} className="relative overflow-hidden bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
+            <Card key={index} className="relative overflow-hidden bg-white border border-gray-400 shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-sm font-medium text-muted-foreground">
                     {kpi.title}
                   </CardTitle>
-                  <div className={`rounded-xl p-3 ${kpi.color}`}>
-                    <Icon className="h-5 w-5" />
+                  <div className={`rounded-lg p-2 ${kpi.color}`}>
+                    <Icon className="h-4 w-4" />
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <div className="text-3xl font-bold mb-1">{kpi.value}</div>
-                <p className="text-sm text-muted-foreground mb-3">{kpi.description}</p>
-                <div className="flex items-center gap-2">
+                <div className="text-2xl font-bold mb-1">{kpi.value}</div>
+                <p className="text-xs text-muted-foreground mb-2">{kpi.description}</p>
+                <div className="flex items-center gap-1">
                   {kpi.trend === 'up' ? (
-                    <TrendingUp className="h-4 w-4 text-green-600" />
+                    <TrendingUp className="h-3 w-3 text-green-600" />
                   ) : (
-                    <TrendingDown className="h-4 w-4 text-red-600" />
+                    <TrendingDown className="h-3 w-3 text-red-600" />
                   )}
-                  <span className="text-sm font-medium text-muted-foreground">{kpi.change}</span>
+                  <span className="text-xs font-medium text-muted-foreground">{kpi.change}</span>
                 </div>
               </CardContent>
               {kpi.title !== 'Active Project Value' && (
@@ -357,7 +396,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
         {/* Projects Overview - Left Column (5/12) */}
         <div className="xl:col-span-5">
-          <Card className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow h-full">
+          <Card className="bg-white border border-gray-400 shadow-md hover:shadow-lg transition-shadow h-full">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -373,7 +412,7 @@ export function Dashboard() {
               {/* Condensed Projects List */}
               <div className="space-y-3">
                 {filteredAndSortedProjects.map((project) => (
-                  <div key={project.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all">
+                  <div key={project.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-400 hover:bg-gray-200 hover:border-gray-500 transition-all">
                     <div className="flex-1 min-w-0">
                       <Button
                         variant="ghost"
@@ -402,7 +441,7 @@ export function Dashboard() {
 
         {/* Recent Activity - Middle Column (4/12) */}
         <div className="xl:col-span-4">
-          <Card className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow h-full">
+          <Card className="bg-white border border-gray-400 shadow-md hover:shadow-lg transition-shadow h-full">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -416,7 +455,7 @@ export function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-3 p-3 rounded-lg border border-gray-100 hover:bg-gray-50 hover:border-gray-200 transition-all">
+                <div key={index} className="flex items-start gap-3 p-3 rounded-lg border border-gray-300 hover:bg-gray-200 hover:border-gray-400 transition-all">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="text-xs">
                       {activity.user.split(' ').map(n => n[0]).join('')}
@@ -445,7 +484,7 @@ export function Dashboard() {
 
         {/* Critical Tasks - Right Column (3/12) */}
         <div className="xl:col-span-3">
-          <Card className="bg-white border border-gray-200 shadow-md hover:shadow-lg transition-shadow h-full">
+          <Card className="bg-white border border-gray-400 shadow-md hover:shadow-lg transition-shadow h-full">
             <CardHeader className="pb-4">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <AlertTriangle className="h-5 w-5 text-orange-600" />
@@ -457,7 +496,7 @@ export function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {criticalTasks.map((task, index) => (
-                <div key={index} className="space-y-2 rounded-lg border border-gray-200 p-3 hover:bg-gray-50 hover:border-gray-300 transition-all">
+                <div key={index} className="space-y-2 rounded-lg border border-gray-400 p-3 hover:bg-gray-200 hover:border-gray-500 transition-all">
                   <div className="space-y-1">
                     <p className="text-sm font-medium leading-tight">{task.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{task.project}</p>

@@ -5,46 +5,46 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 0 0% 5.9%; /* gray-900 for AAA text contrast */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 5.9%; /* gray-900 for card text */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 0 0% 5.9%; /* gray-900 for popover text */
     --primary: 199 89% 48%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
+    --secondary: 0 0% 95.7%; /* gray-100 for secondary backgrounds */
+    --secondary-foreground: 0 0% 5.9%; /* gray-900 for secondary text */
+    --muted: 0 0% 95.7%; /* gray-100 for muted backgrounds */
+    --muted-foreground: 0 0% 35.3%; /* gray-600 for muted text */
+    --accent: 0 0% 95.7%; /* gray-100 for accent backgrounds */
+    --accent-foreground: 0 0% 5.9%; /* gray-900 for accent text */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
+    --border: 0 0% 60.8%; /* gray-400 for form borders */
+    --input: 0 0% 74.9%; /* gray-300 for input borders */
     --ring: 199 89% 48%;
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --background: 0 0% 5.9%; /* gray-900 for dark background */
+    --foreground: 0 0% 95.7%; /* gray-100 for dark text */
+    --card: 0 0% 11%; /* gray-800 for dark cards */
+    --card-foreground: 0 0% 95.7%; /* gray-100 for dark card text */
+    --popover: 0 0% 11%; /* gray-800 for dark popovers */
+    --popover-foreground: 0 0% 95.7%; /* gray-100 for dark popover text */
     --primary: 199 89% 48%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary-foreground: 0 0% 5.9%; /* gray-900 for primary text on dark */
+    --secondary: 0 0% 23.5%; /* gray-700 for dark secondary */
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
+    --muted: 0 0% 23.5%; /* gray-700 for dark muted */
+    --muted-foreground: 0 0% 47.8%; /* gray-500 for dark muted text */
+    --accent: 0 0% 23.5%; /* gray-700 for dark accent */
     --accent-foreground: 210 40% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 0 0% 35.3%; /* gray-600 for dark borders */
+    --input: 0 0% 35.3%; /* gray-600 for dark inputs */
     --ring: 199 89% 48%;
   }
 

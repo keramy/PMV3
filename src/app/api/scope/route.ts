@@ -11,6 +11,7 @@ import { createApiDatabase, ApiFilters } from '@/lib/api/database'
 import { createClient } from '@/lib/supabase/server'
 import type { ScopeListResponse } from '@/types/scope'
 import { SCOPE_PERMISSIONS } from '@/types/scope'
+import { hasPermission } from '@/lib/permissions'
 import { z } from 'zod'
 
 // Query validation schema
@@ -156,7 +157,7 @@ export const POST = apiMiddleware.validate(
       .eq('id', user.id)
       .single()
 
-    if (!profile?.permissions?.some((p: string) => p === SCOPE_PERMISSIONS.CREATE)) {
+    if (!profile || !hasPermission(profile.permissions, SCOPE_PERMISSIONS.CREATE)) {
       return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
       const db = createApiDatabase(user)
@@ -172,31 +173,14 @@ export const POST = apiMiddleware.validate(
         unit: validatedData.unit,
         unit_cost: validatedData.unit_cost,
         total_cost: validatedData.total_cost,
-        initial_cost: validatedData.initial_cost,
-        actual_cost: validatedData.actual_cost,
         start_date: validatedData.start_date,
         end_date: validatedData.end_date,
         priority: validatedData.priority,
         status: validatedData.status,
         assigned_to: validatedData.assigned_to,
-        subcontractor_id: validatedData.subcontractor_id,
         notes: validatedData.notes,
         created_by: user.id,
         completion_percentage: 0
-      }, {
-        select: `
-          *,
-          assigned_user:assigned_to(id, first_name, last_name, job_title),
-          created_by_user:created_by(first_name, last_name),
-          subcontractor:subcontractor_id(
-            id,
-            name,
-            trade,
-            contact_person,
-            phone,
-            email
-          )
-        `
       })
 
       return Response.json({

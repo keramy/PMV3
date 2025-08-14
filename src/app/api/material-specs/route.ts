@@ -131,7 +131,7 @@ export async function GET(request: NextRequest) {
     // Get statistics (separate query for better performance)
     const { data: statsData } = await supabase
       .from('material_specs')
-      .select('status, category, priority, total_cost, created_at, reviewed_by')
+      .select('status, category, priority, total_cost, created_at, reviewed_by, image_url')
       .eq('project_id', projectId)
 
     // Calculate statistics
@@ -216,6 +216,7 @@ export async function POST(request: NextRequest) {
         total_cost,
         supplier: formData.supplier,
         notes: formData.notes,
+        image_url: formData.image_url,  // NEW: Handle image URL
         project_id: new URL(request.url).searchParams.get('project_id'),
         created_by: user.id,
         status: 'pending',

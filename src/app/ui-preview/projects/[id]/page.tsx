@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ProjectSidebar } from './components/project-sidebar'
-import { ProjectHeader } from './components/project-header'
 import { ProjectTabs } from './components/project-tabs'
 import { ProjectOverview } from './components/project-overview'
 import { ProjectScope } from './components/project-scope'
 import { ProjectDrawings } from './components/project-drawings'
 import { ProjectMaterials } from './components/project-materials'
 import { ProjectTasks } from './components/project-tasks'
+import { ProjectBreadcrumb } from '@/components/ui/breadcrumb'
 
 interface ProjectWorkspacePageProps {
   params: Promise<{ id: string }>
@@ -74,15 +74,6 @@ export default function ProjectWorkspacePage({ params }: ProjectWorkspacePagePro
     return allProjects[id as keyof typeof allProjects] || allProjects['proj-001']
   }
 
-  const handleBackToMain = () => {
-    router.push('/ui-preview')
-    // Set the active view to projects in the parent component
-    if (typeof window !== 'undefined') {
-      const event = new CustomEvent('setUIPreviewActiveView', { detail: 'projects' })
-      window.dispatchEvent(event)
-    }
-  }
-
   const handleToggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed)
   }
@@ -107,36 +98,18 @@ export default function ProjectWorkspacePage({ params }: ProjectWorkspacePagePro
       <ProjectSidebar 
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={handleToggleSidebar}
-        onBackToMain={handleBackToMain}
-        projectName={projectData.name}
       />
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="border-b bg-background px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Formula PM</span>
-              <ChevronRight className="h-4 w-4" />
-              <span>Projects</span>
-              <ChevronRight className="h-4 w-4" />
-              <span className="font-medium text-foreground">
-                {projectData.name}
-              </span>
-            </div>
-            <Button variant="outline" size="sm" className="text-xs">
-              Project View
-            </Button>
-          </div>
+        {/* Header with Breadcrumb */}
+        <header className="border-b bg-background px-6 py-4">
+          <ProjectBreadcrumb projectName={projectData.name} />
         </header>
         
         {/* Content Area */}
         <main className="flex-1 overflow-auto">
-          <div className="space-y-6 bg-gray-50 min-h-full p-6">
-            {/* Project Header */}
-            <ProjectHeader project={projectData} />
-
+          <div className="space-y-6 bg-gray-100 min-h-full p-6">
             {/* Project Tabs */}
             <ProjectTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
