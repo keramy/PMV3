@@ -22,6 +22,7 @@ export type PermissionCategory =
 // Granular permissions - Admin configurable
 export type Permission =
   // Project permissions
+  | 'view_projects'
   | 'create_projects'
   | 'edit_projects' 
   | 'delete_projects'
@@ -41,7 +42,7 @@ export type Permission =
   | 'upload_drawings'
   | 'internal_review_drawings'
   | 'client_review_drawings'
-  | 'approve_drawings'
+  | 'approve_shop_drawings'
   
   // Material specifications
   | 'view_materials'

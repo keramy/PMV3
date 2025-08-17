@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { Sidebar } from './components/sidebar'
 import { Dashboard } from './components/dashboard'
 import { ProjectsTable } from './components/projects-table'
-import { ShopDrawingsTable } from './components/shop-drawings-table'
+import { ShopDrawingsTable } from '@/components/shop-drawings/ShopDrawingsTable'
 import { MaterialSpecsTable } from './components/material-specs-table'
 import { TasksList } from './components/tasks-list'
 import { ScopeTable } from './components/scope-table'
@@ -67,7 +67,7 @@ export default function UIPreviewPage() {
           <div className="w-full">
             {activeView === 'dashboard' && <Dashboard />}
             {activeView === 'projects' && <ProjectsTable />}
-            {activeView === 'shop-drawings' && <ShopDrawingsTable />}
+            {activeView === 'shop-drawings' && <ShopDrawingsTable projectId="ui-preview" />}
             {activeView === 'material-specs' && <MaterialSpecsTable />}
             {activeView === 'tasks' && <TasksList />}
             {activeView === 'scope' && <ScopeTable />}

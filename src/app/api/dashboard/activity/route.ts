@@ -1,9 +1,10 @@
 /**
- * Activity Feed API Route
- * Returns recent construction activity for dashboard feed
+ * Activity Feed API Route - Real Database Connection
+ * Returns recent construction activity for dashboard feed from actual database
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/client-fixed'
 import type { ActivityFeedItem } from '@/hooks/useDashboardData'
 
 export async function GET(request: NextRequest) {
@@ -19,133 +20,50 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Mock activity feed data
-    const activities: ActivityFeedItem[] = [
-      {
-        id: '1',
-        type: 'task_completed',
-        project_id: '1',
-        project_name: 'Downtown Office Complex',
-        title: 'Electrical rough-in completed - Floor 15',
-        description: 'All electrical rough-in work for the 15th floor has been completed and inspected.',
-        user_name: 'Mike Rodriguez',
-        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
-        priority: 'medium'
-      },
-      {
-        id: '2',
-        type: 'drawing_approved',
-        project_id: '2',
-        project_name: 'Residential Tower Phase 2',
-        title: 'Shop drawing approved - HVAC System Layout',
-        description: 'HVAC system layout drawings for floors 10-15 have been reviewed and approved.',
-        user_name: 'Sarah Johnson',
-        timestamp: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
-        priority: 'high'
-      },
-      {
-        id: '3',
-        type: 'milestone_reached',
-        project_id: '3',
-        project_name: 'Industrial Warehouse',
-        title: 'Structural completion milestone reached',
-        description: 'All structural work has been completed ahead of schedule.',
-        user_name: 'David Chen',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
-        priority: 'high'
-      },
-      {
-        id: '4',
-        type: 'change_order',
-        project_id: '4',
-        project_name: 'Shopping Center Renovation',
-        title: 'Change order approved - Additional HVAC work',
-        description: 'Change order #CO-2024-08 for additional HVAC upgrades approved by client.',
-        user_name: 'Lisa Martinez',
-        timestamp: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(), // 3 hours ago
-        priority: 'critical'
-      },
-      {
-        id: '5',
-        type: 'rfi_submitted',
-        project_id: '5',
-        project_name: 'Hospital Expansion',
-        title: 'RFI submitted - Foundation specifications',
-        description: 'RFI #RFI-2024-045 regarding foundation waterproofing specifications submitted.',
-        user_name: 'Tom Wilson',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(), // 4 hours ago
-        priority: 'medium'
-      },
-      {
-        id: '6',
-        type: 'task_completed',
-        project_id: '6',
-        project_name: 'School Construction',
-        title: 'Plumbing inspection passed',
-        description: 'Final plumbing inspection for the gymnasium wing has passed.',
-        user_name: 'Amanda Davis',
-        timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), // 5 hours ago
-        priority: 'medium'
-      },
-      {
-        id: '7',
-        type: 'drawing_approved',
-        project_id: '1',
-        project_name: 'Downtown Office Complex',
-        title: 'Curtain wall shop drawings approved',
-        description: 'Shop drawings for the north facade curtain wall system have been approved.',
-        user_name: 'Robert Kim',
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(), // 6 hours ago
-        priority: 'high'
-      },
-      {
-        id: '8',
-        type: 'task_completed',
-        project_id: '2',
-        project_name: 'Residential Tower Phase 2',
-        title: 'Concrete pour completed - Level 8',
-        description: 'Concrete pour for Level 8 slab completed successfully.',
-        user_name: 'Carlos Mendoza',
-        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(), // 8 hours ago
-        priority: 'medium'
-      },
-      {
-        id: '9',
-        type: 'milestone_reached',
-        project_id: '4',
-        project_name: 'Shopping Center Renovation',
-        title: 'Demolition phase completed',
-        description: 'All demolition work for Phase 1 renovation has been completed.',
-        user_name: 'Jennifer Lee',
-        timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        priority: 'medium'
-      },
-      {
-        id: '10',
-        type: 'rfi_submitted',
-        project_id: '3',
-        project_name: 'Industrial Warehouse',
-        title: 'RFI submitted - Fire suppression layout',
-        description: 'RFI regarding fire suppression system layout for high-bay storage areas.',
-        user_name: 'Kevin Brown',
-        timestamp: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(), // 1 day ago
-        priority: 'high'
-      }
-    ]
+    console.log('🔍 Activity API - Fetching real data for user:', userId)
 
-    // Apply limit
-    const limitedActivities = activities.slice(0, limit)
+    const supabase = createClient()
 
-    // Simulate network delay for development
-    if (process.env.NODE_ENV === 'development') {
-      await new Promise(resolve => setTimeout(resolve, 200))
+    // Get recent activity from activity_logs table
+    const { data: activities, error } = await supabase
+      .from('activity_logs')
+      .select(`
+        *,
+        user_profiles!activity_logs_user_id_fkey(first_name, last_name),
+        projects!activity_logs_project_id_fkey(name)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+
+    if (error) {
+      console.error('🔍 Activity API - Database error:', error)
+      // If no activity_logs data, return empty array instead of mock data
+      return NextResponse.json([])
     }
 
-    return NextResponse.json(limitedActivities)
+    console.log('🔍 Activity API - Found activities:', activities?.length || 0)
+
+    // Transform database records to ActivityFeedItem format
+    const activityFeed: ActivityFeedItem[] = (activities || []).map(activity => ({
+      id: activity.id,
+      type: activity.action as any, // Maps to activity type
+      project_id: activity.project_id || '',
+      project_name: activity.projects?.name || 'Unknown Project',
+      title: activity.entity_type + ' ' + activity.action,
+      description: activity.details?.toString() || 'No description available',
+      user_name: activity.user_profiles 
+        ? [activity.user_profiles.first_name, activity.user_profiles.last_name].filter(Boolean).join(' ') || 'Unknown User'
+        : 'System',
+      timestamp: activity.created_at || new Date().toISOString(),
+      priority: 'medium' // Default priority, could be enhanced based on activity type
+    }))
+
+    return NextResponse.json(activityFeed)
+
   } catch (error) {
-    console.error('Activity feed API error:', error)
+    console.error('🔍 Activity API - Unexpected error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch activity feed' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

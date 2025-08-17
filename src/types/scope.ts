@@ -73,7 +73,7 @@ export interface ScopeItemFormData {
 }
 
 export interface ScopeItemUpdateData extends Partial<ScopeItemFormData> {
-  completion_percentage?: number
+  // Update data for existing scope items
 }
 
 export interface BulkScopeUpdate {
@@ -102,10 +102,7 @@ export interface ScopeFilters {
     max?: number
   }
   overdue_only?: boolean
-  completion_range?: {
-    min?: number
-    max?: number
-  }
+  // completion_range removed - not using completion percentage
 }
 
 export interface ScopeListParams {
@@ -194,7 +191,7 @@ export interface ScopeStatistics {
     in_progress: number
     not_started: number
     blocked: number
-    completion_percentage: number
+    // completion_percentage calculated as completed/total on frontend
     total_cost: number
   }>
   by_status: Record<ScopeStatus, number>
@@ -228,8 +225,8 @@ export interface ScopeProgressSummary {
     assigned_to?: string
   }>
   category_progress: Record<ScopeCategory, {
-    completion_percentage: number
     items_count: number
+    completed_items: number
     total_cost: number
   }>
 }
@@ -357,7 +354,7 @@ export const DEFAULT_EXCEL_COLUMNS: ExcelImportColumn[] = [
 // ============================================================================
 
 export type ScopeItemSummary = Pick<ScopeItem, 
-  'id' | 'title' | 'category' | 'status' | 'completion_percentage' | 'assigned_to' | 'total_cost'
+  'id' | 'title' | 'category' | 'status' | 'assigned_to' | 'total_cost'
 >
 
 export type ScopeItemWithRelations = ScopeItem & {

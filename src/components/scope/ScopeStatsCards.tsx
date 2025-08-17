@@ -6,7 +6,6 @@
 'use client'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { SCOPE_CATEGORIES } from '@/types/scope'
 import type { ScopeStatistics } from '@/types/scope'
@@ -73,11 +72,10 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
                   <span className="text-gray-700">
                     {SCOPE_CATEGORIES[category as keyof typeof SCOPE_CATEGORIES]?.label || category}
                   </span>
-                  <span className={`font-medium ${getCompletionColor(stats.completion_percentage)}`}>
-                    {stats.completion_percentage}%
+                  <span className="font-medium text-gray-900">
+                    {stats.completed}/{stats.total}
                   </span>
                 </div>
-                <Progress value={stats.completion_percentage} className="h-1" />
               </div>
             ))}
           </div>
@@ -254,8 +252,8 @@ export function ScopeStatsCards({ statistics }: ScopeStatsCardsProps) {
                         <span className="text-xs text-muted-foreground">
                           {stats.total} items
                         </span>
-                        <span className={`text-sm font-medium ${getCompletionColor(stats.completion_percentage)}`}>
-                          {stats.completion_percentage}%
+                        <span className="text-sm font-medium text-gray-900">
+                          {stats.completed}/{stats.total}
                         </span>
                       </div>
                     </div>

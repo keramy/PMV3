@@ -38,12 +38,16 @@
       "Bash(npx tsc:*)",
       "Bash(taskkill:*)",
       "mcp__filesystem__read_file",
-      "mcp__filesystem__write_file"
+      "mcp__filesystem__write_file",
+      "Bash(npx playwright install:*)",
+      "WebFetch(domain:supabase.com)",
+      "WebSearch"
     ],
     "deny": []
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
     "supabase"
-  ]
+  ],
+  "outputStyle": "Explanatory"
 }

@@ -214,16 +214,7 @@ export function ScopeItemsList({
                   )}
                 </div>
 
-                {/* Progress Bar */}
-                {item.completion_percentage !== undefined && item.completion_percentage > 0 && (
-                  <div className="space-y-1">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="font-medium">{item.completion_percentage}%</span>
-                    </div>
-                    <Progress value={item.completion_percentage} className="h-2" />
-                  </div>
-                )}
+                {/* Progress removed - not tracked for scope items */}
 
                 {/* Notes */}
                 {item.notes && (

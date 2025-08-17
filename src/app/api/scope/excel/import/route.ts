@@ -196,7 +196,6 @@ export async function POST(request: NextRequest) {
             assigned_to: item.assigned_to,
             notes: item.notes,
             created_by: user.id,
-            completion_percentage: 0
           })
           .select()
           .single()

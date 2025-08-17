@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,137 +36,29 @@ import {
   Edit,
   Trash2
 } from 'lucide-react'
+import { EmptyProjects } from '@/components/ui/empty-state'
+import { ProjectCreateDialog } from '@/components/projects/ProjectCreateDialog'
 
 export default function ProjectsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortField, setSortField] = useState<string>('')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
-  // Mock projects data - same as dashboard but with more projects
-  const allProjects = [
-    {
-      id: 'proj-001',
-      name: 'Akbank Head Office Renovation',
-      client: 'Akbank',
-      status: 'in_progress',
-      budget: 2800000,
-      spent: 1820000,
-      start_date: '2025-01-15',
-      end_date: '2025-06-30',
-      progress_percentage: 65,
-      project_manager: 'Mehmet Yılmaz'
-    },
-    {
-      id: 'proj-002', 
-      name: 'Garanti BBVA Tech Center MEP',
-      client: 'Garanti BBVA',
-      status: 'in_progress',
-      budget: 4200000,
-      spent: 1890000,
-      start_date: '2024-11-01',
-      end_date: '2025-08-15',
-      progress_percentage: 45,
-      project_manager: 'Ayşe Demir'
-    },
-    {
-      id: 'proj-003',
-      name: 'Marina Bay Tower Construction',
-      client: 'Marina Development',
-      status: 'planning',
-      budget: 8500000,
-      spent: 0,
-      start_date: '2025-03-01',
-      end_date: '2026-01-15',
-      progress_percentage: 15,
-      project_manager: 'Can Özkan'
-    },
-    {
-      id: 'proj-004',
-      name: 'Tech Hub Renovation Phase 2',
-      client: 'Tech Hub Istanbul',
-      status: 'completed',
-      budget: 1250000,
-      spent: 1225000,
-      start_date: '2024-08-01',
-      end_date: '2024-12-20',
-      progress_percentage: 100,
-      project_manager: 'Zeynep Kaya'
-    },
-    {
-      id: 'proj-005',
-      name: 'Sabanci Center Office Fit-out',
-      client: 'Sabanci Holding',
-      status: 'on_hold',
-      budget: 950000,
-      spent: 285000,
-      start_date: '2025-02-01',
-      end_date: '2025-07-10',
-      progress_percentage: 30,
-      project_manager: 'Emre Şahin'
-    },
-    {
-      id: 'proj-006',
-      name: 'Formula HQ Showroom',
-      client: 'Formula PM',
-      status: 'in_progress',
-      budget: 680000,
-      spent: 510000,
-      start_date: '2025-01-10',
-      end_date: '2025-04-25',
-      progress_percentage: 75,
-      project_manager: 'Selin Aydın'
-    },
-    {
-      id: 'proj-007',
-      name: 'Yapı Kredi Bank Branch Network',
-      client: 'Yapı Kredi',
-      status: 'planning',
-      budget: 3200000,
-      spent: 0,
-      start_date: '2025-04-01',
-      end_date: '2025-11-30',
-      progress_percentage: 8,
-      project_manager: 'Burak Yıldız'
-    },
-    {
-      id: 'proj-008',
-      name: 'Zorlu Center Retail Expansion',
-      client: 'Zorlu Holding',
-      status: 'in_progress',
-      budget: 5600000,
-      spent: 2240000,
-      start_date: '2024-10-15',
-      end_date: '2025-05-20',
-      progress_percentage: 40,
-      project_manager: 'Derya Arslan'
-    },
-    {
-      id: 'proj-009',
-      name: 'Koç University Lab Building',
-      client: 'Koç University',
-      status: 'in_progress',
-      budget: 7200000,
-      spent: 3600000,
-      start_date: '2024-09-01',
-      end_date: '2025-12-15',
-      progress_percentage: 50,
-      project_manager: 'Kerem Özdemir'
-    },
-    {
-      id: 'proj-010',
-      name: 'Turkcell Data Center Cooling',
-      client: 'Turkcell',
-      status: 'completed',
-      budget: 2100000,
-      spent: 2050000,
-      start_date: '2024-06-01',
-      end_date: '2024-11-30',
-      progress_percentage: 100,
-      project_manager: 'Gül Yılmaz'
+  // Check for create query parameter
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      setIsCreateDialogOpen(true)
+      // Remove the query parameter
+      router.replace('/projects')
     }
-  ]
+  }, [searchParams, router])
+
+  // Real projects data - will be fetched from API
+  const allProjects: any[] = []
 
   // Utility functions
   const getStatusBadge = (status: string) => {
@@ -256,9 +148,18 @@ export default function ProjectsPage() {
     router.push(`/projects/${projectId}`)
   }
 
+  const handleCreateProject = () => {
+    setIsCreateDialogOpen(true)
+  }
+
+  const handleProjectCreated = (project: any) => {
+    // Refresh the page to show new project
+    window.location.reload()
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 -m-6 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6 bg-gray-100 min-h-full -m-6 p-6">
+      <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
@@ -267,7 +168,7 @@ export default function ProjectsPage() {
               Manage your construction projects from start to finish
             </p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleCreateProject}>
             <Plus className="mr-2 h-4 w-4" />
             New Project
           </Button>
@@ -495,18 +396,19 @@ export default function ProjectsPage() {
                 </TableBody>
               </Table>
               {filteredAndSortedProjects.length === 0 && (
-                <div className="text-center py-12">
-                  <Building2 className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">No projects found</h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Try adjusting your search or filter to find what you're looking for.
-                  </p>
-                </div>
+                <EmptyProjects onCreateProject={handleCreateProject} />
               )}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Project Create Dialog */}
+      <ProjectCreateDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onProjectCreated={handleProjectCreated}
+      />
     </div>
   )
 }

@@ -104,7 +104,7 @@ interface ScopeItemWithSubcontractor {
   priority: string | null
   start_date: string | null
   end_date: string | null
-  completion_percentage: number | null
+  // completion_percentage removed - not tracked for scope items
   created_by: string | null
   created_at: string | null
   updated_at: string | null
@@ -213,7 +213,6 @@ export function ScopeTable() {
       priority: 'high',
       start_date: '2024-01-15',
       end_date: '2024-02-15',
-      completion_percentage: 45,
       created_by: 'user-002',
       created_at: '2024-01-15T10:00:00Z',
       updated_at: '2024-01-15T10:00:00Z'

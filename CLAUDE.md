@@ -10,6 +10,20 @@ Formula PM V3 is a **complete rebuild** of v2 focusing on:
 - **CONSTRUCTION-FOCUSED** - Built for real construction workflows
 - **MOBILE-FIRST** - Field workers are primary users
 
+## ⚠️ **CRITICAL: DATABASE STATE MANAGEMENT**
+
+### **NEVER ASSUME DATABASE SCHEMA FROM MIGRATION FILES**
+**ALWAYS use Supabase MCP to check actual database state before making changes.**
+
+**Key Learnings:**
+- ✅ Database has been **manually modified** beyond migrations
+- ✅ `actual_cost` column EXISTS in scope_items table (don't try to remove it)
+- ✅ `start_date`, `end_date`, `priority` columns EXIST in scope_items
+- ✅ Use `mcp__supabase__generate_typescript_types` to get current schema
+- ❌ Don't infer schema from migration files alone
+
+**When in doubt**: "Check database with supabase mcp if you want to see what's on db. You cannot decide what's there by looking at migrations."
+
 ## ✅ COMPLETED FOUNDATION & SIMPLIFIED WORKFLOWS (Phases 1-2)
 
 ### 🎉 Foundation Complete (Tasks 1-9.6) - SOLID! 
@@ -74,6 +88,22 @@ Formula PM V3 is a **complete rebuild** of v2 focusing on:
 - `approved` - Client approved (✅ Complete)
 - `rejected` - Client rejected (🔵 Our turn)
 
+**Responsibility Field Options:**
+- `internal_action` - Internal team action required
+- `client_review` - Client review in progress  
+- `completed` - Workflow completed
+
+**Valid Categories ONLY:**
+- `construction` - General construction drawings
+- `millwork` - Custom millwork/cabinetry
+- `electrical` - Electrical systems
+- `mechanical` - HVAC/mechanical systems
+- `plumbing` - Plumbing systems
+- `hvac` - Heating, ventilation, air conditioning
+
+**❌ Invalid Categories (removed):**
+- ~~architectural~~ ~~structural~~ ~~fire_protection~~ ~~technology~~ ~~specialty~~
+
 **Key Benefits:**
 - Always know "whose turn" it is
 - Color-coded responsibility (Blue=Ours, Orange=Client, Green=Complete)
@@ -83,7 +113,8 @@ Formula PM V3 is a **complete rebuild** of v2 focusing on:
 **Files Implemented:**
 - `src/types/shop-drawings.ts` - Complete type system with utilities
 - `src/app/api/shop-drawings/route.ts` - Simplified API with turn-based statistics
-- `src/components/shop-drawings/` - Updated UI components for new workflow
+- `src/app/ui-preview/components/shop-drawings-table.tsx` - Single consolidated component
+- Duplicate components removed and imports updated
 - All TypeScript errors resolved, tests passing
 
 ### 📋 Material Specs - PM Only Approval ✅ COMPLETE
@@ -119,12 +150,19 @@ Formula PM V3 is a **complete rebuild** of v2 focusing on:
 
 **Database-Aligned Structure:**
 - **Table Columns**: id, project_id, title, description, category, specification, quantity, unit, unit_cost, total_cost, assigned_to, notes
-- **Status Field Removed**: Simplified PM workflow without time-consuming status tracking
+- **Additional Columns**: actual_cost, cost_variance, cost_variance_percentage, start_date, end_date, priority, subcontractor_id
+- **Completion Tracking**: ❌ NO `completion_percentage` for scope items
+- **Project Tracking**: ✅ Projects STILL have `progress_percentage`
 - **Proper Types**: Full TypeScript alignment with actual database schema
+
+**Progress Display Changes:**
+- **Scope Items**: Show completed/total counts ONLY (no progress bars)
+- **Projects**: Still show percentage-based progress tracking
+- **UI Pattern**: Text counts like "5/10 completed" instead of progress bars
 
 **Revolutionary Expandable Row Design:**
 - **Main Table (Always Visible)**: ID, Title, Category, Quantity, Unit, Unit Price, Total Cost, Assigned To, Actions
-- **Expandable Details**: Project, Description, Specification, Cost Breakdown, Notes
+- **Expandable Details**: Project, Description, Specification, Cost Breakdown, Notes, Timeline (start/end dates)
 - **No Horizontal Scrolling**: All essential data fits on screen without scrolling
 
 **Advanced Multi-Select Filtering System:**
@@ -138,8 +176,9 @@ Formula PM V3 is a **complete rebuild** of v2 focusing on:
 - ✅ **Supplier Analysis** - "Show me what John Smith is working on"
 - ✅ **Trade Filtering** - "Show me all electrical work"
 - ✅ **Cost Visibility** - Quantity, Unit Price, Total always visible
+- ✅ **Timeline Tracking** - Start/end dates for scope items
 - ✅ **Mobile Optimized** - No horizontal scrolling, touch-friendly
-- ✅ **Streamlined Workflow** - No status management overhead
+- ✅ **Streamlined Workflow** - Simple completed/total counts instead of percentages
 
 **Files Updated:**
 - `src/app/ui-preview/components/scope-table.tsx` - Complete redesign with database alignment
@@ -455,15 +494,62 @@ Filesystem operations → Test artifact management
 - **External Integration**: Web fetching + API testing + Error handling validation
 - **Production Issues**: PostgreSQL diagnostics + Supabase logs + GitHub issue creation
 
+## 🎯 **COMPONENT ARCHITECTURE & CONSOLIDATION ✅ COMPLETE (August 2025)**
+
+### **Single Source of Truth: UI Preview Components**
+**Problem Solved**: Duplicate components causing TypeScript errors and maintenance overhead
+
+**Component Consolidation Rules:**
+- ✅ **UI Preview is Source**: `/src/app/ui-preview/components/` contains the canonical components
+- ✅ **Remove Duplicates**: Delete outdated versions in `/src/components/tables/` and `/src/components/[domain]/`
+- ✅ **Update Imports**: All imports should point to UI Preview components
+- ✅ **Proper Interfaces**: UI Preview components have complete hook integrations
+
+**Shop Drawings Consolidation Example:**
+- ❌ **REMOVED**: `src/components/shop-drawings/ShopDrawingsTable.tsx` (no hooks)
+- ❌ **REMOVED**: `src/components/tables/shop-drawings-table.tsx` (commented hooks)
+- ✅ **CANONICAL**: `src/app/ui-preview/components/shop-drawings-table.tsx` (active hooks)
+- ✅ **UPDATED**: All imports now point to UI Preview version
+
+**Component Identification Process:**
+1. Check which version has active hook imports (not commented)
+2. Verify which version is used in UI Preview system
+3. Remove versions with TODO comments or no hook integration
+4. Update all import statements to point to canonical version
+
+**Files Consolidated:**
+- Shop Drawings Table: 3 versions → 1 canonical version
+- All import references updated to UI Preview components
+- TypeScript compilation errors eliminated
+
+## 🔧 **TYPESCRIPT TYPE GENERATION WORKFLOW**
+
+### **Use Supabase MCP for Type Generation**
+**NEVER manually create database types - always generate from actual database**
+
+**Correct Workflow:**
+1. **Generate Types**: Use `mcp__supabase__generate_typescript_types`
+2. **Update File**: Replace content in `src/types/database.generated.ts`
+3. **Import**: Use generated types in application code
+4. **Verify**: Run `npm run type-check` to validate
+
+**Type Files:**
+- `src/types/database.generated.ts` - Auto-generated from Supabase (CANONICAL)
+- `src/types/database.ts` - Manual type extensions and utilities
+- Never manually edit generated types file
+
 ## 💡 Key Reminders for Continued Development
 
-1. **Reference v2 patterns**: Use `formulapmv3copiedfromv2/` for business logic patterns
-2. **Maintain simplicity**: Keep functions under 50 lines
-3. **Permission-first**: Every UI element checks permissions
-4. **Mobile-ready**: Test on tablets, optimize for touch
-5. **Performance**: Maintain <500ms navigation target
-6. **Construction focus**: Build for real construction workflows
-7. **MCP Integration**: Use appropriate MCP tools for each development phase
+1. **Check Database First**: Use Supabase MCP to verify actual schema before making assumptions
+2. **UI Preview is Source**: Always use UI Preview components as canonical versions
+3. **Reference v2 patterns**: Use `formulapmv3copiedfromv2/` for business logic patterns only
+4. **Maintain simplicity**: Keep functions under 50 lines
+5. **Permission-first**: Every UI element checks permissions
+6. **Mobile-ready**: Test on tablets, optimize for touch
+7. **Performance**: Maintain <500ms navigation target
+8. **Construction focus**: Build for real construction workflows
+9. **MCP Integration**: Use appropriate MCP tools for each development phase
+10. **No Comments**: Don't add code comments unless explicitly requested
 
 ## 🚀 Ready to Continue Development
 
@@ -532,31 +618,49 @@ Filesystem operations → Test artifact management
 
 **Development Environment Ready:**
 - Server: `npm run dev` (Port 3002) ✅
-- Testing: `npm test` (85/90 tests passing) ✅
-- Build: `npm run build` (Error-free compilation) ✅
-- TypeScript: `npm run type-check` (100% type safety) ✅
+- Testing: `npm test` (85/90 tests passing) ✅  
+- Build: `npm run build` (Has TypeScript errors - see Known Issues) ⚠️
+- TypeScript: `npm run type-check` (Multiple errors remaining) ⚠️
 - Branding: Professional Formula PM identity system ✅
 
 ---
 
 **Last Updated**: August 2025  
-**Phase**: Professional Branding System Complete ✅ + Gray Palette System ✅ + Foundation (Tasks 1-13) ✅  
+**Phase**: Component Consolidation & Database Alignment Complete ✅  
 **Status**: App Running Successfully at http://localhost:3002 with Professional Branding  
-**Next**: Material Specs API & Advanced Features (Tasks 14-21) 🚧
+**Next**: Resolve remaining TypeScript errors, then Material Specs API & Advanced Features (Tasks 14-21) 🚧
 
 ---
 
-## 🚀 CURRENT STATUS - AUTHENTICATION FIXED & READY FOR DEVELOPMENT
+## 🚀 CURRENT STATUS - POST CONSOLIDATION & TYPE FIXES
+
+**Component Architecture**: ✅ **CONSOLIDATED**
+- ✅ Shop drawing duplicates removed and consolidated
+- ✅ Single source of truth: UI Preview components
+- ✅ All imports updated to canonical components
+- ✅ Component-related TypeScript errors resolved
+
+**Database Alignment**: ✅ **VERIFIED**
+- ✅ Actual database schema documented and verified
+- ✅ Scope item completion tracking corrected (no percentages)
+- ✅ Shop drawing categories corrected (6 valid categories only)
+- ✅ Type generation workflow established
 
 **Authentication System**: ✅ **FULLY OPERATIONAL**
 - ✅ Session management working properly
 - ✅ Automatic token refresh implemented  
-- ✅ TypeScript compilation 100% successful
 - ✅ No authentication errors in Supabase logs
 - ✅ Debug tools available at `/auth-debug`
 
-**Development Server**: ✅ **RUNNING** at http://localhost:3000
-**Build Status**: ✅ **SUCCESS** - Zero compilation errors
-**Type Safety**: ✅ **MAINTAINED** - No `as any` escape hatches
+**Development Server**: ✅ **RUNNING** at http://localhost:3002
+**Build Status**: ⚠️ **PARTIAL** - Shop drawing errors fixed, other TypeScript errors remain
+**Type Safety**: ⚠️ **IN PROGRESS** - Component consolidation complete, other type issues remain
 
-Formula PM V3 is now ready for continued feature development with a robust, secure authentication foundation.
+### 📋 **Known Remaining TypeScript Issues:**
+- Scope API unit type string assignments 
+- Task comment interface mismatches
+- Validation middleware type issues
+- Permission array type assignments
+- Mock user data interface mismatches
+
+Formula PM V3 component architecture is now clean and consolidated. Ready for continued development once remaining type issues are resolved.

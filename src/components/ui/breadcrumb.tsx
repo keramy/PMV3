@@ -76,13 +76,13 @@ export function ProjectBreadcrumb({
     {
       label: "Dashboard",
       onClick: () => {
-        window.location.href = '/ui-preview?view=dashboard'
+        window.location.href = '/dashboard'
       }
     },
     {
       label: "Projects",
       onClick: () => {
-        window.location.href = '/ui-preview?view=projects'
+        window.location.href = '/dashboard'
       }
     },
     {

@@ -21,7 +21,7 @@ const logger = createLogger('shop-drawings-api')
 
 // Query validation schema
 const shopDrawingQuerySchema = z.object({
-  project_id: z.string(),
+  project_id: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
   category: z.string().optional(),
@@ -51,9 +51,13 @@ export const GET = apiMiddleware.permissions(
 
     // Build filters
     const filters = [
-      ApiFilters.inProject(params.project_id),
       ApiFilters.activeItems()
     ]
+    
+    // Only filter by project if not 'all'
+    if (params.project_id && params.project_id !== 'all') {
+      filters.push(ApiFilters.inProject(params.project_id))
+    }
 
     if (params.category && params.category !== 'all') {
       filters.push((query: any) => query.eq('category', params.category))
@@ -100,9 +104,14 @@ export const GET = apiMiddleware.permissions(
     })
 
     // Get statistics for the project
+    const statsFilters = [ApiFilters.activeItems()]
+    if (params.project_id && params.project_id !== 'all') {
+      statsFilters.push(ApiFilters.inProject(params.project_id))
+    }
+    
     const statsResult = await db.findMany('shop_drawings', {
       select: 'status, category, priority, created_at, due_date, submitted_to_client_date, client_response_date',
-      filters: [ApiFilters.inProject(params.project_id)]
+      filters: statsFilters
     })
 
     const statistics = calculateShopDrawingStatistics(statsResult.data || [])

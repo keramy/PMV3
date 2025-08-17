@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -204,6 +204,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           id: string
+          image_url: string | null
           manufacturer: string | null
           model: string | null
           name: string
@@ -229,6 +230,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          image_url?: string | null
           manufacturer?: string | null
           model?: string | null
           name: string
@@ -254,6 +256,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          image_url?: string | null
           manufacturer?: string | null
           model?: string | null
           name?: string
@@ -712,72 +715,91 @@ export type Database = {
       }
       scope_items: {
         Row: {
+          actual_cost: number | null
           assigned_to: string | null
           category: string | null
-          completion_percentage: number | null
+          cost_variance: number | null
+          cost_variance_percentage: number | null
           created_at: string | null
           created_by: string | null
           description: string | null
           end_date: string | null
           id: string
+          initial_cost: number | null
           notes: string | null
           priority: string | null
-          project_id: string | null
+          project_id: string
           quantity: number | null
           specification: string | null
           start_date: string | null
           status: string | null
+          subcontractor_id: string | null
           title: string
           total_cost: number | null
-          unit: string | null
+          unit: Database["public"]["Enums"]["unit_type"] | null
           unit_cost: number | null
           updated_at: string | null
         }
         Insert: {
+          actual_cost?: number | null
           assigned_to?: string | null
           category?: string | null
-          completion_percentage?: number | null
+          cost_variance?: number | null
+          cost_variance_percentage?: number | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
+          initial_cost?: number | null
           notes?: string | null
           priority?: string | null
-          project_id?: string | null
+          project_id: string
           quantity?: number | null
           specification?: string | null
           start_date?: string | null
           status?: string | null
+          subcontractor_id?: string | null
           title: string
           total_cost?: number | null
-          unit?: string | null
+          unit?: Database["public"]["Enums"]["unit_type"] | null
           unit_cost?: number | null
           updated_at?: string | null
         }
         Update: {
+          actual_cost?: number | null
           assigned_to?: string | null
           category?: string | null
-          completion_percentage?: number | null
+          cost_variance?: number | null
+          cost_variance_percentage?: number | null
           created_at?: string | null
           created_by?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
+          initial_cost?: number | null
           notes?: string | null
           priority?: string | null
-          project_id?: string | null
+          project_id?: string
           quantity?: number | null
           specification?: string | null
           start_date?: string | null
           status?: string | null
+          subcontractor_id?: string | null
           title?: string
           total_cost?: number | null
-          unit?: string | null
+          unit?: Database["public"]["Enums"]["unit_type"] | null
           unit_cost?: number | null
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_scope_items_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "scope_items_assigned_to_fkey"
             columns: ["assigned_to"]
@@ -799,11 +821,76 @@ export type Database = {
             referencedRelation: "projects"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "scope_items_subcontractor_id_fkey"
+            columns: ["subcontractor_id"]
+            isOneToOne: false
+            referencedRelation: "subcontractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_drawing_comments: {
+        Row: {
+          attachments: Json | null
+          comment: string
+          comment_type: string | null
+          created_at: string | null
+          id: string
+          is_resolved: boolean | null
+          shop_drawing_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attachments?: Json | null
+          comment: string
+          comment_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          shop_drawing_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attachments?: Json | null
+          comment?: string
+          comment_type?: string | null
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          shop_drawing_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_drawing_comments_shop_drawing_id_fkey"
+            columns: ["shop_drawing_id"]
+            isOneToOne: false
+            referencedRelation: "shop_drawings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawing_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       shop_drawings: {
         Row: {
+          category: Database["public"]["Enums"]["drawing_category"] | null
+          client_comments: string | null
+          client_contact: string | null
+          client_response_date: string | null
+          client_response_type: string | null
           created_at: string | null
+          current_turn: string | null
+          days_with_client: number | null
           description: string | null
           drawing_number: string | null
           due_date: string | null
@@ -811,7 +898,9 @@ export type Database = {
           file_size: number | null
           file_url: string | null
           id: string
+          priority: Database["public"]["Enums"]["drawing_priority"] | null
           project_id: string | null
+          responsibility: string | null
           review_comments: string | null
           reviewed_at: string | null
           reviewed_by: string | null
@@ -819,11 +908,21 @@ export type Database = {
           status: string | null
           submitted_at: string | null
           submitted_by: string | null
+          submitted_to_client_by: string | null
+          submitted_to_client_date: string | null
           title: string
+          trade: string | null
           updated_at: string | null
         }
         Insert: {
+          category?: Database["public"]["Enums"]["drawing_category"] | null
+          client_comments?: string | null
+          client_contact?: string | null
+          client_response_date?: string | null
+          client_response_type?: string | null
           created_at?: string | null
+          current_turn?: string | null
+          days_with_client?: number | null
           description?: string | null
           drawing_number?: string | null
           due_date?: string | null
@@ -831,7 +930,9 @@ export type Database = {
           file_size?: number | null
           file_url?: string | null
           id?: string
+          priority?: Database["public"]["Enums"]["drawing_priority"] | null
           project_id?: string | null
+          responsibility?: string | null
           review_comments?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -839,11 +940,21 @@ export type Database = {
           status?: string | null
           submitted_at?: string | null
           submitted_by?: string | null
+          submitted_to_client_by?: string | null
+          submitted_to_client_date?: string | null
           title: string
+          trade?: string | null
           updated_at?: string | null
         }
         Update: {
+          category?: Database["public"]["Enums"]["drawing_category"] | null
+          client_comments?: string | null
+          client_contact?: string | null
+          client_response_date?: string | null
+          client_response_type?: string | null
           created_at?: string | null
+          current_turn?: string | null
+          days_with_client?: number | null
           description?: string | null
           drawing_number?: string | null
           due_date?: string | null
@@ -851,7 +962,9 @@ export type Database = {
           file_size?: number | null
           file_url?: string | null
           id?: string
+          priority?: Database["public"]["Enums"]["drawing_priority"] | null
           project_id?: string | null
+          responsibility?: string | null
           review_comments?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -859,15 +972,32 @@ export type Database = {
           status?: string | null
           submitted_at?: string | null
           submitted_by?: string | null
+          submitted_to_client_by?: string | null
+          submitted_to_client_date?: string | null
           title?: string
+          trade?: string | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "shop_drawings_project_id_fkey"
+            foreignKeyName: "fk_shop_drawings_project"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawings_client_contact_fkey"
+            columns: ["client_contact"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -880,6 +1010,13 @@ export type Database = {
           {
             foreignKeyName: "shop_drawings_submitted_by_fkey"
             columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawings_submitted_to_client_by_fkey"
+            columns: ["submitted_to_client_by"]
             isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
@@ -1056,6 +1193,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_tasks_project"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
@@ -1180,11 +1324,11 @@ export type Database = {
     Functions: {
       create_notification: {
         Args: {
-          target_user_id: string
-          notification_type: string
-          notification_title: string
-          notification_message: string
           notification_data?: Json
+          notification_message: string
+          notification_title: string
+          notification_type: string
+          target_user_id: string
         }
         Returns: string
       }
@@ -1197,12 +1341,57 @@ export type Database = {
         Returns: number
       }
       mark_notifications_as_read: {
-        Args: { target_user_id: string; notification_ids: string[] }
+        Args: { notification_ids: string[]; target_user_id: string }
         Returns: number
       }
     }
     Enums: {
+      drawing_category:
+        | "construction"
+        | "millwork"
+        | "electrical"
+        | "mechanical"
+        | "plumbing"
+        | "hvac"
+      drawing_priority: "low" | "medium" | "high" | "critical"
+      drawing_status:
+        | "pending_submittal"
+        | "submitted_to_client"
+        | "revision_requested"
+        | "approved"
+        | "rejected"
+      material_category:
+        | "wood"
+        | "metal"
+        | "glass"
+        | "stone"
+        | "paint"
+        | "floor"
+        | "fabric"
+        | "hardware"
+        | "miscellaneous"
       material_priority: "low" | "medium" | "high" | "critical"
+      unit_type:
+        | "pcs"
+        | "set"
+        | "lm"
+        | "sqm"
+        | "cum"
+        | "kg"
+        | "ton"
+        | "lot"
+        | "ea"
+        | "sf"
+        | "lf"
+        | "cf"
+        | "hrs"
+        | "days"
+        | "roll"
+        | "bag"
+        | "box"
+        | "can"
+        | "gal"
+        | "ltr"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1330,7 +1519,56 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      drawing_category: [
+        "construction",
+        "millwork",
+        "electrical",
+        "mechanical",
+        "plumbing",
+        "hvac",
+      ],
+      drawing_priority: ["low", "medium", "high", "critical"],
+      drawing_status: [
+        "pending_submittal",
+        "submitted_to_client",
+        "revision_requested",
+        "approved",
+        "rejected",
+      ],
+      material_category: [
+        "wood",
+        "metal",
+        "glass",
+        "stone",
+        "paint",
+        "floor",
+        "fabric",
+        "hardware",
+        "miscellaneous",
+      ],
       material_priority: ["low", "medium", "high", "critical"],
+      unit_type: [
+        "pcs",
+        "set",
+        "lm",
+        "sqm",
+        "cum",
+        "kg",
+        "ton",
+        "lot",
+        "ea",
+        "sf",
+        "lf",
+        "cf",
+        "hrs",
+        "days",
+        "roll",
+        "bag",
+        "box",
+        "can",
+        "gal",
+        "ltr",
+      ],
     },
   },
 } as const

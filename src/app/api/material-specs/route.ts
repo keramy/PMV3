@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const projectId = searchParams.get('project_id')
 
+    // Allow 'all' projects or specific project ID
     if (!projectId) {
       return NextResponse.json(
         { error: 'Project ID required' },
@@ -85,7 +86,11 @@ export async function GET(request: NextRequest) {
           id, first_name, last_name
         )
       `)
-      .eq('project_id', projectId)
+      
+    // Only filter by project if not 'all'
+    if (projectId !== 'all') {
+      query = query.eq('project_id', projectId)
+    }
 
     // Apply filters
     if (params.status && params.status.length > 0) {
@@ -129,10 +134,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Get statistics (separate query for better performance)
-    const { data: statsData } = await supabase
+    let statsQuery = supabase
       .from('material_specs')
       .select('status, category, priority, total_cost, created_at, reviewed_by, image_url')
-      .eq('project_id', projectId)
+      
+    // Only filter by project if not 'all'
+    if (projectId !== 'all') {
+      statsQuery = statsQuery.eq('project_id', projectId)
+    }
+    
+    const { data: statsData } = await statsQuery
 
     // Calculate statistics
     const statistics = calculateStatistics(statsData || [])

@@ -99,7 +99,6 @@ export async function GET(request: NextRequest) {
       'End Date': item.end_date ? new Date(item.end_date).toLocaleDateString() : '',
       'Priority': item.priority || '',
       'Status': item.status ? SCOPE_STATUSES[item.status as keyof typeof SCOPE_STATUSES]?.label : '',
-      'Completion %': item.completion_percentage || 0,
       'Assigned To': item.assigned_user ? `${item.assigned_user.first_name} ${item.assigned_user.last_name}` : '',
       'Job Title': item.assigned_user?.job_title || '',
       'Notes': item.notes || '',
@@ -134,7 +133,6 @@ export async function GET(request: NextRequest) {
             { wch: 12 },  // End Date
             { wch: 10 },  // Priority
             { wch: 15 },  // Status
-            { wch: 12 },  // Completion %
             { wch: 20 },  // Assigned To
             { wch: 15 },  // Job Title
             { wch: 30 },  // Notes
@@ -166,7 +164,6 @@ export async function GET(request: NextRequest) {
         { wch: 12 },  // End Date
         { wch: 10 },  // Priority
         { wch: 15 },  // Status
-        { wch: 12 },  // Completion %
         { wch: 20 },  // Assigned To
         { wch: 15 },  // Job Title
         { wch: 30 },  // Notes

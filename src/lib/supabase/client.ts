@@ -1,10 +1,10 @@
 /**
  * Formula PM V3 Client-Side Supabase Client
- * Enhanced with proper TypeScript types for browser environments
- * Optimized for construction site connectivity and offline scenarios
+ * Fixed: Proper SSR cookie-based authentication (no localStorage)
+ * Compatible with server-side cookie handling
  */
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/types/database'
 
 // Environment variables with validation
@@ -26,53 +26,24 @@ const jwtExpiry = parseInt(process.env.NEXT_PUBLIC_JWT_EXPIRY || '14400')
 
 // Basic client options compatible with @supabase/ssr
 
-/**
- * Create standard Supabase client options for better session persistence
- */
-function createBrowserClientOptions() {
-  return {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false, // Handled by middleware
-      storageKey: 'formulapm_auth_token',
-      // Configure for construction site connectivity
-      flowType: 'pkce' as const,
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    },
-    db: {
-      schema: 'public' as const
-    },
-    // Global request configuration for construction sites
-    global: {
-      headers: {
-        'X-Client-Info': 'formulapm-v3-browser',
-      },
-    },
-    // Realtime options for construction team collaboration
-    realtime: {
-      params: {
-        eventsPerSecond: 2, // Reduced for mobile connections
-      }
-    }
-  }
-}
+// Removed old createBrowserClientOptions - using @supabase/ssr instead
 
 // ============================================================================
 // BROWSER CLIENT - Optimized for construction field workers
 // ============================================================================
 
 /**
- * Enhanced browser client with proper TypeScript types
- * Configured for compile-time safety and runtime performance
+ * Enhanced browser client using @supabase/ssr for proper cookie handling
+ * FIXED: No localStorage - uses cookies for SSR compatibility
  */
 export function createClient() {
   // Development debugging (only in dev mode)
   if (isDevelopment) {
-    console.log('🔍 Supabase Client Creation:', {
+    console.log('🔍 Supabase Client Creation (Fixed):', {
       supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
       supabaseAnonKey: supabaseAnonKey ? 'Present' : 'MISSING',
-      env: process.env.NODE_ENV
+      env: process.env.NODE_ENV,
+      storageType: 'cookies' // FIXED: No more localStorage
     })
   }
 
@@ -98,11 +69,20 @@ export function createClient() {
     throw new Error(error)
   }
 
-  return createSupabaseClient<Database>(
-    supabaseUrl,
-    supabaseAnonKey,
-    createBrowserClientOptions()
-  )
+  // SIMPLIFIED: Use createBrowserClient with error catching
+  try {
+    console.log('🔍 Creating Supabase client...')
+    const client = createBrowserClient<Database>(
+      supabaseUrl,
+      supabaseAnonKey
+      // NO CUSTOM OPTIONS - let @supabase/ssr handle cookies automatically
+    )
+    console.log('✅ Supabase client created successfully')
+    return client
+  } catch (error) {
+    console.error('❌ CRITICAL: Failed to create Supabase client:', error)
+    throw error
+  }
 }
 
 // ============================================================================

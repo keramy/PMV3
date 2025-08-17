@@ -105,7 +105,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       'title', 'description', 'category', 'specification', 'quantity', 'unit', 
       'unit_cost', 'total_cost', 'initial_cost', 'actual_cost', 'start_date', 
       'end_date', 'priority', 'status', 'assigned_to', 'subcontractor_id', 
-      'notes', 'completion_percentage'
+      'notes'
     ]
 
     const updateData: any = {}

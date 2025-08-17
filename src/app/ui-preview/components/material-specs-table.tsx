@@ -104,6 +104,8 @@ export function MaterialSpecsTable() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isCompressing, setIsCompressing] = useState(false)
   const [compressionInfo, setCompressionInfo] = useState<{originalSize: number, compressedSize: number} | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchCategory, setSearchCategory] = useState('all')
 
   // Image compression function
   const compressImage = (file: File): Promise<{blob: Blob, dataUrl: string}> => {
@@ -622,6 +624,7 @@ export function MaterialSpecsTable() {
                         const materialData = {
                           name: newMaterial.name,
                           category: newMaterial.category as any,
+                          priority: 'medium' as const, // Default priority
                           manufacturer: newMaterial.manufacturer,
                           model: newMaterial.model,
                           specification: newMaterial.specification,
@@ -726,7 +729,7 @@ export function MaterialSpecsTable() {
                   </TableCell>
                   
                   <TableCell className="py-4">
-                    <div className="text-sm font-medium text-gray-900">{spec.project}</div>
+                    <div className="text-sm font-medium text-gray-900">{spec.project?.name || 'N/A'}</div>
                   </TableCell>
                   
                   <TableCell className="py-4 text-center">
@@ -735,8 +738,8 @@ export function MaterialSpecsTable() {
                   
                   <TableCell className="py-4">
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-gray-900">{formatDate(spec.submittedAt)}</p>
-                      <p className="text-xs text-gray-700">by {spec.submittedBy}</p>
+                      <p className="text-xs font-medium text-gray-900">{formatDate(spec.created_at)}</p>
+                      <p className="text-xs text-gray-700">by {spec.created_by}</p>
                     </div>
                   </TableCell>
                   

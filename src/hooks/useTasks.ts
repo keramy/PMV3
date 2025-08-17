@@ -34,7 +34,17 @@ export function useTasks(filters: TaskFilters) {
       })
       
       const response = await fetch(`/api/tasks?${params}`)
-      if (!response.ok) throw new Error('Failed to fetch tasks')
+      
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('UNAUTHORIZED')
+        }
+        if (response.status === 403) {
+          throw new Error('FORBIDDEN')
+        }
+        throw new Error(`HTTP ${response.status}: Failed to fetch tasks`)
+      }
+      
       return response.json()
     },
     staleTime: 30000, // 30 seconds

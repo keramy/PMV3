@@ -19,7 +19,9 @@ import {
 } from 'lucide-react'
 
 export default function HomePage() {
+  // Always call useAuth hook to avoid conditional hook calls
   const { user, loading } = useAuth()
+  const useAuthBypass = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true'
 
   if (loading) {
     return (
@@ -27,6 +29,7 @@ export default function HomePage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Loading Formula PM V3...</p>
+          {useAuthBypass && <p className="text-sm text-red-600 mt-2">Auth bypass enabled but still loading</p>}
         </div>
       </div>
     )

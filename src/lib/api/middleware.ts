@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
 import type { Permission } from '@/types/auth'
+import { isDevAuthBypassEnabled, mockAuthenticatedUser } from '@/lib/dev/mock-user'
 
 // ============================================================================
 // TYPES
@@ -84,6 +85,11 @@ export const ApiResponses = {
 export function withAuth(handler: AuthenticatedHandler) {
   return async (request: NextRequest): Promise<Response> => {
     try {
+      // DEVELOPMENT: Check if authentication bypass is enabled
+      if (isDevAuthBypassEnabled()) {
+        console.log('🚀 [DEV MODE] API Auth bypass - using mock user')
+        return await handler(mockAuthenticatedUser, request)
+      }
       // Strategy 1: Use middleware-provided user headers (preferred)
       const middlewareUserId = request.headers.get('X-User-ID')
       const middlewareUserEmail = request.headers.get('X-User-Email')

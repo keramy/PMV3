@@ -60,7 +60,7 @@ export type ActivityLog = Tables['activity_logs']['Row']
 
 // Enhanced UserProfile type with application-specific transformations
 export type UserProfileRaw = Tables['user_profiles']['Row']
-export interface AppUserProfile extends Omit<UserProfileRaw, 'first_name' | 'last_name' | 'permissions'> {
+export interface AppUserProfile extends UserProfileRaw {
   full_name: string
   permissions: Permission[]
 }
@@ -112,15 +112,12 @@ export type ShopDrawingApprovalStage =
 
 // Shop drawing categories
 export type ShopDrawingCategory =
-  | 'architectural'
-  | 'structural'
-  | 'mechanical'
+  | 'construction'
+  | 'millwork'
   | 'electrical'
+  | 'mechanical'
   | 'plumbing'
   | 'hvac'
-  | 'fire_protection'
-  | 'technology'
-  | 'specialty'
 
 // Construction trades
 export type ConstructionTrade =
@@ -208,13 +205,13 @@ export type ResourceType =
 // ============================================================================
 
 // Enhanced shop drawing type with new workflow fields
-export interface EnhancedShopDrawing extends ShopDrawing {
+export interface EnhancedShopDrawing extends Omit<ShopDrawing, 'category' | 'priority'> {
   // New fields from migration
   scope_item_id?: string | null
   approval_stage?: ShopDrawingApprovalStage
-  category?: ShopDrawingCategory
+  category: ShopDrawingCategory | null  // Required in base type, made explicit
   trade?: ConstructionTrade
-  priority?: PriorityLevel
+  priority: PriorityLevel | null  // Required in base type, made explicit
   internal_reviewer_id?: string | null
   internal_review_date?: string | null
   internal_approved?: boolean

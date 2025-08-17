@@ -35,7 +35,8 @@ export const GET = apiMiddleware.queryValidate(
       // Build filters for database query
       const filters = []
 
-      if (validatedFilters.project_id) {
+      // Only filter by project if not 'all'
+      if (validatedFilters.project_id && validatedFilters.project_id !== 'all') {
         filters.push(ApiFilters.inProject(validatedFilters.project_id))
       }
 

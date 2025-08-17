@@ -451,7 +451,7 @@ export const ApiQueries = {
       }),
       db.findMany('scope_items', { 
         filters: [...filters, ApiFilters.activeItems()],
-        select: 'id, status, completion_percentage'
+        select: 'id, status'
       }),
       db.findMany('shop_drawings', { 
         filters: [...filters, ApiFilters.activeItems()],

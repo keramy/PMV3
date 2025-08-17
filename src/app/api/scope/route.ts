@@ -16,7 +16,7 @@ import { z } from 'zod'
 
 // Query validation schema
 const scopeQuerySchema = z.object({
-  project_id: z.string(),
+  project_id: z.string().optional(),
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
   category: z.string().optional(),
@@ -42,9 +42,12 @@ export const GET = apiMiddleware.permissions(
     const db = createApiDatabase(user)
 
     // Build filters
-    const filters = [
-      ApiFilters.inProject(params.project_id)
-    ]
+    const filters = []
+    
+    // Only filter by project if not 'all'
+    if (params.project_id && params.project_id !== 'all') {
+      filters.push(ApiFilters.inProject(params.project_id))
+    }
 
     if (params.category && params.category !== 'all') {
       filters.push((query: any) => query.eq('category', params.category))
@@ -89,7 +92,7 @@ export const GET = apiMiddleware.permissions(
 
     // Get statistics for the project
     const statsResult = await db.findMany('scope_items', {
-      select: 'category, status, total_cost, completion_percentage',
+      select: 'category, status, total_cost',
       filters: [ApiFilters.inProject(params.project_id)]
     })
 
@@ -180,7 +183,6 @@ export const POST = apiMiddleware.validate(
         assigned_to: validatedData.assigned_to,
         notes: validatedData.notes,
         created_by: user.id,
-        completion_percentage: 0
       })
 
       return Response.json({
@@ -219,7 +221,6 @@ function calculateScopeStatistics(items: any[]) {
       in_progress: 0,
       not_started: 0,
       blocked: 0,
-      completion_percentage: 0,
       total_cost: 0
     }
   })
@@ -274,7 +275,7 @@ function calculateScopeStatistics(items: any[]) {
   Object.keys(statistics.by_category).forEach(category => {
     const catStats = statistics.by_category[category]
     if (catStats.total > 0) {
-      catStats.completion_percentage = Math.round((catStats.completed / catStats.total) * 100)
+      // Completion percentage calculated on frontend from completed/total
     }
   })
 

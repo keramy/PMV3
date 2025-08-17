@@ -45,7 +45,13 @@ export function useMaterialSpecs(params: MaterialSpecListParams) {
       const response = await fetch(`/api/material-specs?${searchParams.toString()}`)
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch material specs: ${response.statusText}`)
+        if (response.status === 401) {
+          throw new Error('UNAUTHORIZED')
+        }
+        if (response.status === 403) {
+          throw new Error('FORBIDDEN')
+        }
+        throw new Error(`HTTP ${response.status}: Failed to fetch material specs`)
       }
       
       return response.json()
