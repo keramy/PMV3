@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { createClient } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/useAuth'
 import type { 
   MaterialSpec, 
   MaterialSpecFormData, 
@@ -26,6 +27,8 @@ export const materialSpecsQueryKeys = {
 
 // Custom hook for fetching material specs list
 export function useMaterialSpecs(params: MaterialSpecListParams) {
+  const { profile } = useAuth()
+  
   return useQuery({
     queryKey: materialSpecsQueryKeys.list(params),
     queryFn: async (): Promise<MaterialSpecListResponse> => {
@@ -42,7 +45,9 @@ export function useMaterialSpecs(params: MaterialSpecListParams) {
         }
       })
 
-      const response = await fetch(`/api/material-specs?${searchParams.toString()}`)
+      const response = await fetch(`/api/material-specs?${searchParams.toString()}`, {
+        headers: { 'x-user-id': profile?.id || '' }
+      })
       
       if (!response.ok) {
         if (response.status === 401) {
@@ -56,6 +61,7 @@ export function useMaterialSpecs(params: MaterialSpecListParams) {
       
       return response.json()
     },
+    enabled: !!profile?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
@@ -64,10 +70,14 @@ export function useMaterialSpecs(params: MaterialSpecListParams) {
 
 // Custom hook for fetching a single material spec
 export function useMaterialSpec(id: string) {
+  const { profile } = useAuth()
+  
   return useQuery({
     queryKey: materialSpecsQueryKeys.detail(id),
     queryFn: async (): Promise<MaterialSpec> => {
-      const response = await fetch(`/api/material-specs/${id}`)
+      const response = await fetch(`/api/material-specs/${id}`, {
+        headers: { 'x-user-id': profile?.id || '' }
+      })
       
       if (!response.ok) {
         throw new Error(`Failed to fetch material spec: ${response.statusText}`)
@@ -75,7 +85,7 @@ export function useMaterialSpec(id: string) {
       
       return response.json()
     },
-    enabled: !!id,
+    enabled: !!id && !!profile?.id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   })
@@ -84,6 +94,7 @@ export function useMaterialSpec(id: string) {
 // Mutation hook for creating material specs
 export function useCreateMaterialSpec() {
   const queryClient = useQueryClient()
+  const { profile } = useAuth()
   
   return useMutation({
     mutationFn: async (data: MaterialSpecFormData & { project_id: string }): Promise<MaterialSpec> => {
@@ -91,6 +102,7 @@ export function useCreateMaterialSpec() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': profile?.id || ''
         },
         body: JSON.stringify(data),
       })
@@ -130,6 +142,7 @@ export function useCreateMaterialSpec() {
 // Mutation hook for updating material specs
 export function useUpdateMaterialSpec() {
   const queryClient = useQueryClient()
+  const { profile } = useAuth()
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: MaterialSpecUpdateData }): Promise<MaterialSpec> => {
@@ -137,6 +150,7 @@ export function useUpdateMaterialSpec() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': profile?.id || ''
         },
         body: JSON.stringify(data),
       })
@@ -164,6 +178,7 @@ export function useUpdateMaterialSpec() {
 // Mutation hook for PM review (approve/reject)
 export function useReviewMaterialSpec() {
   const queryClient = useQueryClient()
+  const { profile } = useAuth()
   
   return useMutation({
     mutationFn: async ({ id, reviewData }: { id: string; reviewData: MaterialSpecReviewData }): Promise<MaterialSpec> => {
@@ -171,6 +186,7 @@ export function useReviewMaterialSpec() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': profile?.id || ''
         },
         body: JSON.stringify(reviewData),
       })

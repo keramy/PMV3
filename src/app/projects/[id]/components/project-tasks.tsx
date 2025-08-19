@@ -19,9 +19,8 @@ export function ProjectTasks({ projectId }: ProjectTasksProps) {
         </div>
       </div>
 
-      {/* Reuse the existing tasks list component */}
-      {/* Note: In real implementation, this would filter by projectId */}
-      <TaskList />
+      {/* Tasks list component with project filtering */}
+      <TaskList projectId={projectId} />
     </div>
   )
 }

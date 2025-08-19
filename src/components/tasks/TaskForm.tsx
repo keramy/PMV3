@@ -190,14 +190,14 @@ export function TaskForm({ projectId, task, onClose }: TaskFormProps) {
             <div>
               <Label htmlFor="assigned_to">Assign To</Label>
               <Select
-                defaultValue={watch('assigned_to')}
-                onValueChange={(value) => setValue('assigned_to', value)}
+                defaultValue={watch('assigned_to') || 'unassigned'}
+                onValueChange={(value) => setValue('assigned_to', value === 'unassigned' ? '' : value)}
               >
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="Select team member" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {projectMembers?.map((member: any) => (
                     <SelectItem key={member.user.id} value={member.user.id}>
                       {member.user.first_name} {member.user.last_name}

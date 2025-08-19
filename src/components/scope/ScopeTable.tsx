@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
+import { toast } from '@/hooks/use-toast'
+import { useCreateScopeItem } from '@/hooks/useScope'
 import { EmptyScope, EmptyState } from '@/components/ui/empty-state'
 import {
   Table,
@@ -125,7 +127,7 @@ interface SubcontractorOption {
 }
 
 export function ScopeTable({ projectId }: ScopeTableProps) {
-  const [selectedProject, setSelectedProject] = useState('all')
+  const [selectedProject, setSelectedProject] = useState(projectId || 'all')
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
   const [expandAll, setExpandAll] = useState(false)
@@ -143,9 +145,47 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
   const [viewModalOpen, setViewModalOpen] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [addModalOpen, setAddModalOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<ScopeItemWithSubcontractor | null>(null)
+  
+  // Add scope item form state
+  const [newScopeItem, setNewScopeItem] = useState({
+    title: '',
+    description: '',
+    category: '',
+    specification: '',
+    quantity: 1,
+    unit: 'pcs' as const,
+    unit_cost: 0,
+    total_cost: 0,
+    priority: 'medium' as const,
+    status: 'not_started',
+    assigned_to: '',
+    subcontractor_id: '',
+    start_date: '',
+    end_date: '',
+    notes: ''
+  })
 
   const { profile } = useAuth()
+  
+  // Mutation hooks for API operations
+  const createScopeItem = useCreateScopeItem()
+
+  // Update selected project when projectId prop changes
+  React.useEffect(() => {
+    if (projectId && projectId !== selectedProject) {
+      setSelectedProject(projectId)
+    }
+  }, [projectId, selectedProject])
+
+  // Auto-calculate total cost when quantity or unit cost changes
+  React.useEffect(() => {
+    const totalCost = newScopeItem.quantity * newScopeItem.unit_cost
+    if (totalCost !== newScopeItem.total_cost) {
+      setNewScopeItem(prev => ({ ...prev, total_cost: totalCost }))
+    }
+  }, [newScopeItem.quantity, newScopeItem.unit_cost, newScopeItem.total_cost])
 
   // API integration with real data fetching
   const { data: scopeData, isLoading, error } = useQuery({
@@ -185,14 +225,14 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
     enabled: !!profile?.id
   })
 
-  // Use real API data - no more mock data
-  const scopeItems = scopeData?.items || []
+  // Use real API data - fix data structure access
+  const scopeItems = scopeData?.data?.items || []
 
-  const statistics = scopeData?.statistics || {}
+  const statistics = scopeData?.data?.statistics || {}
   
   useEffect(() => {
     if (scopeData?.pagination) {
-      setTotalPages(scopeData.pagination.totalPages)
+      setTotalPages(scopeData.pagination.total_pages)
     }
   }, [scopeData])
 
@@ -483,6 +523,78 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
       setSelectedItem(null)
     }
   }
+  
+  // Add scope item handlers
+  const handleAddScopeItem = () => {
+    setAddModalOpen(true)
+  }
+  
+  const resetScopeItemForm = () => {
+    setNewScopeItem({
+      title: '',
+      description: '',
+      category: 'construction',
+      specification: '',
+      quantity: 1,
+      unit: 'pcs' as const,
+      unit_cost: 0,
+      total_cost: 0,
+      priority: 'medium' as const,
+      status: 'not_started',
+      assigned_to: 'unassigned',
+      subcontractor_id: '',
+      start_date: '',
+      end_date: '',
+      notes: ''
+    })
+  }
+  
+  const handleSaveNewScopeItem = async () => {
+    try {
+      const projectIdToUse = selectedProject !== 'all' ? selectedProject : projectId || ''
+      
+      if (!projectIdToUse) {
+        throw new Error('Project ID is required')
+      }
+      
+      const newItem = await createScopeItem.mutateAsync({
+        project_id: projectIdToUse,
+        title: newScopeItem.title,
+        description: newScopeItem.description,
+        category: newScopeItem.category,
+        specification: newScopeItem.specification,
+        quantity: newScopeItem.quantity,
+        unit: newScopeItem.unit,
+        unit_cost: newScopeItem.unit_cost,
+        priority: newScopeItem.priority,
+        status: newScopeItem.status,
+        assigned_to: newScopeItem.assigned_to === 'unassigned' ? undefined : newScopeItem.assigned_to,
+        subcontractor_id: newScopeItem.subcontractor_id || undefined,
+        start_date: newScopeItem.start_date || undefined,
+        end_date: newScopeItem.end_date || undefined,
+        notes: newScopeItem.notes
+      })
+      
+      // Show success notification
+      toast({
+        title: "Success!",
+        description: `Scope item "${newScopeItem.title}" has been created successfully.`,
+        variant: "default",
+      })
+      
+      setAddModalOpen(false)
+      resetScopeItemForm()
+    } catch (error) {
+      console.error('Failed to create scope item:', error)
+      
+      // Show error notification
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create scope item. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -518,7 +630,10 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
             <Download className="mr-2 h-4 w-4" />
             Export Excel
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm">
+          <Button 
+            onClick={handleAddScopeItem}
+            className="bg-blue-600 hover:bg-blue-700 text-white transition-colors shadow-sm"
+          >
             <ClipboardList className="mr-2 h-4 w-4" />
             Add Scope Item
           </Button>
@@ -804,7 +919,9 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                         )}
                       </Button>
                     </TableCell>
-                    <TableCell className="font-mono text-sm py-4 font-medium text-gray-800">{item.id}</TableCell>
+                    <TableCell className="font-mono text-sm py-4 font-medium text-gray-800">
+                      {item.scope_code || item.id?.slice(0, 8)}
+                    </TableCell>
                     <TableCell className="py-4">
                       <Badge 
                         className={`${getCategoryColor(item.category)} font-semibold transition-colors border text-sm px-3 py-2`}
@@ -1078,7 +1195,322 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
         </div>
       )}
       
-      {/* Modals and other components would be here but simplified for space */}
+      {/* Add Scope Item Modal */}
+      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Scope Item</DialogTitle>
+            <DialogDescription>
+              Create a new scope item for the project. All fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-6 py-4">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-blue-600" />
+                Basic Information
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Title *
+                  </label>
+                  <Input
+                    value={newScopeItem.title}
+                    onChange={(e) => setNewScopeItem(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="e.g., Install kitchen cabinets"
+                    className="border-gray-400 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={newScopeItem.description}
+                    onChange={(e) => setNewScopeItem(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Detailed description of the scope item..."
+                    className="w-full h-20 px-3 py-2 border border-gray-400 rounded-md focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Category
+                  </label>
+                  <Select 
+                    value={newScopeItem.category} 
+                    onValueChange={(value) => setNewScopeItem(prev => ({ ...prev, category: value }))}
+                  >
+                    <SelectTrigger className="border-gray-400 focus:border-blue-500">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="construction">Construction</SelectItem>
+                      <SelectItem value="millwork">Millwork</SelectItem>
+                      <SelectItem value="electrical">Electrical</SelectItem>
+                      <SelectItem value="mechanical">Mechanical</SelectItem>
+                      <SelectItem value="plumbing">Plumbing</SelectItem>
+                      <SelectItem value="hvac">HVAC</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Priority
+                  </label>
+                  <Select 
+                    value={newScopeItem.priority} 
+                    onValueChange={(value: 'low' | 'medium' | 'high' | 'critical') => 
+                      setNewScopeItem(prev => ({ ...prev, priority: value }))
+                    }
+                  >
+                    <SelectTrigger className="border-gray-400 focus:border-blue-500">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="critical">Critical</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-800 mb-2">
+                  Specification
+                </label>
+                <Input
+                  value={newScopeItem.specification}
+                  onChange={(e) => setNewScopeItem(prev => ({ ...prev, specification: e.target.value }))}
+                  placeholder="Technical specifications or requirements"
+                  className="border-gray-400 focus:border-blue-500"
+                />
+              </div>
+            </div>
+            
+            {/* Quantity and Pricing */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-green-600" />
+                Quantity & Pricing
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Quantity
+                  </label>
+                  <Input
+                    type="number"
+                    value={newScopeItem.quantity}
+                    onChange={(e) => setNewScopeItem(prev => ({ 
+                      ...prev, 
+                      quantity: parseFloat(e.target.value) || 0 
+                    }))}
+                    min="0"
+                    step="0.01"
+                    className="border-gray-400 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Unit
+                  </label>
+                  <Select 
+                    value={newScopeItem.unit} 
+                    onValueChange={(value: any) => setNewScopeItem(prev => ({ ...prev, unit: value }))}
+                  >
+                    <SelectTrigger className="border-gray-400 focus:border-blue-500">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pcs">Pieces</SelectItem>
+                      <SelectItem value="set">Set</SelectItem>
+                      <SelectItem value="lm">Linear Meter</SelectItem>
+                      <SelectItem value="sqm">Square Meter</SelectItem>
+                      <SelectItem value="cum">Cubic Meter</SelectItem>
+                      <SelectItem value="kg">Kilogram</SelectItem>
+                      <SelectItem value="ton">Ton</SelectItem>
+                      <SelectItem value="lot">Lot</SelectItem>
+                      <SelectItem value="ea">Each</SelectItem>
+                      <SelectItem value="sf">Square Feet</SelectItem>
+                      <SelectItem value="lf">Linear Feet</SelectItem>
+                      <SelectItem value="cf">Cubic Feet</SelectItem>
+                      <SelectItem value="hrs">Hours</SelectItem>
+                      <SelectItem value="days">Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Unit Cost (₺)
+                  </label>
+                  <Input
+                    type="number"
+                    value={newScopeItem.unit_cost}
+                    onChange={(e) => setNewScopeItem(prev => ({ 
+                      ...prev, 
+                      unit_cost: parseFloat(e.target.value) || 0 
+                    }))}
+                    min="0"
+                    step="0.01"
+                    className="border-gray-400 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Total Cost (₺)
+                  </label>
+                  <Input
+                    type="number"
+                    value={newScopeItem.total_cost}
+                    disabled
+                    className="bg-gray-100 border-gray-300 text-gray-700 font-semibold"
+                  />
+                  <p className="text-xs text-gray-600 mt-1">Auto-calculated</p>
+                </div>
+              </div>
+            </div>
+            
+            {/* Assignment and Schedule */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                <User className="h-5 w-5 text-purple-600" />
+                Assignment & Schedule
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Assigned To
+                  </label>
+                  <Select 
+                    value={newScopeItem.assigned_to || 'unassigned'} 
+                    onValueChange={(value) => setNewScopeItem(prev => ({ 
+                      ...prev, 
+                      assigned_to: value 
+                    }))}
+                  >
+                    <SelectTrigger className="border-gray-400 focus:border-blue-500">
+                      <SelectValue placeholder="Select assignee" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="unassigned">Unassigned</SelectItem>
+                      {uniqueSubcontractors.map((sub) => (
+                        <SelectItem key={sub.id} value={sub.id || ''}>
+                          {sub.name} - {sub.trade}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Status
+                  </label>
+                  <Select 
+                    value={newScopeItem.status} 
+                    onValueChange={(value) => setNewScopeItem(prev => ({ ...prev, status: value }))}
+                  >
+                    <SelectTrigger className="border-gray-400 focus:border-blue-500">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="not_started">Not Started</SelectItem>
+                      <SelectItem value="in_progress">In Progress</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                      <SelectItem value="on_hold">On Hold</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    Start Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={newScopeItem.start_date}
+                    onChange={(e) => setNewScopeItem(prev => ({ ...prev, start_date: e.target.value }))}
+                    className="border-gray-400 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-800 mb-2">
+                    End Date
+                  </label>
+                  <Input
+                    type="date"
+                    value={newScopeItem.end_date}
+                    onChange={(e) => setNewScopeItem(prev => ({ ...prev, end_date: e.target.value }))}
+                    className="border-gray-400 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            {/* Notes */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Notes</h3>
+              <div>
+                <textarea
+                  value={newScopeItem.notes}
+                  onChange={(e) => setNewScopeItem(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Additional notes, requirements, or comments..."
+                  className="w-full h-24 px-3 py-2 border border-gray-400 rounded-md focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setAddModalOpen(false)
+                resetScopeItemForm()
+              }}
+              className="border-gray-400 hover:bg-gray-200"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleSaveNewScopeItem}
+              disabled={!newScopeItem.title || createScopeItem.isPending}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {createScopeItem.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Create Scope Item
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modals for view, edit, delete would be here */}
     </div>
   )
 }

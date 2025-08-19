@@ -726,10 +726,12 @@ export type Database = {
           end_date: string | null
           id: string
           initial_cost: number | null
+          item_sequence: number | null
           notes: string | null
           priority: string | null
           project_id: string
           quantity: number | null
+          scope_code: string | null
           specification: string | null
           start_date: string | null
           status: string | null
@@ -752,10 +754,12 @@ export type Database = {
           end_date?: string | null
           id?: string
           initial_cost?: number | null
+          item_sequence?: number | null
           notes?: string | null
           priority?: string | null
           project_id: string
           quantity?: number | null
+          scope_code?: string | null
           specification?: string | null
           start_date?: string | null
           status?: string | null
@@ -778,10 +782,12 @@ export type Database = {
           end_date?: string | null
           id?: string
           initial_cost?: number | null
+          item_sequence?: number | null
           notes?: string | null
           priority?: string | null
           project_id?: string
           quantity?: number | null
+          scope_code?: string | null
           specification?: string | null
           start_date?: string | null
           status?: string | null
@@ -997,7 +1003,7 @@ export type Database = {
             foreignKeyName: "shop_drawings_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
-            referencedRelation: "user_profiles"
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
           {
@@ -1232,7 +1238,6 @@ export type Database = {
       user_profiles: {
         Row: {
           avatar_url: string | null
-          company_id: string | null
           created_at: string | null
           email: string
           first_name: string | null
@@ -1247,7 +1252,6 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
-          company_id?: string | null
           created_at?: string | null
           email: string
           first_name?: string | null
@@ -1262,7 +1266,6 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
-          company_id?: string | null
           created_at?: string | null
           email?: string
           first_name?: string | null
@@ -1275,15 +1278,7 @@ export type Database = {
           phone?: string | null
           updated_at?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_profiles_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "companies"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
@@ -1331,6 +1326,10 @@ export type Database = {
           target_user_id: string
         }
         Returns: string
+      }
+      get_next_scope_sequence: {
+        Args: { p_project_id: string }
+        Returns: number
       }
       get_unread_notification_count: {
         Args: { target_user_id: string }

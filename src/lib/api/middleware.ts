@@ -101,17 +101,36 @@ export function withAuth(handler: AuthenticatedHandler) {
           email: middlewareUserEmail || undefined
         }
         
-        // Get user permissions from database if needed
+        // Get user permissions from database using service role key
         try {
-          const supabase = await createClient()
-          const { data: profile } = await supabase
+          console.log('🔍 [DEBUG] Loading permissions for user:', middlewareUserId)
+          
+          // Create service client with proper service role authentication
+          const { createClient } = await import('@supabase/supabase-js')
+          const serviceClient = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!,
+            {
+              auth: {
+                autoRefreshToken: false,
+                persistSession: false
+              }
+            }
+          )
+          
+          const { data: profile, error: dbError } = await serviceClient
             .from('user_profiles')
             .select('permissions')
             .eq('id', middlewareUserId)
             .single()
           
+          console.log('🔍 [DEBUG] Database query result:', { profile, dbError })
+          
           if (profile?.permissions) {
-            user.permissions = profile.permissions
+            user.permissions = profile.permissions as Permission[]
+            console.log('🔍 [DEBUG] Loaded permissions:', user.permissions)
+          } else {
+            console.log('🔍 [DEBUG] No permissions found in profile')
           }
         } catch (error) {
           console.warn('🔐 [API Auth] Failed to load user permissions:', error)
@@ -130,8 +149,10 @@ export function withAuth(handler: AuthenticatedHandler) {
         return ApiResponses.unauthorized()
       }
 
-      // Get user profile with permissions
-      const { data: profile } = await supabase
+      // Get user profile with permissions using service client to bypass RLS
+      const { createServiceClient } = await import('@/lib/supabase/server')
+      const serviceSupabase = createServiceClient()
+      const { data: profile } = await serviceSupabase
         .from('user_profiles')
         .select('permissions')
         .eq('id', session.user.id)
@@ -140,7 +161,7 @@ export function withAuth(handler: AuthenticatedHandler) {
       const user: AuthenticatedUser = {
         id: session.user.id,
         email: session.user.email,
-        permissions: profile?.permissions || []
+        permissions: (profile?.permissions as Permission[]) || []
       }
 
       return await handler(user, request)
@@ -225,7 +246,7 @@ export function withQueryValidation<T>(
       const { searchParams } = new URL(request.url)
       const queryObject: Record<string, any> = {}
       
-      // Convert URLSearchParams to object
+      // Convert URLSearchParams to object with type coercion
       searchParams.forEach((value, key) => {
         // Handle arrays (multiple values for same key)
         if (queryObject[key]) {
@@ -233,7 +254,17 @@ export function withQueryValidation<T>(
             ? [...queryObject[key], value]
             : [queryObject[key], value]
         } else {
-          queryObject[key] = value
+          // Type coercion for common parameter types
+          if (key === 'page' || key === 'limit') {
+            // Convert to number
+            const num = parseInt(value, 10)
+            queryObject[key] = isNaN(num) ? value : num
+          } else if (value === 'true' || value === 'false') {
+            // Convert boolean strings to actual booleans
+            queryObject[key] = value === 'true'
+          } else {
+            queryObject[key] = value
+          }
         }
       })
       
@@ -344,7 +375,17 @@ export const apiMiddleware = {
   // Full stack (auth + permissions + error handling)
   protected: (permissions: Permission | Permission[]) => 
     (handler: AuthenticatedHandler) =>
-      withErrorHandling(withPermissions(permissions, handler)),
+      async (request: NextRequest): Promise<Response> => {
+        try {
+          return await withPermissions(permissions, handler)(request)
+        } catch (error) {
+          console.error('🚨 [API Error]:', error)
+          return NextResponse.json(
+            { success: false, error: 'Internal server error' },
+            { status: 500 }
+          )
+        }
+      },
   
   // Responses helper
   response: ApiResponses

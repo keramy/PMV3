@@ -16,6 +16,7 @@ import type {
   ScopeCategory,
   ScopeStatus
 } from '@/types/scope'
+import type { Database } from '@/types/database'
 
 export async function POST(request: NextRequest) {
   try {
@@ -186,7 +187,7 @@ export async function POST(request: NextRequest) {
             category: item.category,
             specification: item.specification,
             quantity: item.quantity,
-            unit: item.unit,
+            unit: item.unit as Database['public']['Enums']['unit_type'] | null,
             unit_cost: item.unit_cost,
             total_cost: item.total_cost,
             start_date: item.start_date,
@@ -333,6 +334,22 @@ function validateScopeItem(item: Partial<ScopeItemFormData>, rowNumber: number):
         error_type: 'invalid_format',
         error_message: 'Unit cost must be a positive number',
         cell_value: item.unit_cost
+      })
+    }
+  }
+
+  // Unit validation
+  if (item.unit) {
+    const validUnits = ['pcs', 'set', 'lm', 'sqm', 'cum', 'kg', 'ton', 'lot', 'ea', 'sf', 'lf', 'cf', 'hrs', 'days', 'roll', 'bag', 'box', 'can', 'gal', 'ltr']
+    if (!validUnits.includes(item.unit as string)) {
+      errors.push({
+        row_number: rowNumber,
+        column: 'E',
+        field_name: 'unit',
+        error_type: 'invalid_value',
+        error_message: `Invalid unit. Must be one of: ${validUnits.join(', ')}`,
+        cell_value: item.unit,
+        suggested_fix: 'Use a valid unit type'
       })
     }
   }

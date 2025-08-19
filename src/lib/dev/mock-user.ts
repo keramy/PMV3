@@ -75,14 +75,12 @@ export const mockUserProfile: UserProfile = {
   last_name: 'User',
   email: 'developer@formulapm.com',
   job_title: 'Full Stack Developer',
-  company: 'Formula PM Development',
   phone: '+1 (555) 123-4567',
   avatar_url: null,
   permissions: mockAuthenticatedUser.permissions || [],
   created_at: '2025-01-01T00:00:00Z',
   updated_at: new Date().toISOString(),
   last_login: new Date().toISOString(),
-  is_admin: true,
   is_active: true
 }
 

@@ -4,6 +4,7 @@ import { QueryProvider } from '@/providers/QueryProvider'
 import { Toaster } from '@/components/ui/toaster'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   title: 'Formula PM V3',
   description: 'Construction Project Management Platform - Built for speed and efficiency',
   icons: {

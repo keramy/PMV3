@@ -244,12 +244,22 @@ export function Dashboard({ user, profile, loading }: DashboardProps) {
   const getStatusBadge = (status: string) => {
     const config = {
       in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+      active: { label: 'Active', className: 'bg-blue-100 text-blue-800 border-blue-200' },
       completed: { label: 'Completed', className: 'bg-green-100 text-green-800 border-green-200' },
       planning: { label: 'Planning', className: 'bg-orange-100 text-orange-800 border-orange-200' },
       on_hold: { label: 'On Hold', className: 'bg-gray-100 text-gray-800 border-gray-400' }
     }
     
     const cfg = config[status as keyof typeof config]
+    // Handle undefined status gracefully
+    if (!cfg) {
+      return (
+        <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-400">
+          {status || 'Unknown'}
+        </Badge>
+      )
+    }
+    
     return (
       <Badge variant="outline" className={cfg.className}>
         {cfg.label}

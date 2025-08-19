@@ -39,18 +39,24 @@ import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
 
-// Form validation schema
-const projectCreateSchema = z.object({
+// Form input schema (before transformation)
+const projectCreateInputSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(200, 'Name must be under 200 characters'),
   client_name: z.string().min(1, 'Client name is required').max(100, 'Client name must be under 100 characters'),
   description: z.string().optional(),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
-  budget: z.coerce.number().min(0, 'Budget must be positive').optional(),
+  budget: z.string().optional(), // String in form
   status: z.enum(['planning', 'active', 'on_hold', 'completed']).default('planning'),
 })
 
-type ProjectCreateFormData = z.infer<typeof projectCreateSchema>
+// Transform schema for API submission
+const projectCreateSchema = projectCreateInputSchema.transform((data) => ({
+  ...data,
+  budget: data.budget === '' ? undefined : (data.budget ? parseFloat(data.budget) : undefined)
+}))
+
+type ProjectCreateFormData = z.infer<typeof projectCreateInputSchema>
 
 interface ProjectCreateDialogProps {
   open: boolean
@@ -66,14 +72,14 @@ export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: Pr
   const { toast } = useToast()
 
   const form = useForm<ProjectCreateFormData>({
-    resolver: zodResolver(projectCreateSchema),
+    resolver: zodResolver(projectCreateInputSchema),
     defaultValues: {
       name: '',
       client_name: '',
       description: '',
       start_date: '',
       end_date: '',
-      budget: undefined,
+      budget: '',
       status: 'planning',
     },
   })
@@ -88,13 +94,15 @@ export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: Pr
     setError(null)
 
     try {
+      // Transform the data before sending to API
+      const transformedData = projectCreateSchema.parse(data)
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-user-id': profile.id,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(transformedData),
       })
 
       if (!response.ok) {

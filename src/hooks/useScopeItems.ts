@@ -13,7 +13,6 @@ import type {
   ScopeListResponse,
   BulkScopeUpdate,
   ExcelImportResult,
-  ExcelExportData
 } from '@/types/scope'
 
 // Query keys
@@ -123,7 +122,10 @@ export function useCreateScopeItem() {
           statistics: {
             ...old.statistics,
             total_items: old.statistics.total_items + 1,
-            total_value: old.statistics.total_value + (newItem.total_cost || 0)
+            financial: {
+              ...old.statistics.financial,
+              total_budget: old.statistics.financial.total_budget + (newItem.total_cost || 0)
+            }
           }
         }
       })
@@ -286,7 +288,7 @@ export function useImportScopeFromExcel() {
 export function useScopeExcelExport(projectId: string, filters?: ScopeFilters) {
   return useQuery({
     queryKey: scopeItemsQueryKeys.export(projectId, filters),
-    queryFn: async (): Promise<ExcelExportData> => {
+    queryFn: async (): Promise<{ success: boolean }> => {
       const searchParams = new URLSearchParams({ project_id: projectId })
       
       if (filters) {

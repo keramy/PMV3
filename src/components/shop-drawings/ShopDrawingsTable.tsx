@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { useShopDrawings, useUpdateShopDrawingStatus, useSubmitToClient, useRecordClientResponse } from '@/hooks/useShopDrawings'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/useAuth'
 import {
   Table,
   TableBody,
@@ -48,99 +49,61 @@ interface ShopDrawingsTableProps {
   projectId?: string
 }
 
-export function ShopDrawingsTable({ projectId = 'temp-project-id' }: ShopDrawingsTableProps) {
+export function ShopDrawingsTable({ projectId }: ShopDrawingsTableProps) {
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false)
   const [newComment, setNewComment] = useState('')
+  const { profile } = useAuth()
 
-  // TODO: Replace mock data with API integration
-  /*
+  // Fetch real shop drawings data from API
   const { data: drawingsData, isLoading, error } = useQuery({
     queryKey: ['shop-drawings', projectId],
-    queryFn: () => fetch(`/api/shop-drawings?project_id=${projectId}`)
-      .then(res => res.json()),
-    enabled: !!projectId
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (projectId && projectId !== 'all') {
+        params.set('project_id', projectId)
+      }
+      return fetch(`/api/shop-drawings?${params}`, {
+        headers: { 'x-user-id': profile?.id || '' }
+      }).then(res => res.json())
+    },
+    enabled: !!profile?.id
   })
 
-  const drawings = drawingsData?.data || []
+  // Fetch real comments data from API - MOVED BEFORE EARLY RETURNS
+  const { data: commentsData, isLoading: commentsLoading } = useQuery({
+    queryKey: ['shop-drawing-comments', selectedDrawingId],
+    queryFn: () => fetch(`/api/shop-drawings/${selectedDrawingId}/comments`, {
+      headers: { 'x-user-id': profile?.id || '' }
+    }).then(res => res.json()),
+    enabled: !!selectedDrawingId && isCommentsModalOpen && !!profile?.id
+  })
 
-  if (isLoading) return <ShopDrawingsLoadingSkeleton />
-  if (error) return <ErrorBoundary error={error} />
-  */
+  const drawings = drawingsData?.data?.drawings || []
+  const currentComments = commentsData?.data || []
 
-  // Shop drawings data aligned with database schema (MOCK DATA - REMOVE WHEN API CONNECTED)
-  const drawings = [
-    {
-      id: 'SD-001',
-      drawing_number: 'MWK-001',
-      title: 'Executive Kitchen Cabinets',
-      file_name: 'Executive_Kitchen_Cabinets_Rev_C.pdf',
-      file_size: 2800000,
-      project: 'Akbank Head Office Renovation',
-      revision: 'C',
-      status: 'approved',
-      responsibility: 'completed',
-      submitted_by: 'Ahmet Yilmaz',
-      submitted_at: '2025-06-10T09:30:00Z',
-      review_comments: 3
-    },
-    {
-      id: 'SD-002',
-      drawing_number: 'MWK-002',
-      title: 'Executive Reception Desk',
-      file_name: 'Executive_Reception_Desk_Rev_B.pdf',
-      file_size: 1900000,
-      project: 'Akbank Head Office Renovation',
-      revision: 'B',
-      status: 'submitted_to_client',
-      responsibility: 'client_review',
-      submitted_by: 'Ahmet Yilmaz',
-      submitted_at: '2025-06-08T14:45:00Z',
-      review_comments: 1
-    },
-    {
-      id: 'SD-003',
-      drawing_number: 'MEP-101',
-      title: 'Data Center HVAC System',
-      file_name: 'Data_Center_HVAC_System_Rev_A.pdf',
-      file_size: 4200000,
-      project: 'Garanti BBVA Tech Center MEP',
-      revision: 'A',
-      status: 'revision_requested',
-      responsibility: 'internal_action',
-      submitted_by: 'Emre Koc',
-      submitted_at: '2025-06-01T11:20:00Z',
-      review_comments: 5
-    },
-    {
-      id: 'SD-004',
-      drawing_number: 'ELE-201',
-      title: 'Main Electrical Distribution',
-      file_name: 'Main_Electrical_Distribution_Rev_A.pdf',
-      file_size: 3100000,
-      project: 'Garanti BBVA Tech Center MEP',
-      revision: 'A',
-      status: 'pending_submittal',
-      responsibility: 'internal_action',
-      submitted_by: 'Fatma Arslan',
-      submitted_at: '2025-06-09T08:30:00Z',
-      review_comments: 2
-    },
-    {
-      id: 'SD-005',
-      drawing_number: 'FP-301',
-      title: 'Server Room Fire Suppression',
-      file_name: 'Server_Room_Fire_Suppression_Rev_A.pdf',
-      file_size: 2600000,
-      project: 'Garanti BBVA Tech Center MEP',
-      revision: 'A',
-      status: 'rejected',
-      responsibility: 'internal_action',
-      submitted_by: 'Emre Koc',
-      submitted_at: '2025-06-14T15:10:00Z',
-      review_comments: 4
-    }
-  ]
+  // Show loading state
+  if (isLoading) {
+    return <div className="p-6"><div className="animate-pulse text-center">Loading shop drawings...</div></div>
+  }
+
+  // Show error state  
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="text-center py-12">
+          <h2 className="text-lg font-semibold mb-2">Error Loading Drawings</h2>
+          <p className="text-gray-600 mb-4">Failed to load shop drawings. Please try refreshing.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 h-10 px-4 py-2"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -230,70 +193,6 @@ export function ShopDrawingsTable({ projectId = 'temp-project-id' }: ShopDrawing
     return `${mb.toFixed(1)} MB`
   }
 
-  // TODO: Replace with real comments API
-  /*
-  const { data: commentsData, isLoading: commentsLoading } = useQuery({
-    queryKey: ['shop-drawing-comments', selectedDrawingId],
-    queryFn: () => fetch(`/api/shop-drawings/${selectedDrawingId}/comments`)
-      .then(res => res.json()),
-    enabled: !!selectedDrawingId && isCommentsModalOpen
-  })
-
-  const currentComments = commentsData?.data || []
-  */
-
-  // Mock comments data for testing (REMOVE WHEN API CONNECTED)
-  const getMockComments = (drawingId: string) => {
-    const allComments = {
-      'SD-001': [
-        {
-          id: 'c1',
-          user: 'Sarah Kim',
-          user_initials: 'SK',
-          timestamp: '2025-01-12T10:30:00Z',
-          comment_type: 'general',
-          comment: 'Reviewed the cabinet specifications. The measurements look accurate for the executive kitchen space.'
-        },
-        {
-          id: 'c2',
-          user: 'Client Contact',
-          user_initials: 'AC',
-          timestamp: '2025-01-13T14:20:00Z',
-          comment_type: 'approval',
-          comment: 'Approved. Please proceed with manufacturing. The finishes match our requirements perfectly.'
-        }
-      ],
-      'SD-002': [
-        {
-          id: 'c3',
-          user: 'David Johnson',
-          user_initials: 'DJ',
-          timestamp: '2025-01-10T09:15:00Z',
-          comment_type: 'general',
-          comment: 'The reception desk design looks great. Waiting for client feedback on the material selection.'
-        }
-      ],
-      'SD-003': [
-        {
-          id: 'c4',
-          user: 'Emre Koc',
-          user_initials: 'EK',
-          timestamp: '2025-01-08T16:45:00Z',
-          comment_type: 'submittal',
-          comment: 'Initial HVAC system design submitted for review. Includes redundant cooling for critical server equipment.'
-        },
-        {
-          id: 'c5',
-          user: 'Client Engineer',
-          user_initials: 'CE',
-          timestamp: '2025-01-09T11:30:00Z',
-          comment_type: 'revision_request',
-          comment: 'Please revise to include additional backup cooling capacity and update the control system specifications.'
-        }
-      ]
-    }
-    return allComments[drawingId as keyof typeof allComments] || []
-  }
 
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date()
@@ -330,45 +229,35 @@ export function ShopDrawingsTable({ projectId = 'temp-project-id' }: ShopDrawing
   }
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return
+    if (!newComment.trim() || !selectedDrawingId) return
     
-    // TODO: Replace with real API call
-    /*
     try {
-      setIsSubmittingComment(true)
-      
       const response = await fetch(`/api/shop-drawings/${selectedDrawingId}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': profile?.id || ''
         },
         body: JSON.stringify({
           comment: newComment,
-          comment_type: 'general' // TODO: Add comment type selector
+          comment_type: 'general'
         })
       })
       
       if (!response.ok) throw new Error('Failed to add comment')
       
-      // Refresh comments
-      queryClient.invalidateQueries(['shop-drawing-comments', selectedDrawingId])
+      // TODO: Add proper query invalidation when React Query client is available
+      // queryClient.invalidateQueries(['shop-drawing-comments', selectedDrawingId])
       
       setNewComment('')
       
-      // Show success toast
-      toast.success('Comment added successfully')
+      // Show success message (TODO: Add proper toast notification)
+      console.log('Comment added successfully')
       
     } catch (error) {
       console.error('Error adding comment:', error)
-      toast.error('Failed to add comment')
-    } finally {
-      setIsSubmittingComment(false)
+      alert('Failed to add comment. Please try again.')
     }
-    */
-    
-    // MOCK IMPLEMENTATION (REMOVE WHEN API CONNECTED)
-    console.log('Adding comment:', newComment, 'to drawing:', selectedDrawingId)
-    setNewComment('')
   }
 
   const formatDate = (dateString: string) => {
@@ -466,7 +355,7 @@ export function ShopDrawingsTable({ projectId = 'temp-project-id' }: ShopDrawing
                       <FileText className="h-5 w-5 text-red-600 flex-shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900 truncate">{drawing.title}</p>
-                        <p className="text-xs text-gray-700">{drawing.file_name} • {formatFileSize(drawing.file_size)}</p>
+                        <p className="text-xs text-gray-700">{drawing.file_name || drawing.file_path || 'No file'} • {drawing.file_size ? formatFileSize(drawing.file_size) : 'Unknown size'}</p>
                       </div>
                     </div>
                   </TableCell>
@@ -541,6 +430,19 @@ export function ShopDrawingsTable({ projectId = 'temp-project-id' }: ShopDrawing
             })}
           </TableBody>
         </Table>
+        
+        {/* Empty State */}
+        {drawings.length === 0 && (
+          <div className="text-center py-12 text-gray-800">
+            <FileText className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium mb-2">No Shop Drawings</h3>
+            <p className="text-sm text-gray-700 mb-4">No shop drawings found for this project.</p>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+              <FileText className="mr-2 h-4 w-4" />
+              Upload First Drawing
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Comments Modal */}
@@ -573,25 +475,30 @@ export function ShopDrawingsTable({ projectId = 'temp-project-id' }: ShopDrawing
 
               {/* Comments List */}
               <div className="flex-1 overflow-y-auto space-y-4 mb-4 max-h-96">
-                {getMockComments(selectedDrawingId).map((comment) => (
-                  <div key={comment.id} className="flex gap-3">
-                    <Avatar className="h-8 w-8 flex-shrink-0">
-                      <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
-                        {comment.user_initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-sm">{comment.user}</span>
-                        {getCommentTypeBadge(comment.comment_type)}
-                        <span className="text-xs text-gray-600">{formatTimeAgo(comment.timestamp)}</span>
-                      </div>
-                      <p className="text-sm text-gray-900 leading-relaxed">{comment.comment}</p>
-                    </div>
+                {commentsLoading ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    <p className="text-sm text-gray-600">Loading comments...</p>
                   </div>
-                ))}
-                
-                {getMockComments(selectedDrawingId).length === 0 && (
+                ) : currentComments.length > 0 ? (
+                  currentComments.map((comment: any) => (
+                    <div key={comment.id} className="flex gap-3">
+                      <Avatar className="h-8 w-8 flex-shrink-0">
+                        <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
+                          {(comment.user || comment.user_name || 'U').split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm">{comment.user || comment.user_name || 'Unknown User'}</span>
+                          {getCommentTypeBadge(comment.comment_type || 'general')}
+                          <span className="text-xs text-gray-600">{formatTimeAgo(comment.timestamp || comment.created_at)}</span>
+                        </div>
+                        <p className="text-sm text-gray-900 leading-relaxed">{comment.comment || comment.content}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
                   <div className="text-center py-8 text-gray-500">
                     <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p className="text-sm">No comments yet</p>

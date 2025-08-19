@@ -424,7 +424,7 @@ export const jsonTransformer = {
     try {
       return JSON.parse(jsonString) as T
     } catch (error) {
-      logger.warn('Failed to parse JSON field', { error, jsonString })
+      logger.warn('Failed to parse JSON field', { error: error instanceof Error ? error : new Error(String(error)), metadata: { jsonString } })
       return null
     }
   },
@@ -433,7 +433,7 @@ export const jsonTransformer = {
     try {
       return JSON.stringify(data)
     } catch (error) {
-      logger.warn('Failed to stringify JSON field', { error, data })
+      logger.warn('Failed to stringify JSON field', { error: error instanceof Error ? error : new Error(String(error)), metadata: { data } })
       return null
     }
   }
@@ -452,7 +452,7 @@ export const arrayTransformer = {
         const cleaned = arrayField.replace(/[{}]/g, '')
         return cleaned.split(',').filter(item => item.trim().length > 0) as T[]
       } catch (error) {
-        logger.warn('Failed to parse array field', { error, arrayField })
+        logger.warn('Failed to parse array field', { error: error instanceof Error ? error : new Error(String(error)), metadata: { arrayField } })
         return []
       }
     }
@@ -585,7 +585,7 @@ export async function withErrorHandling<T>(
         hint: error.hint
       }
       
-      logger.error(`Database error in ${context}`, { error: dbError })
+      logger.error(`Database error in ${context}`, { error: new Error(dbError.message) })
       
       return {
         data: null,
@@ -604,7 +604,7 @@ export async function withErrorHandling<T>(
       message: error instanceof Error ? error.message : 'Unknown exception'
     }
     
-    logger.error(`Exception in ${context}`, { error })
+    logger.error(`Exception in ${context}`, { error: error instanceof Error ? error : new Error(String(error)) })
     
     return {
       data: null,
@@ -632,7 +632,7 @@ export async function withArrayErrorHandling<T>(
         hint: error.hint
       }
       
-      logger.error(`Database error in ${context}`, { error: dbError })
+      logger.error(`Database error in ${context}`, { error: new Error(dbError.message) })
       
       return {
         data: [],
@@ -653,7 +653,7 @@ export async function withArrayErrorHandling<T>(
       message: error instanceof Error ? error.message : 'Unknown exception'
     }
     
-    logger.error(`Exception in ${context}`, { error })
+    logger.error(`Exception in ${context}`, { error: error instanceof Error ? error : new Error(String(error)) })
     
     return {
       data: [],
@@ -694,7 +694,7 @@ export async function withTransformErrorHandling<TRaw, TApp>(
       message: `Data transformation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
     
-    logger.error(`Transformation error in ${context}`, { error })
+    logger.error(`Transformation error in ${context}`, { error: error instanceof Error ? error : new Error(String(error)) })
     
     return {
       data: null,
@@ -736,7 +736,7 @@ export async function withArrayTransformErrorHandling<TRaw, TApp>(
       message: `Data transformation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
     }
     
-    logger.error(`Transformation error in ${context}`, { error })
+    logger.error(`Transformation error in ${context}`, { error: error instanceof Error ? error : new Error(String(error)) })
     
     return {
       data: [],

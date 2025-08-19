@@ -12,19 +12,28 @@ import {
   CheckSquare
 } from 'lucide-react'
 
+export interface TabCounts {
+  overview: number
+  scope: number
+  drawings: number
+  materials: number
+  tasks: number
+}
+
 interface ProjectTabsProps {
   activeTab: string
   onTabChange: (tab: string) => void
+  counts?: TabCounts
 }
 
-export function ProjectTabs({ activeTab, onTabChange }: ProjectTabsProps) {
-  // Mock data for badges - in real app, these would come from API/props
-  const mockCounts = {
-    overview: 0,
-    scope: 0,
-    drawings: 2, // 2 items need attention
-    materials: 1, // 1 pending PM approval
-    tasks: 3 // 3 overdue tasks
+export function ProjectTabs({ activeTab, onTabChange, counts }: ProjectTabsProps) {
+  // Default to 0 for all counts if not provided
+  const tabCounts = {
+    overview: counts?.overview || 0,
+    scope: counts?.scope || 0,
+    drawings: counts?.drawings || 0,
+    materials: counts?.materials || 0,
+    tasks: counts?.tasks || 0
   }
 
   const tabs = [
@@ -32,31 +41,31 @@ export function ProjectTabs({ activeTab, onTabChange }: ProjectTabsProps) {
       id: 'overview',
       label: 'Overview',
       icon: LayoutDashboard,
-      badge: mockCounts.overview
+      badge: tabCounts.overview
     },
     {
       id: 'scope',
       label: 'Scope',
       icon: ClipboardList,
-      badge: mockCounts.scope
+      badge: tabCounts.scope
     },
     {
       id: 'drawings',
       label: 'Drawings',
       icon: FileText,
-      badge: mockCounts.drawings
+      badge: tabCounts.drawings
     },
     {
       id: 'materials',
       label: 'Materials',
       icon: Package,
-      badge: mockCounts.materials
+      badge: tabCounts.materials
     },
     {
       id: 'tasks',
       label: 'Tasks',
       icon: CheckSquare,
-      badge: mockCounts.tasks
+      badge: tabCounts.tasks
     }
   ]
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import type { Task } from '@/types/tasks'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -38,81 +39,7 @@ export function TasksList({ projectId }: TasksListProps) {
   if (isLoading) return <div className="p-6"><div className="animate-pulse text-center">Loading tasks...</div></div>
   if (error) return <div className="p-6 text-red-600">Error loading tasks</div>
 
-  // Fallback tasks data (used if API fails)
-  const mockTasks = [
-    {
-      id: 'T-001',
-      title: 'Conference Room Technology Integration',
-      description: 'Install and configure AV equipment in executive conference room',
-      project: 'Akbank Head Office Renovation',
-      assignee: 'Ebru Alkin',
-      priority: 'high',
-      status: 'in_progress',
-      dueDate: '2025-06-15',
-      comments: 3,
-      completed: false
-    },
-    {
-      id: 'T-002',
-      title: 'Office Furniture Coordination',
-      description: 'Coordinate delivery and installation of office furniture',
-      project: 'Tech Hub Renovation',
-      assignee: 'Serra Uluveren',
-      priority: 'medium',
-      status: 'pending',
-      dueDate: '2025-06-18',
-      comments: 1,
-      completed: false
-    },
-    {
-      id: 'T-003',
-      title: 'Showroom Display System Setup',
-      description: 'Install interactive display systems in showroom area',
-      project: 'Formula HQ Showroom',
-      assignee: 'Hakan Ayseli',
-      priority: 'high',
-      status: 'in_progress',
-      dueDate: '2025-06-12',
-      comments: 5,
-      completed: false
-    },
-    {
-      id: 'T-004',
-      title: 'Formula Branded Reception Wall Design',
-      description: 'Complete design and installation of branded wall',
-      project: 'Formula HQ Showroom',
-      assignee: 'Yusuf Saglam',
-      priority: 'low',
-      status: 'completed',
-      dueDate: '2025-06-10',
-      comments: 2,
-      completed: true
-    },
-    {
-      id: 'T-005',
-      title: 'HVAC System Testing',
-      description: 'Complete testing and commissioning of HVAC system',
-      project: 'Garanti BBVA Tech Center',
-      assignee: 'Emre Koc',
-      priority: 'critical',
-      status: 'overdue',
-      dueDate: '2025-06-08',
-      comments: 8,
-      completed: false
-    },
-    {
-      id: 'T-006',
-      title: 'Electrical Panel Installation',
-      description: 'Install main electrical distribution panel',
-      project: 'Marina Bay Tower',
-      assignee: 'Fatma Arslan',
-      priority: 'high',
-      status: 'pending',
-      dueDate: '2025-06-20',
-      comments: 0,
-      completed: false
-    }
-  ]
+  // No fallback data - use proper API data only
 
   const getPriorityBadge = (priority: string) => {
     const config = {
@@ -149,8 +76,8 @@ export function TasksList({ projectId }: TasksListProps) {
 
   const getStatusBadge = (status: string) => {
     const config = {
-      pending: { 
-        label: 'To Do', 
+      not_started: { 
+        label: 'Not Started', 
         variant: 'modern_neutral' as const,
         icon: <Clock className="mr-1 h-3 w-3" />
       },
@@ -164,8 +91,13 @@ export function TasksList({ projectId }: TasksListProps) {
         variant: 'modern_success' as const,
         icon: <CheckCircle className="mr-1 h-3 w-3" />
       },
-      overdue: { 
-        label: 'Overdue', 
+      on_hold: { 
+        label: 'On Hold', 
+        variant: 'modern_warning' as const,
+        icon: <Clock className="mr-1 h-3 w-3" />
+      },
+      cancelled: { 
+        label: 'Cancelled', 
         variant: 'modern_danger' as const,
         icon: <AlertTriangle className="mr-1 h-3 w-3" />
       }
@@ -195,10 +127,18 @@ export function TasksList({ projectId }: TasksListProps) {
 
   const getTasksByStatus = () => {
     return {
-      pending: tasks.filter(t => t.status === 'pending'),
-      in_progress: tasks.filter(t => t.status === 'in_progress'),
-      completed: tasks.filter(t => t.status === 'completed'),
-      overdue: tasks.filter(t => t.status === 'overdue')
+      not_started: tasks.filter((t: Task) => t.status === 'not_started'),
+      in_progress: tasks.filter((t: Task) => t.status === 'in_progress'),
+      completed: tasks.filter((t: Task) => t.status === 'completed'),
+      on_hold: tasks.filter((t: Task) => t.status === 'on_hold'),
+      cancelled: tasks.filter((t: Task) => t.status === 'cancelled'),
+      // Calculate overdue tasks from due_date
+      overdue: tasks.filter((t: Task) => {
+        if (!t.due_date) return false
+        const dueDate = new Date(t.due_date)
+        const now = new Date()
+        return dueDate < now && t.status !== 'completed'
+      })
     }
   }
 
@@ -220,8 +160,8 @@ export function TasksList({ projectId }: TasksListProps) {
             <div className="flex flex-wrap items-center gap-4 mt-3 text-sm">
               <span className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-gray-700 rounded-full"></div>
-                <span className="text-gray-800">To Do:</span>
-                <span className="font-bold text-gray-800">{tasksByStatus.pending.length}</span>
+                <span className="text-gray-800">Not Started:</span>
+                <span className="font-bold text-gray-800">{tasksByStatus.not_started.length}</span>
               </span>
               <span className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
@@ -266,7 +206,7 @@ export function TasksList({ projectId }: TasksListProps) {
             </Button>
             <Button variant="outline" className="h-12 px-4 border-2 hover:bg-orange-50 hover:border-orange-300">
               <Flag className="h-4 w-4 mr-2 text-orange-600" />
-              High Priority ({tasks.filter(t => t.priority === 'critical' || t.priority === 'high').length})
+              High Priority ({tasks.filter((t: Task) => t.priority === 'critical' || t.priority === 'high').length})
             </Button>
           </div>
         </div>
@@ -274,21 +214,21 @@ export function TasksList({ projectId }: TasksListProps) {
 
       {/* Visual Kanban Board */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* To Do Column */}
+        {/* Not Started Column */}
         <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
           <div className="bg-gray-200 p-4 border-b">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Clock className="h-5 w-5 text-gray-800" />
-                <h3 className="font-bold text-gray-900">To Do</h3>
+                <h3 className="font-bold text-gray-900">Not Started</h3>
               </div>
               <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-400">
-                {tasksByStatus.pending.length}
+                {tasksByStatus.not_started.length}
               </Badge>
             </div>
           </div>
           <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-            {tasksByStatus.pending.map((task) => (
+            {tasksByStatus.not_started.map((task: Task) => (
               <Card key={task.id} className="border-l-4 border-l-gray-400 hover:shadow-md hover:bg-gray-200 transition-shadow">
                 <CardContent className="p-4">
                   <div className="space-y-3">
@@ -296,34 +236,34 @@ export function TasksList({ projectId }: TasksListProps) {
                       <div className="flex items-center gap-2">
                         {getPriorityBadge(task.priority)}
                       </div>
-                      <Checkbox checked={task.completed} className="mt-1" />
+                      <Checkbox checked={task.status === 'completed'} className="mt-1" />
                     </div>
                     
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-1">{task.title}</h4>
                       <p className="text-xs text-gray-800 mb-2">{task.description}</p>
-                      <p className="text-xs text-blue-600 font-medium">{task.project}</p>
+                      <p className="text-xs text-blue-600 font-medium">{task.project?.name || 'No Project'}</p>
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Avatar className="h-6 w-6">
                           <AvatarFallback className="text-xs bg-gray-200">
-                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                            {task.assignee ? `${task.assignee.first_name?.[0] || ''}${task.assignee.last_name?.[0] || ''}` : 'NA'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-gray-800">{task.assignee.split(' ')[0]}</span>
+                        <span className="text-xs text-gray-800">{task.assignee?.first_name || 'Unassigned'}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 text-xs text-gray-700">
                           <Calendar className="h-3 w-3" />
-                          <span>{getDaysUntilDue(task.dueDate)}</span>
+                          <span>{task.due_date ? getDaysUntilDue(task.due_date) : 'No due date'}</span>
                         </div>
-                        {task.comments > 0 && (
+                        {(task.comment_count || 0) > 0 && (
                           <div className="flex items-center gap-1 text-xs text-gray-700">
                             <MessageSquare className="h-3 w-3" />
-                            <span>{task.comments}</span>
+                            <span>{task.comment_count}</span>
                           </div>
                         )}
                       </div>
@@ -349,7 +289,7 @@ export function TasksList({ projectId }: TasksListProps) {
             </div>
           </div>
           <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-            {tasksByStatus.in_progress.map((task) => (
+            {tasksByStatus.in_progress.map((task: Task) => (
               <Card key={task.id} className="border-l-4 border-l-blue-400 hover:shadow-md hover:bg-gray-200 transition-shadow">
                 <CardContent className="p-4">
                   <div className="space-y-3">
@@ -357,34 +297,34 @@ export function TasksList({ projectId }: TasksListProps) {
                       <div className="flex items-center gap-2">
                         {getPriorityBadge(task.priority)}
                       </div>
-                      <Checkbox checked={task.completed} className="mt-1" />
+                      <Checkbox checked={task.status === 'completed'} className="mt-1" />
                     </div>
                     
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-1">{task.title}</h4>
                       <p className="text-xs text-gray-800 mb-2">{task.description}</p>
-                      <p className="text-xs text-blue-600 font-medium">{task.project}</p>
+                      <p className="text-xs text-blue-600 font-medium">{task.project?.name || 'No Project'}</p>
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Avatar className="h-6 w-6">
                           <AvatarFallback className="text-xs bg-blue-100">
-                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                            {task.assignee ? `${task.assignee.first_name?.[0] || ''}${task.assignee.last_name?.[0] || ''}` : 'NA'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-gray-800">{task.assignee.split(' ')[0]}</span>
+                        <span className="text-xs text-gray-800">{task.assignee?.first_name || 'Unassigned'}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 text-xs text-gray-700">
                           <Calendar className="h-3 w-3" />
-                          <span>{getDaysUntilDue(task.dueDate)}</span>
+                          <span>{task.due_date ? getDaysUntilDue(task.due_date) : 'No due date'}</span>
                         </div>
-                        {task.comments > 0 && (
+                        {(task.comment_count || 0) > 0 && (
                           <div className="flex items-center gap-1 text-xs text-gray-700">
                             <MessageSquare className="h-3 w-3" />
-                            <span>{task.comments}</span>
+                            <span>{task.comment_count}</span>
                           </div>
                         )}
                       </div>
@@ -410,7 +350,7 @@ export function TasksList({ projectId }: TasksListProps) {
             </div>
           </div>
           <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-            {tasksByStatus.overdue.map((task) => (
+            {tasksByStatus.overdue.map((task: Task) => (
               <Card key={task.id} className="border-l-4 border-l-red-400 hover:shadow-md transition-shadow bg-red-50/50">
                 <CardContent className="p-4">
                   <div className="space-y-3">
@@ -418,34 +358,34 @@ export function TasksList({ projectId }: TasksListProps) {
                       <div className="flex items-center gap-2">
                         {getPriorityBadge(task.priority)}
                       </div>
-                      <Checkbox checked={task.completed} className="mt-1" />
+                      <Checkbox checked={task.status === 'completed'} className="mt-1" />
                     </div>
                     
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-1">{task.title}</h4>
                       <p className="text-xs text-gray-800 mb-2">{task.description}</p>
-                      <p className="text-xs text-blue-600 font-medium">{task.project}</p>
+                      <p className="text-xs text-blue-600 font-medium">{task.project?.name || 'No Project'}</p>
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Avatar className="h-6 w-6">
                           <AvatarFallback className="text-xs bg-red-100">
-                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                            {task.assignee ? `${task.assignee.first_name?.[0] || ''}${task.assignee.last_name?.[0] || ''}` : 'NA'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-gray-800">{task.assignee.split(' ')[0]}</span>
+                        <span className="text-xs text-gray-800">{task.assignee?.first_name || 'Unassigned'}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 text-xs text-red-600 font-medium">
                           <Calendar className="h-3 w-3" />
-                          <span>{getDaysUntilDue(task.dueDate)}</span>
+                          <span>{task.due_date ? getDaysUntilDue(task.due_date) : 'No due date'}</span>
                         </div>
-                        {task.comments > 0 && (
+                        {(task.comment_count || 0) > 0 && (
                           <div className="flex items-center gap-1 text-xs text-gray-700">
                             <MessageSquare className="h-3 w-3" />
-                            <span>{task.comments}</span>
+                            <span>{task.comment_count}</span>
                           </div>
                         )}
                       </div>
@@ -471,7 +411,7 @@ export function TasksList({ projectId }: TasksListProps) {
             </div>
           </div>
           <div className="p-4 space-y-3 max-h-96 overflow-y-auto">
-            {tasksByStatus.completed.map((task) => (
+            {tasksByStatus.completed.map((task: Task) => (
               <Card key={task.id} className="border-l-4 border-l-green-400 hover:shadow-md hover:bg-gray-200 transition-shadow opacity-75">
                 <CardContent className="p-4">
                   <div className="space-y-3">
@@ -479,23 +419,23 @@ export function TasksList({ projectId }: TasksListProps) {
                       <div className="flex items-center gap-2">
                         {getPriorityBadge(task.priority)}
                       </div>
-                      <Checkbox checked={task.completed} className="mt-1" />
+                      <Checkbox checked={task.status === 'completed'} className="mt-1" />
                     </div>
                     
                     <div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-1 line-through">{task.title}</h4>
                       <p className="text-xs text-gray-800 mb-2">{task.description}</p>
-                      <p className="text-xs text-blue-600 font-medium">{task.project}</p>
+                      <p className="text-xs text-blue-600 font-medium">{task.project?.name || 'No Project'}</p>
                     </div>
                     
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1">
                         <Avatar className="h-6 w-6">
                           <AvatarFallback className="text-xs bg-green-100">
-                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                            {task.assignee ? `${task.assignee.first_name?.[0] || ''}${task.assignee.last_name?.[0] || ''}` : 'NA'}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-xs text-gray-800">{task.assignee.split(' ')[0]}</span>
+                        <span className="text-xs text-gray-800">{task.assignee?.first_name || 'Unassigned'}</span>
                       </div>
                       
                       <div className="flex items-center gap-2">
@@ -503,10 +443,10 @@ export function TasksList({ projectId }: TasksListProps) {
                           <CheckCircle className="h-3 w-3" />
                           <span>Done</span>
                         </div>
-                        {task.comments > 0 && (
+                        {(task.comment_count || 0) > 0 && (
                           <div className="flex items-center gap-1 text-xs text-gray-700">
                             <MessageSquare className="h-3 w-3" />
-                            <span>{task.comments}</span>
+                            <span>{task.comment_count}</span>
                           </div>
                         )}
                       </div>

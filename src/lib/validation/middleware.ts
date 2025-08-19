@@ -34,7 +34,7 @@ export function createValidationErrorResponse(errors: string[], status: number =
     details: errors
   }
   
-  logger.warn('Validation failed', { errors, status })
+  logger.warn('Validation failed', { error: new Error('Validation failed'), metadata: { errors, status } })
   
   return NextResponse.json(errorResponse, { status })
 }
@@ -46,7 +46,7 @@ export function createServerErrorResponse(message: string = 'Internal server err
     message
   }
   
-  logger.error('Server error in validation', { message })
+  logger.error('Server error in validation', { error: new Error(message) })
   
   return NextResponse.json(errorResponse, { status: 500 })
 }
@@ -78,7 +78,7 @@ export async function validateBody<T>(
       data: validation.data!
     }
   } catch (error) {
-    logger.error('Error parsing request body', { error })
+    logger.error('Error parsing request body', { error: error instanceof Error ? error : new Error(String(error)) })
     return {
       success: false,
       response: createValidationErrorResponse(['Invalid JSON body'], 400)
@@ -200,7 +200,7 @@ export async function validateRequest<TBody = unknown, TParams = unknown, TQuery
     if (schemas.body && ['POST', 'PUT', 'PATCH'].includes(method)) {
       const bodyValidation = await validateBody(request, schemas.body)
       if (!bodyValidation.success) {
-        return { success: false, response: bodyValidation.response }
+        return { success: false, response: (bodyValidation as { success: false; response: NextResponse }).response }
       }
       validatedData.body = bodyValidation.data
     }
@@ -209,7 +209,7 @@ export async function validateRequest<TBody = unknown, TParams = unknown, TQuery
     if (schemas.params) {
       const paramsValidation = validateParams(params, schemas.params)
       if (!paramsValidation.success) {
-        return { success: false, response: paramsValidation.response }
+        return { success: false, response: (paramsValidation as { success: false; response: NextResponse }).response }
       }
       validatedData.params = paramsValidation.data
     }
@@ -219,19 +219,21 @@ export async function validateRequest<TBody = unknown, TParams = unknown, TQuery
       const searchParams = new URL(request.url).searchParams
       const queryValidation = validateQuery(searchParams, schemas.query)
       if (!queryValidation.success) {
-        return { success: false, response: queryValidation.response }
+        return { success: false, response: (queryValidation as { success: false; response: NextResponse }).response }
       }
       validatedData.query = queryValidation.data
     }
     
     const duration = Date.now() - startTime
     logger.info('Request validation successful', {
-      method,
-      url,
       duration,
-      hasBody: !!validatedData.body,
-      hasParams: !!validatedData.params,
-      hasQuery: !!validatedData.query
+      metadata: { 
+        method, 
+        url,
+        hasBody: !!validatedData.body,
+        hasParams: !!validatedData.params,
+        hasQuery: !!validatedData.query
+      }
     })
     
     return {
@@ -242,10 +244,9 @@ export async function validateRequest<TBody = unknown, TParams = unknown, TQuery
   } catch (error) {
     const duration = Date.now() - startTime
     logger.error('Request validation failed', {
-      method,
-      url,
+      error: error instanceof Error ? error : new Error(String(error)),
       duration,
-      error
+      metadata: { method, url }
     })
     
     return {
@@ -280,13 +281,16 @@ export function withValidation<TBody = unknown, TParams = unknown, TQuery = unkn
     )
     
     if (!validation.success) {
-      return validation.response
+      return (validation as { success: false; response: NextResponse }).response
     }
     
     try {
       return await handler(validation.data)
     } catch (error) {
-      logger.error('Route handler error', { error, url: request.url })
+      logger.error('Route handler error', { 
+        error: error instanceof Error ? error : new Error(String(error)),
+        metadata: { url: request.url }
+      })
       return createServerErrorResponse('Internal server error')
     }
   }
@@ -323,7 +327,7 @@ export async function safeParseJson(request: NextRequest): Promise<{
     const body = await request.json()
     return { success: true, data: body }
   } catch (error) {
-    logger.warn('Failed to parse JSON body', { error })
+    logger.warn('Failed to parse JSON body', { error: error instanceof Error ? error : new Error(String(error)) })
     return { 
       success: false, 
       error: error instanceof Error ? error.message : 'Invalid JSON' 

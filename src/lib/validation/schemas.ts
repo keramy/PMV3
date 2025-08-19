@@ -125,7 +125,7 @@ export const createMaterialSpecSchema = z.object({
   unit: nonEmptyStringSchema.max(20, 'Unit too long'),
   unit_cost: optionalPositiveNumberSchema,
   total_cost: optionalPositiveNumberSchema,
-  supplier: optionalStringSchema.max(100, 'Supplier name too long'),
+  supplier: z.string().max(100, 'Supplier name too long').optional(),
   status: materialSpecStatusSchema.default('pending'),
   notes: optionalStringSchema
 })
@@ -184,9 +184,9 @@ export const permissionSchema = z.enum([
 
 export const updateUserProfileSchema = z.object({
   id: uuidSchema,
-  first_name: optionalStringSchema.max(50, 'First name too long'),
-  last_name: optionalStringSchema.max(50, 'Last name too long'),  
-  job_title: optionalStringSchema.max(100, 'Job title too long'),
+  first_name: z.string().max(50, 'First name too long').optional(),
+  last_name: z.string().max(50, 'Last name too long').optional(),  
+  job_title: z.string().max(100, 'Job title too long').optional(),
   permissions: z.array(permissionSchema).optional()
 })
 

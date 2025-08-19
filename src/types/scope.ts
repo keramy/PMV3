@@ -39,10 +39,11 @@ export interface ScopeItem extends DBScopeItem {
   progress_percentage?: number
   days_remaining?: number
   is_overdue?: boolean
+  project_name?: string
   
   // Relationships (loaded separately)
   assigned_user?: Pick<UserProfile, 'id' | 'first_name' | 'last_name' | 'job_title'>
-  subcontractor?: Pick<Subcontractor, 'id' | 'name' | 'trade' | 'email'>
+  subcontractor?: Pick<Subcontractor, 'id' | 'name' | 'trade' | 'contact_person' | 'phone' | 'email'>
   created_by_user?: Pick<UserProfile, 'first_name' | 'last_name'>
   
   // Excel import metadata
@@ -56,9 +57,10 @@ export interface ScopeItem extends DBScopeItem {
 // ============================================================================
 
 export interface ScopeItemFormData {
+  project_id: string
   title: string
   description?: string
-  category: ScopeCategory
+  category?: ScopeCategory
   specification?: string
   quantity?: number
   unit?: string
@@ -67,8 +69,9 @@ export interface ScopeItemFormData {
   start_date?: string
   end_date?: string
   priority?: string
-  status?: ScopeStatus
+  status?: string
   assigned_to?: string
+  subcontractor_id?: string
   notes?: string
 }
 
@@ -107,6 +110,7 @@ export interface ScopeFilters {
 
 export interface ScopeListParams {
   project_id: string
+  search?: string
   filters?: ScopeFilters
   sort?: {
     field: keyof ScopeItem
@@ -253,6 +257,12 @@ export interface ScopeListResponse {
   statistics: ScopeStatistics
   total_count: number
   filters_applied: ScopeFilters
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+  }
 }
 
 // ============================================================================

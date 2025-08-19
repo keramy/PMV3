@@ -7,7 +7,6 @@
 
 import { NextRequest } from 'next/server'
 import { apiMiddleware } from '@/lib/api/middleware'
-import { createApiDatabase, ApiFilters } from '@/lib/api/database'
 import { createClient } from '@/lib/supabase/server'
 import type { ScopeListResponse } from '@/types/scope'
 import { SCOPE_PERMISSIONS } from '@/types/scope'
@@ -39,39 +38,14 @@ export const GET = apiMiddleware.permissions(
     })
     
     const params = scopeQuerySchema.parse(queryObject)
-    const db = createApiDatabase(user)
-
-    // Build filters
-    const filters = []
-    
-    // Only filter by project if not 'all'
-    if (params.project_id && params.project_id !== 'all') {
-      filters.push(ApiFilters.inProject(params.project_id))
-    }
-
-    if (params.category && params.category !== 'all') {
-      filters.push((query: any) => query.eq('category', params.category))
-    }
-
-    if (params.status && params.status.length > 0) {
-      filters.push(ApiFilters.byStatuses(params.status))
-    }
-
-    if (params.assigned_to && params.assigned_to.length > 0) {
-      filters.push((query: any) => query.in('assigned_to', params.assigned_to))
-    }
-
-    if (params.search) {
-      filters.push((query: any) => 
-        query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`)
-      )
-    }
+    const supabase = await createClient()
 
     const offset = (params.page - 1) * params.limit
 
-    // Query scope items with relationships including subcontractor
-    const result = await db.findMany('scope_items', {
-      select: `
+    // Build direct Supabase query with relationships
+    let query = supabase
+      .from('scope_items')
+      .select(`
         *,
         assigned_user:assigned_to(id, first_name, last_name, job_title),
         created_by_user:created_by(first_name, last_name),
@@ -83,27 +57,65 @@ export const GET = apiMiddleware.permissions(
           phone,
           email
         )
-      `,
-      filters,
-      orderBy: { column: params.sort_field as any, ascending: params.sort_direction === 'asc' },
-      limit: params.limit,
-      offset
-    })
+      `, { count: 'exact' })
+
+    // Apply filters directly
+    if (params.project_id && params.project_id !== 'all') {
+      query = query.eq('project_id', params.project_id)
+    }
+
+    if (params.category && params.category !== 'all') {
+      query = query.eq('category', params.category)
+    }
+
+    if (params.status && params.status.length > 0) {
+      query = query.in('status', params.status)
+    }
+
+    if (params.assigned_to && params.assigned_to.length > 0) {
+      query = query.in('assigned_to', params.assigned_to)
+    }
+
+    if (params.search) {
+      query = query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%`)
+    }
+
+    // Apply ordering and pagination
+    query = query
+      .order(params.sort_field, { ascending: params.sort_direction === 'asc' })
+      .range(offset, offset + params.limit - 1)
+
+    const { data: scopeItems, error, count } = await query
+
+    if (error) {
+      console.error('Scope items query error:', error)
+      return Response.json({ error: 'Failed to fetch scope items' }, { status: 500 })
+    }
 
     // Get statistics for the project
-    const statsResult = await db.findMany('scope_items', {
-      select: 'category, status, total_cost',
-      filters: [ApiFilters.inProject(params.project_id)]
-    })
+    let statsQuery = supabase
+      .from('scope_items')
+      .select('category, status, total_cost')
 
-    const statistics = calculateScopeStatistics(statsResult.data || [])
+    if (params.project_id && params.project_id !== 'all') {
+      statsQuery = statsQuery.eq('project_id', params.project_id)
+    }
+
+    const { data: statsData, error: statsError } = await statsQuery
+
+    if (statsError) {
+      console.error('Statistics query error:', statsError)
+      // Continue without statistics rather than failing the whole request
+    }
+
+    const statistics = calculateScopeStatistics(statsData || [])
 
     return Response.json({
       success: true,
       data: {
-        items: result.data,
+        items: scopeItems,
         statistics,
-        total_count: result.count,
+        total_count: count,
         filters_applied: {
           category: params.category === 'all' ? undefined : params.category as any,
           status: params.status as any,
@@ -114,8 +126,8 @@ export const GET = apiMiddleware.permissions(
       pagination: {
         page: params.page,
         limit: params.limit,
-        total: result.count || 0,
-        total_pages: Math.ceil((result.count || 0) / params.limit)
+        total: count || 0,
+        total_pages: Math.ceil((count || 0) / params.limit)
       }
     })
   }
@@ -129,7 +141,7 @@ const scopeItemFormSchema = z.object({
   category: z.string().optional(),
   specification: z.string().optional(),
   quantity: z.number().optional(),
-  unit: z.string().optional(),
+  unit: z.enum(['pcs', 'set', 'lm', 'sqm', 'cum', 'kg', 'ton', 'lot', 'ea', 'sf', 'lf', 'cf', 'hrs', 'days', 'roll', 'bag', 'box', 'can', 'gal', 'ltr']).optional(),
   unit_cost: z.number().optional(),
   total_cost: z.number().optional(),
   initial_cost: z.number().optional(),
@@ -138,8 +150,8 @@ const scopeItemFormSchema = z.object({
   end_date: z.string().optional(),
   priority: z.enum(['low', 'medium', 'high', 'critical']).default('medium'),
   status: z.string().default('not_started'),
-  assigned_to: z.string().optional(),
-  subcontractor_id: z.string().optional(),
+  assigned_to: z.string().optional().transform(val => val === '' || val === 'unassigned' ? undefined : val),
+  subcontractor_id: z.string().optional().transform(val => val === '' ? undefined : val),
   notes: z.string().optional()
 }).transform(data => {
   // Calculate total cost if not provided
@@ -163,31 +175,72 @@ export const POST = apiMiddleware.validate(
     if (!profile || !hasPermission(profile.permissions, SCOPE_PERMISSIONS.CREATE)) {
       return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
-      const db = createApiDatabase(user)
 
-      // Create scope item with cost tracking and subcontractor
-      const result = await db.insert('scope_items', {
-        project_id: validatedData.project_id,
-        title: validatedData.title,
-        description: validatedData.description,
-        category: validatedData.category,
-        specification: validatedData.specification,
-        quantity: validatedData.quantity,
-        unit: validatedData.unit,
-        unit_cost: validatedData.unit_cost,
-        total_cost: validatedData.total_cost,
-        start_date: validatedData.start_date,
-        end_date: validatedData.end_date,
-        priority: validatedData.priority,
-        status: validatedData.status,
-        assigned_to: validatedData.assigned_to,
-        notes: validatedData.notes,
-        created_by: user.id,
-      })
+    // Get project code and next sequence number
+    const { data: project } = await supabase
+      .from('projects')
+      .select('project_code')
+      .eq('id', validatedData.project_id)
+      .single()
+
+    if (!project?.project_code) {
+      return Response.json({ error: 'Project code not found' }, { status: 400 })
+    }
+
+    // Get next sequence number for this project
+    const { data: nextSeqResult } = await supabase
+      .rpc('get_next_scope_sequence', { p_project_id: validatedData.project_id })
+
+    const nextSequence = nextSeqResult || 1
+
+    // Generate category prefix based on category
+    const categoryPrefixes: Record<string, string> = {
+      'construction': '100',
+      'millwork': '200', 
+      'electrical': '300',
+      'mechanical': '400',
+      'plumbing': '500',
+      'hvac': '600'
+    }
+
+    const categoryPrefix = categoryPrefixes[validatedData.category || 'construction'] || '100'
+    const scopeCode = `${categoryPrefix}-${project.project_code}-${nextSequence.toString().padStart(4, '0')}`
+
+    // Create scope item with generated scope code
+      const { data: newScopeItem, error } = await supabase
+        .from('scope_items')
+        .insert({
+          project_id: validatedData.project_id,
+          title: validatedData.title,
+          description: validatedData.description,
+          category: validatedData.category,
+          specification: validatedData.specification,
+          quantity: validatedData.quantity,
+          unit: validatedData.unit,
+          unit_cost: validatedData.unit_cost,
+          total_cost: validatedData.total_cost,
+          start_date: validatedData.start_date,
+          end_date: validatedData.end_date,
+          priority: validatedData.priority,
+          status: validatedData.status,
+          assigned_to: validatedData.assigned_to,
+          notes: validatedData.notes,
+          created_by: user.id,
+          subcontractor_id: validatedData.subcontractor_id,
+          scope_code: scopeCode,
+          item_sequence: nextSequence,
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Failed to create scope item:', error)
+        return Response.json({ error: 'Failed to create scope item' }, { status: 500 })
+      }
 
       return Response.json({
         success: true,
-        data: result.data
+        data: newScopeItem
       }, { status: 201 })
   }
 )

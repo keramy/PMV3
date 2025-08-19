@@ -210,7 +210,7 @@ export interface EnhancedShopDrawing extends Omit<ShopDrawing, 'category' | 'pri
   scope_item_id?: string | null
   approval_stage?: ShopDrawingApprovalStage
   category: ShopDrawingCategory | null  // Required in base type, made explicit
-  trade?: ConstructionTrade
+  trade: ConstructionTrade | null
   priority: PriorityLevel | null  // Required in base type, made explicit
   internal_reviewer_id?: string | null
   internal_review_date?: string | null

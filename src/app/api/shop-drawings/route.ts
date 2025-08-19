@@ -7,17 +7,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { apiMiddleware } from '@/lib/api/middleware'
-import { createApiDatabase, ApiFilters } from '@/lib/api/database'
 import { createClient } from '@/lib/supabase/server'
-import { withValidation, createSuccessResponse } from '@/lib/validation/middleware'
 import { createShopDrawingSchema, updateShopDrawingSchema, paginationSchema, filterSchema } from '@/lib/validation/schemas'
-import { createLogger } from '@/lib/logger'
 import type { ShopDrawingStatistics } from '@/types/shop-drawings'
 import { SHOP_DRAWING_PERMISSIONS } from '@/types/shop-drawings'
 import { hasPermission } from '@/lib/permissions'
 import { z } from 'zod'
-
-const logger = createLogger('shop-drawings-api')
 
 // Query validation schema
 const shopDrawingQuerySchema = z.object({
@@ -47,86 +42,97 @@ export const GET = apiMiddleware.permissions(
     })
     
     const params = shopDrawingQuerySchema.parse(queryObject)
-    const db = createApiDatabase(user)
-
-    // Build filters
-    const filters = [
-      ApiFilters.activeItems()
-    ]
-    
-    // Only filter by project if not 'all'
-    if (params.project_id && params.project_id !== 'all') {
-      filters.push(ApiFilters.inProject(params.project_id))
-    }
-
-    if (params.category && params.category !== 'all') {
-      filters.push((query: any) => query.eq('category', params.category))
-    }
-
-    if (params.status && params.status.length > 0) {
-      filters.push(ApiFilters.byStatuses(params.status))
-    }
-
-    if (params.priority && params.priority !== 'all') {
-      filters.push((query: any) => query.eq('priority', params.priority))
-    }
-
-    if (params.submitted_by) {
-      filters.push((query: any) => query.eq('submitted_by', params.submitted_by))
-    }
-
-    if (params.client_contact) {
-      filters.push((query: any) => query.eq('client_contact', params.client_contact))
-    }
-
-    if (params.search) {
-      filters.push((query: any) => 
-        query.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%,drawing_number.ilike.%${params.search}%`)
-      )
-    }
+    const supabase = await createClient()
 
     const offset = (params.page - 1) * params.limit
 
-    // Query shop drawings with relationships
-    const result = await db.findMany('shop_drawings', {
-      select: `
+    // Build direct Supabase query
+    let drawingsQuery = supabase
+      .from('shop_drawings')
+      .select(`
         *,
-        project:projects(id, name),
-        submitted_by_user:user_profiles!submitted_by(id, first_name, last_name, job_title),
-        scope_item:scope_items(id, title, category),
-        submitted_to_client_by_user:user_profiles!submitted_to_client_by(id, first_name, last_name),
-        client_contact_user:user_profiles!client_contact(id, first_name, last_name, company)
-      `,
-      filters,
-      orderBy: { column: params.sort_field as any, ascending: params.sort_direction === 'asc' },
-      limit: params.limit,
-      offset
-    })
-
-    // Get statistics for the project
-    const statsFilters = [ApiFilters.activeItems()]
+        assigned_user:assigned_to(id, first_name, last_name, job_title),
+        created_by_user:created_by(first_name, last_name)
+      `, { count: 'exact' })
+      .is('deleted_at', null) // Only active items
+    
+    // Apply filters directly
     if (params.project_id && params.project_id !== 'all') {
-      statsFilters.push(ApiFilters.inProject(params.project_id))
+      drawingsQuery = drawingsQuery.eq('project_id', params.project_id)
+    }
+
+    if (params.category && params.category !== 'all') {
+      const validCategories = ['construction', 'millwork', 'electrical', 'mechanical', 'plumbing', 'hvac']
+      if (validCategories.includes(params.category)) {
+        drawingsQuery = drawingsQuery.eq('category', params.category as 'construction' | 'millwork' | 'electrical' | 'mechanical' | 'plumbing' | 'hvac')
+      }
+    }
+
+    if (params.status && params.status.length > 0) {
+      drawingsQuery = drawingsQuery.in('status', params.status)
+    }
+
+    if (params.priority && params.priority !== 'all') {
+      const validPriorities = ['low', 'medium', 'high', 'critical']
+      if (validPriorities.includes(params.priority)) {
+        drawingsQuery = drawingsQuery.eq('priority', params.priority as 'low' | 'medium' | 'high' | 'critical')
+      }
+    }
+
+    if (params.submitted_by) {
+      drawingsQuery = drawingsQuery.eq('submitted_by', params.submitted_by)
+    }
+
+    if (params.client_contact) {
+      drawingsQuery = drawingsQuery.eq('client_contact', params.client_contact)
+    }
+
+    if (params.search) {
+      drawingsQuery = drawingsQuery.or(`title.ilike.%${params.search}%,description.ilike.%${params.search}%,drawing_number.ilike.%${params.search}%`)
+    }
+
+    // Apply ordering and pagination
+    drawingsQuery = drawingsQuery
+      .order(params.sort_field || 'created_at', { ascending: params.sort_direction === 'asc' })
+      .range(offset, offset + params.limit - 1)
+
+    const { data: shopDrawings, error, count } = await drawingsQuery
+
+    if (error) {
+      console.error('Shop drawings query error:', error)
+      return NextResponse.json({ error: 'Failed to fetch shop drawings' }, { status: 500 })
+    }
+
+    // Get statistics for the project using direct Supabase
+    let statsQuery = supabase
+      .from('shop_drawings')
+      .select('status, category, priority, created_at, due_date, submitted_to_client_date, client_response_date')
+      .is('deleted_at', null) // Only active items
+    
+    if (params.project_id && params.project_id !== 'all') {
+      statsQuery = statsQuery.eq('project_id', params.project_id)
     }
     
-    const statsResult = await db.findMany('shop_drawings', {
-      select: 'status, category, priority, created_at, due_date, submitted_to_client_date, client_response_date',
-      filters: statsFilters
-    })
+    const { data: statsData, error: statsError } = await statsQuery
+    
+    if (statsError) {
+      console.error('Statistics query error:', statsError)
+      // Continue without statistics rather than failing the whole request
+    }
 
-    const statistics = calculateShopDrawingStatistics(statsResult.data || [])
+    const statistics = calculateShopDrawingStatistics(statsData || [])
 
     return Response.json({
       success: true,
       data: {
-        drawings: result.data,
+        drawings: shopDrawings,
         statistics,
-        total_count: result.count,
+        total_count: count,
         filters_applied: {
           category: params.category === 'all' ? undefined : params.category,
           status: params.status,
           priority: params.priority === 'all' ? undefined : params.priority,
-          current_turn: params.current_turn as any,
+          current_turn: params.current_turn,
           search_term: params.search,
           submitted_by: params.submitted_by,
           client_contact: params.client_contact
@@ -135,8 +141,8 @@ export const GET = apiMiddleware.permissions(
       pagination: {
         page: params.page,
         limit: params.limit,
-        total: result.count || 0,
-        total_pages: Math.ceil((result.count || 0) / params.limit)
+        total: count || 0,
+        total_pages: Math.ceil((count || 0) / params.limit)
       }
     })
   }
@@ -171,10 +177,11 @@ export const POST = apiMiddleware.validate(
     if (!profile || !hasPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.CREATE)) {
       return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
-      const db = createApiDatabase(user)
 
-      // Create shop drawing
-      const result = await db.insert('shop_drawings', {
+    // Create shop drawing using direct Supabase
+    const { data: newShopDrawing, error } = await supabase
+      .from('shop_drawings')
+      .insert({
         project_id: validatedData.project_id,
         drawing_number: validatedData.drawing_number,
         title: validatedData.title,
@@ -183,26 +190,35 @@ export const POST = apiMiddleware.validate(
         submitted_by: user.id,
         status: 'pending_submittal'
       })
+      .select()
+      .single()
 
-      // Log the creation activity
-      if (result.data) {
-        await db.insert('activity_logs', {
+    if (error) {
+      console.error('Failed to create shop drawing:', error)
+      return Response.json({ error: 'Failed to create shop drawing' }, { status: 500 })
+    }
+
+    // Log the creation activity using direct Supabase
+    if (newShopDrawing) {
+      await supabase
+        .from('activity_logs')
+        .insert({
           user_id: user.id,
           project_id: validatedData.project_id,
           entity_type: 'shop_drawing',
-          entity_id: result.data.id,
+          entity_id: newShopDrawing.id,
           action: 'created',
           details: {
-            title: result.data.title,
-            drawing_number: result.data.drawing_number
+            title: newShopDrawing.title,
+            drawing_number: newShopDrawing.drawing_number
           }
         })
-      }
+    }
 
-      return Response.json({
-        success: true,
-        data: result.data
-      }, { status: 201 })
+    return Response.json({
+      success: true,
+      data: newShopDrawing
+    }, { status: 201 })
   }
 )
 

@@ -139,8 +139,10 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
   const { data: scopeData, isLoading, error } = useScopeItems({
     project_id: projectId && projectId !== 'all' ? projectId : 'all',
     search: searchTerm || undefined,
-    categories: selectedCategories.length > 0 ? selectedCategories : undefined,
-    assigned_to: selectedSubcontractors.length > 0 ? selectedSubcontractors : undefined,
+    filters: {
+      category: selectedCategories.length > 0 ? selectedCategories[0] as any : undefined,
+      assigned_to: selectedSubcontractors.length > 0 ? selectedSubcontractors : undefined,
+    },
     page: currentPage,
     limit: itemsPerPage
   })

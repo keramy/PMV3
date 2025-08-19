@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Sidebar } from './components/sidebar'
 import { Dashboard } from './components/dashboard'
@@ -25,7 +25,7 @@ function getInitialView(searchParams: URLSearchParams): string {
   return 'dashboard'
 }
 
-export default function UIPreviewPage() {
+function UIPreviewContent() {
   const searchParams = useSearchParams()
   const [activeView, setActiveView] = useState(() => getInitialView(searchParams))
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
@@ -75,5 +75,13 @@ export default function UIPreviewPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function UIPreviewPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <UIPreviewContent />
+    </Suspense>
   )
 }

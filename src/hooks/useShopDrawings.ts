@@ -4,6 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/useAuth'
 import type { 
   ShopDrawing, 
   ShopDrawingFormData, 
@@ -28,6 +29,8 @@ export const shopDrawingsQueryKeys = {
 
 // Custom hook for fetching shop drawings list with "whose turn" tracking
 export function useShopDrawings(params: ShopDrawingListParams) {
+  const { profile } = useAuth()
+  
   return useQuery({
     queryKey: shopDrawingsQueryKeys.list(params),
     queryFn: async (): Promise<ShopDrawingListResponse> => {
@@ -44,14 +47,23 @@ export function useShopDrawings(params: ShopDrawingListParams) {
         }
       })
 
-      const response = await fetch(`/api/shop-drawings?${searchParams.toString()}`)
+      const response = await fetch(`/api/shop-drawings?${searchParams.toString()}`, {
+        headers: { 'x-user-id': profile?.id || '' }
+      })
       
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('UNAUTHORIZED')
+        }
+        if (response.status === 403) {
+          throw new Error('FORBIDDEN')
+        }
         throw new Error(`Failed to fetch shop drawings: ${response.statusText}`)
       }
       
       return response.json()
     },
+    enabled: !!profile?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes (shorter for real-time workflow)
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,

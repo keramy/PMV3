@@ -78,11 +78,11 @@ export const taskFiltersSchema = z.object({
   tags: z.array(z.string()).optional(),
   due_date_from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   due_date_to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  overdue_only: z.boolean().optional(),
-  assigned_to_me: z.boolean().optional(),
-  mentioning_me: z.boolean().optional(),
-  page: z.number().positive().default(1),
-  limit: z.number().positive().max(100).default(20)
+  overdue_only: z.coerce.boolean().optional(),
+  assigned_to_me: z.coerce.boolean().optional(),
+  mentioning_me: z.coerce.boolean().optional(),
+  page: z.coerce.number().positive().default(1),
+  limit: z.coerce.number().positive().max(100).default(20)
 })
 
 // Export type inferences for validation

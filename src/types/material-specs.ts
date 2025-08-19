@@ -335,3 +335,5 @@ export function isOverdueForReview(spec: Partial<MaterialSpec>): boolean {
   if (spec.status !== 'pending') return false
   return getDaysSinceSubmission(spec) > 3
 }
+
+// Note: MATERIAL_SPEC_PERMISSIONS defined above at line 173

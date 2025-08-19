@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/useAuth'
 import { 
   CheckCircle, 
   Clock, 
@@ -39,63 +41,98 @@ interface ProjectOverviewProps {
 }
 
 export function ProjectOverview({ project }: ProjectOverviewProps) {
-  // Mock metrics based on project
+  const { profile } = useAuth()
+  
+  // Determine if queries should be enabled
+  const queriesEnabled = !!profile?.id && !!project.id
+  
+  // Fetch real scope items data
+  const { data: scopeData } = useQuery({
+    queryKey: ['project-scope-stats', project.id],
+    queryFn: () => fetch(`/api/scope?project_id=${project.id}&limit=100`, {
+      headers: { 'x-user-id': profile?.id || '' }
+    }).then(res => res.json()),
+    enabled: queriesEnabled
+  })
+
+  // Fetch real shop drawings data
+  const { data: drawingsData } = useQuery({
+    queryKey: ['project-drawings-stats', project.id],
+    queryFn: () => fetch(`/api/shop-drawings?project_id=${project.id}&limit=100`, {
+      headers: { 'x-user-id': profile?.id || '' }
+    }).then(res => res.json()),
+    enabled: queriesEnabled
+  })
+
+  // Fetch real tasks data
+  const { data: tasksData } = useQuery({
+    queryKey: ['project-tasks-stats', project.id],
+    queryFn: () => fetch(`/api/tasks?project_id=${project.id}&limit=100`, {
+      headers: { 'x-user-id': profile?.id || '' }
+    }).then(res => res.json()),
+    enabled: queriesEnabled
+  })
+
+  // Fetch real materials data
+  const { data: materialsData } = useQuery({
+    queryKey: ['project-materials-stats', project.id],
+    queryFn: () => fetch(`/api/material-specs?project_id=${project.id}&limit=100`, {
+      headers: { 'x-user-id': profile?.id || '' }
+    }).then(res => res.json()),
+    enabled: queriesEnabled
+  })
+
+  // Fetch real project activity
+  const { data: activityData } = useQuery({
+    queryKey: ['project-activity', project.id],
+    queryFn: () => fetch(`/api/dashboard/activity?project_id=${project.id}&limit=10`, {
+      headers: { 'x-user-id': profile?.id || '' }
+    }).then(res => res.json()),
+    enabled: queriesEnabled
+  })
+
+  // Fetch critical tasks for this project
+  const { data: criticalTasksData } = useQuery({
+    queryKey: ['project-critical-tasks', project.id],
+    queryFn: () => fetch(`/api/dashboard/critical-tasks?project_id=${project.id}&limit=5`, {
+      headers: { 'x-user-id': profile?.id || '' }
+    }).then(res => res.json()),
+    enabled: queriesEnabled
+  })
+
+  // Calculate metrics from real API data
+  const scopeStats = scopeData?.data?.statistics
+  const drawingStats = drawingsData?.data?.statistics
+  const taskStats = tasksData?.statistics // Assuming similar structure
+  const materialStats = materialsData?.statistics // Assuming similar structure
+  
   const projectMetrics = {
     scopeItems: {
-      total: 45,
-      completed: Math.floor(45 * project.progress_percentage / 100),
-      inProgress: Math.floor(45 * (project.progress_percentage / 100) * 0.3),
-      pending: 45 - Math.floor(45 * project.progress_percentage / 100) - Math.floor(45 * (project.progress_percentage / 100) * 0.3)
+      total: scopeStats?.total_items || 0,
+      completed: scopeStats?.by_status?.completed || 0,
+      inProgress: scopeStats?.by_status?.in_progress || 0,
+      pending: scopeStats?.by_status?.not_started || 0
     },
     drawings: {
-      total: 23,
-      approved: 15,
-      pending: 8
+      total: drawingStats?.total_drawings || 0,
+      approved: drawingStats?.by_status?.approved || 0,
+      pending: (drawingStats?.by_status?.pending_submittal || 0) + (drawingStats?.by_status?.submitted_to_client || 0)
     },
     tasks: {
-      total: 67,
-      completed: 34,
-      active: 18,
-      overdue: 3
+      total: taskStats?.total_tasks || 0,
+      completed: taskStats?.by_status?.completed || 0,
+      active: taskStats?.by_status?.in_progress || 0,
+      overdue: taskStats?.overdue || 0
     },
     materials: {
-      total: 89,
-      approved: 56,
-      pending: 33
+      total: materialStats?.total_materials || 0,
+      approved: materialStats?.by_status?.approved || 0,
+      pending: materialStats?.by_status?.pending || 0
     }
   }
 
-  // Recent activity for this project
-  const recentActivity = [
-    {
-      user: 'Mehmet Yılmaz',
-      action: 'completed task',
-      item: 'Install electrical panels - Level 2',
-      time: '2 hours ago',
-      type: 'task'
-    },
-    {
-      user: 'Elif Özkan',
-      action: 'approved shop drawing',
-      item: 'HVAC_Layout_B2_Rev_C.pdf',
-      time: '4 hours ago',
-      type: 'drawing'
-    },
-    {
-      user: 'Ahmet Kocabaş',
-      action: 'added scope item',
-      item: 'Fire safety system installation',
-      time: '1 day ago',
-      type: 'scope'
-    },
-    {
-      user: 'Zeynep Demir',
-      action: 'approved material spec',
-      item: 'LED Light Fixtures - Philips CoreLine',
-      time: '2 days ago',
-      type: 'material'
-    }
-  ]
+  // Use real recent activity data
+  const recentActivity = activityData || []
 
   const formatCurrency = (amount: number) => {
     return `₺${(amount / 1000000).toFixed(2)}M`
@@ -111,30 +148,8 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
     }
   }
 
-  // Critical tasks for this project
-  const criticalTasks = [
-    {
-      title: 'Electrical Panel Review',
-      description: 'Approve electrical panel shop drawings for Level 2',
-      daysOverdue: 3,
-      priority: 'critical',
-      assignee: 'Mehmet Yılmaz'
-    },
-    {
-      title: 'HVAC System Approval', 
-      description: 'Final approval needed for HVAC material specifications',
-      daysOverdue: 1,
-      priority: 'high',
-      assignee: 'Elif Özkan'
-    },
-    {
-      title: 'Fire Suppression Drawing',
-      description: 'Review and approve fire suppression system layout',
-      daysOverdue: 5,
-      priority: 'critical',
-      assignee: 'Ahmet Kocabaş'
-    }
-  ]
+  // Use real critical tasks data
+  const criticalTasks = criticalTasksData || []
 
   return (
     <div className="space-y-8">
@@ -158,22 +173,22 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <h4 className="font-semibold text-gray-900">{task.title}</h4>
+                      <h4 className="font-semibold text-gray-900">{task.title || 'Untitled Task'}</h4>
                       <Badge 
                         variant={task.priority === 'critical' ? 'destructive' : 'default'}
                         className="text-xs"
                       >
-                        {task.priority}
+                        {task.priority || 'normal'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-800 mb-2">{task.description}</p>
-                    <p className="text-xs text-gray-700">Assigned to: {task.assignee}</p>
+                    <p className="text-sm text-gray-800 mb-2">{task.description || 'No description available'}</p>
+                    <p className="text-xs text-gray-700">Assigned to: {task.assigned_to_name || 'Unassigned'}</p>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
                     <div className="text-right">
                       <div className="flex items-center gap-1 text-red-600">
                         <Clock className="h-4 w-4" />
-                        <span className="text-sm font-medium">{task.daysOverdue}d overdue</span>
+                        <span className="text-sm font-medium">{task.days_overdue || 0}d overdue</span>
                       </div>
                     </div>
                     <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white">
@@ -317,30 +332,38 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-start gap-4 p-4 rounded-xl border border-gray-200 hover:bg-gray-200 hover:border-gray-400 hover:shadow-sm transition-all duration-200">
-                  <Avatar className="h-10 w-10 ring-2 ring-white shadow-md">
-                    <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700">
-                      {activity.user.split(' ').map(n => n[0]).join('')}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-start justify-between">
-                      <p className="text-sm leading-relaxed">
-                        <span className="font-semibold text-gray-900">{activity.user}</span>{' '}
-                        <span className="text-gray-800">{activity.action}</span>
-                      </p>
-                      <div className="flex items-center gap-2 ml-4">
-                        {getActivityIcon(activity.type)}
-                        <span className="text-xs text-gray-700 font-medium">{activity.time}</span>
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity: any, index: number) => (
+                  <div key={index} className="flex items-start gap-4 p-4 rounded-xl border border-gray-200 hover:bg-gray-200 hover:border-gray-400 hover:shadow-sm transition-all duration-200">
+                    <Avatar className="h-10 w-10 ring-2 ring-white shadow-md">
+                      <AvatarFallback className="text-sm font-semibold bg-gradient-to-br from-blue-100 to-blue-200 text-blue-700">
+                        {(activity.user || 'U').split(' ').map((n: string) => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <p className="text-sm leading-relaxed">
+                          <span className="font-semibold text-gray-900">{activity.user || 'Unknown User'}</span>{' '}
+                          <span className="text-gray-800">{activity.action || 'performed an action'}</span>
+                        </p>
+                        <div className="flex items-center gap-2 ml-4">
+                          {getActivityIcon(activity.type || 'activity')}
+                          <span className="text-xs text-gray-700 font-medium">{activity.time || 'recently'}</span>
+                        </div>
                       </div>
+                      <p className="text-sm text-gray-800 font-medium bg-gray-100 px-3 py-2 rounded-lg border">
+                        {activity.item || activity.target || 'Activity item'}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-800 font-medium bg-gray-100 px-3 py-2 rounded-lg border">
-                      {activity.item}
-                    </p>
                   </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-gray-800">
+                  <Activity className="h-8 w-8 text-gray-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium">No recent activity</p>
+                  <p className="text-xs text-gray-700">Activity will appear here as the team works on this project</p>
                 </div>
-              ))}
+              )}
               
               {/* View All Activity Button */}
               <div className="pt-4 border-t">

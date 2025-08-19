@@ -112,14 +112,14 @@ export function TaskFilters({ filters, onChange, projectId }: TaskFiltersProps) 
       <div>
         <Label className="text-sm font-medium mb-2 block">Assigned To</Label>
         <Select
-          value={filters.assigned_to || ''}
-          onValueChange={(value) => onChange({ assigned_to: value || undefined })}
+          value={filters.assigned_to || 'all'}
+          onValueChange={(value) => onChange({ assigned_to: value === 'all' ? undefined : value })}
         >
           <SelectTrigger>
             <SelectValue placeholder="All team members" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All team members</SelectItem>
+            <SelectItem value="all">All team members</SelectItem>
             {projectMembers?.map((member: any) => (
               <SelectItem key={member.user.id} value={member.user.id}>
                 {member.user.first_name} {member.user.last_name}

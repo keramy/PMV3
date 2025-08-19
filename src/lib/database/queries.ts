@@ -81,7 +81,7 @@ export async function getCurrentUserProfile(): Promise<AppUserProfile | null> {
     console.log('🚨 EXTREME DEBUG: Creating app profile')
     const appProfile: AppUserProfile = {
       ...profile,
-      permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+      permissions: Array.isArray(profile.permissions) ? profile.permissions as Permission[] : [],
       full_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || 'No Name'
     }
 
@@ -147,7 +147,7 @@ export async function getUserProfile(userId: string): Promise<AppUserProfile | n
     // Simple transformation
     const appProfile: AppUserProfile = {
       ...profile,
-      permissions: Array.isArray(profile.permissions) ? profile.permissions : [],
+      permissions: Array.isArray(profile.permissions) ? profile.permissions as Permission[] : [],
       full_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || 'No Name'
     }
 
@@ -198,7 +198,7 @@ export async function getCompanyProjects(
     if (error) {
       console.error('🔍 getCompanyProjects - Error fetching projects:', error)
       return {
-        data: [],
+        data: [] as any[],
         error: { message: error.message },
         totalCount: 0,
         hasMore: false

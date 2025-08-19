@@ -5,6 +5,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useAuth } from '@/hooks/useAuth'
 import type { 
   Task, 
   TaskFormData, 
@@ -17,6 +18,8 @@ import type {
 
 // Fetch tasks with filters
 export function useTasks(filters: TaskFilters) {
+  const { profile } = useAuth()
+  
   return useQuery<TaskListResponse>({
     queryKey: ['tasks', filters],
     queryFn: async () => {
@@ -33,7 +36,9 @@ export function useTasks(filters: TaskFilters) {
         }
       })
       
-      const response = await fetch(`/api/tasks?${params}`)
+      const response = await fetch(`/api/tasks?${params}`, {
+        headers: { 'x-user-id': profile?.id || '' }
+      })
       
       if (!response.ok) {
         if (response.status === 401) {
@@ -47,6 +52,7 @@ export function useTasks(filters: TaskFilters) {
       
       return response.json()
     },
+    enabled: !!profile?.id,
     staleTime: 30000, // 30 seconds
   })
 }

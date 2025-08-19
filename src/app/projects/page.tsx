@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
+import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -42,6 +44,7 @@ import { ProjectCreateDialog } from '@/components/projects/ProjectCreateDialog'
 export default function ProjectsPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { profile } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortField, setSortField] = useState<string>('')
@@ -57,19 +60,46 @@ export default function ProjectsPage() {
     }
   }, [searchParams, router])
 
-  // Real projects data - will be fetched from API
-  const allProjects: any[] = []
+  // Fetch projects from API
+  const { data: projectsResponse, isLoading: projectsLoading, error: projectsError } = useQuery({
+    queryKey: ['projects', statusFilter],
+    queryFn: () => {
+      const params = new URLSearchParams()
+      if (statusFilter !== 'all') {
+        params.append('status', statusFilter)
+      }
+      params.append('sort', 'updated_at:desc')
+      
+      return fetch(`/api/projects?${params}`, {
+        headers: { 'x-user-id': profile?.id || '' }
+      }).then(res => res.json())
+    },
+    enabled: !!profile?.id,
+    refetchInterval: 30000 // Refresh every 30 seconds
+  })
+
+  const allProjects = projectsResponse?.projects || []
 
   // Utility functions
   const getStatusBadge = (status: string) => {
     const config = {
       in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-800 border-blue-200' },
+      active: { label: 'Active', className: 'bg-blue-100 text-blue-800 border-blue-200' },
       completed: { label: 'Completed', className: 'bg-green-100 text-green-800 border-green-200' },
       planning: { label: 'Planning', className: 'bg-orange-100 text-orange-800 border-orange-200' },
       on_hold: { label: 'On Hold', className: 'bg-gray-100 text-gray-800 border-gray-200' }
     }
     
     const cfg = config[status as keyof typeof config]
+    // Handle undefined status gracefully
+    if (!cfg) {
+      return (
+        <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-400">
+          {status || 'Unknown'}
+        </Badge>
+      )
+    }
+    
     return (
       <Badge variant="outline" className={cfg.className}>
         {cfg.label}
@@ -395,7 +425,29 @@ export default function ProjectsPage() {
                   })}
                 </TableBody>
               </Table>
-              {filteredAndSortedProjects.length === 0 && (
+              
+              {/* Loading State */}
+              {projectsLoading && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                    <p className="text-muted-foreground">Loading projects...</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Error State */}
+              {projectsError && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <p className="text-red-600 mb-2">Failed to load projects</p>
+                    <p className="text-sm text-muted-foreground">Please try refreshing the page</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* Empty State */}
+              {!projectsLoading && !projectsError && filteredAndSortedProjects.length === 0 && (
                 <EmptyProjects onCreateProject={handleCreateProject} />
               )}
             </div>

@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Dashboard } from '@/components/dashboard/Dashboard'
-import { useAuth } from '@/hooks/useAuth-fixed'
+import { useAuth } from '@/hooks/useAuth'
 import { 
   DashboardSyncManager, 
   preCacheDashboardData, 

@@ -1,11 +1,12 @@
 /**
  * Material Specs API Route
  * Simple PM approval workflow for material specifications
+ * Refactored to use centralized middleware and database patterns
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { apiMiddleware } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUserProfile } from '@/lib/database/queries'
 import type { 
   MaterialSpec,
   MaterialSpecFormData,
@@ -24,56 +25,50 @@ import {
   isOverdueForReview,
   MATERIAL_SPEC_PERMISSIONS 
 } from '@/types/material-specs'
+import { z } from 'zod'
+
+// Query validation schema
+const materialSpecQuerySchema = z.object({
+  project_id: z.string().optional(),
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(50),
+  category: z.string().optional(),
+  status: z.string().transform(s => s.split(',')).optional(),
+  priority: z.string().optional(),
+  search: z.string().optional(),
+  sort_field: z.string().default('created_at'),
+  sort_direction: z.enum(['asc', 'desc']).default('desc')
+})
 
 // ============================================================================
 // GET - List Material Specs with Filtering & Statistics
 // ============================================================================
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = apiMiddleware.permissions(
+  MATERIAL_SPEC_PERMISSIONS.VIEW,
+  async (user, request) => {
+    const searchParams = new URL(request.url).searchParams
+    
+    // Convert searchParams to object for validation
+    const queryObject: Record<string, string> = {}
+    searchParams.forEach((value, key) => {
+      queryObject[key] = value
+    })
+    
+    const params = materialSpecQuerySchema.parse(queryObject)
     const supabase = await createClient()
-    const user = await getCurrentUserProfile()
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
-    }
-
-    // Check permissions
-    if (!user.permissions.includes('view_materials')) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions' },
-        { status: 403 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
-    const projectId = searchParams.get('project_id')
-
-    // Allow 'all' projects or specific project ID
-    if (!projectId) {
-      return NextResponse.json(
+    
+    // Require project_id
+    if (!params.project_id) {
+      return Response.json(
         { error: 'Project ID required' },
         { status: 400 }
       )
     }
 
-    // Parse query parameters
-    const params: MaterialSpecListParams = {
-      project_id: projectId,
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '50'),
-      sort_field: (searchParams.get('sort_field') || 'created_at') as keyof MaterialSpec,
-      sort_direction: (searchParams.get('sort_direction') || 'desc') as 'asc' | 'desc',
-      status: searchParams.get('status')?.split(',') as MaterialSpecStatus[] | undefined,
-      category: searchParams.get('category') as MaterialCategory | 'all' | undefined,
-      priority: searchParams.get('priority') as MaterialPriority | 'all' | undefined,
-      search_term: searchParams.get('search') || undefined,
-    }
-
-    // Build query
+    // Build direct Supabase query with relationships
+    const offset = (params.page - 1) * params.limit
+    
     let query = supabase
       .from('material_specs')
       .select(`
@@ -85,11 +80,11 @@ export async function GET(request: NextRequest) {
         reviewed_by_user:user_profiles!material_specs_approved_by_fkey(
           id, first_name, last_name
         )
-      `)
+      `, { count: 'exact' })
       
-    // Only filter by project if not 'all'
-    if (projectId !== 'all') {
-      query = query.eq('project_id', projectId)
+    // Apply project filter
+    if (params.project_id && params.project_id !== 'all') {
+      query = query.eq('project_id', params.project_id)
     }
 
     // Apply filters
@@ -102,133 +97,133 @@ export async function GET(request: NextRequest) {
     }
 
     if (params.priority && params.priority !== 'all') {
-      query = query.eq('priority', params.priority)
+      query = query.eq('priority', params.priority as 'low' | 'medium' | 'high' | 'critical')
     }
 
-    if (params.search_term) {
+    if (params.search) {
       query = query.or(`
-        name.ilike.%${params.search_term}%,
-        manufacturer.ilike.%${params.search_term}%,
-        model.ilike.%${params.search_term}%,
-        spec_number.ilike.%${params.search_term}%,
-        specification.ilike.%${params.search_term}%
+        name.ilike.%${params.search}%,
+        manufacturer.ilike.%${params.search}%,
+        model.ilike.%${params.search}%,
+        spec_number.ilike.%${params.search}%,
+        specification.ilike.%${params.search}%
       `)
     }
 
-    // Add sorting
-    query = query.order(params.sort_field, { ascending: params.sort_direction === 'asc' })
-
-    // Add pagination
-    const from = (params.page - 1) * params.limit
-    const to = from + params.limit - 1
-    query = query.range(from, to)
+    // Apply ordering and pagination
+    query = query
+      .order(params.sort_field, { ascending: params.sort_direction === 'asc' })
+      .range(offset, offset + params.limit - 1)
 
     const { data: specs, error, count } = await query
 
     if (error) {
       console.error('Material specs query error:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch material specs' },
-        { status: 500 }
-      )
+      return Response.json({ error: 'Failed to fetch material specs' }, { status: 500 })
     }
 
-    // Get statistics (separate query for better performance)
+    // Get statistics for the project
     let statsQuery = supabase
       .from('material_specs')
       .select('status, category, priority, total_cost, created_at, reviewed_by, image_url')
-      
-    // Only filter by project if not 'all'
-    if (projectId !== 'all') {
-      statsQuery = statsQuery.eq('project_id', projectId)
+
+    if (params.project_id && params.project_id !== 'all') {
+      statsQuery = statsQuery.eq('project_id', params.project_id)
     }
     
-    const { data: statsData } = await statsQuery
+    const { data: statsData, error: statsError } = await statsQuery
 
-    // Calculate statistics
-    const statistics = calculateStatistics(statsData || [])
-
-    const response: MaterialSpecListResponse = {
-      specs: (specs || []) as MaterialSpec[],
-      statistics,
-      total_count: count || 0,
-      filters_applied: {
-        status: params.status,
-        category: params.category,
-        priority: params.priority,
-        search_term: params.search_term,
-      }
+    if (statsError) {
+      console.error('Statistics query error:', statsError)
+      // Continue without statistics rather than failing the whole request
     }
 
-    return NextResponse.json(response)
+    const statistics = calculateStatistics(statsData || [])
 
-  } catch (error) {
-    console.error('Material specs API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return Response.json({
+      success: true,
+      data: {
+        specs: (specs || []) as MaterialSpec[],
+        statistics,
+        total_count: count,
+        filters_applied: {
+          status: params.status as any,
+          category: params.category as any,
+          priority: params.priority as any,
+          search_term: params.search,
+        }
+      },
+      pagination: {
+        page: params.page,
+        limit: params.limit,
+        total: count || 0,
+        total_pages: Math.ceil((count || 0) / params.limit)
+      }
+    })
   }
-}
+)
+
+// Form validation schema
+const materialSpecFormSchema = z.object({
+  project_id: z.string().min(1, 'Project ID is required'),
+  name: z.string().min(1, 'Name is required'),
+  category: z.string().optional(),
+  priority: z.string().default('medium'),
+  manufacturer: z.string().optional(),
+  model: z.string().optional(),
+  spec_number: z.string().optional(),
+  specification: z.string().optional(),
+  unit: z.string().optional(),
+  quantity: z.number().optional(),
+  unit_cost: z.number().optional(),
+  supplier: z.string().optional(),
+  notes: z.string().optional(),
+  image_url: z.string().optional(),
+}).transform(data => {
+  // Calculate total cost if not provided
+  if (data.quantity && data.unit_cost) {
+    (data as any).total_cost = data.quantity * data.unit_cost
+  }
+  return data
+})
 
 // ============================================================================
 // POST - Create New Material Spec
 // ============================================================================
 
-export async function POST(request: NextRequest) {
-  try {
+export const POST = apiMiddleware.validate(
+  materialSpecFormSchema,
+  async (validatedData, user, request) => {
     const supabase = await createClient()
-    const user = await getCurrentUserProfile()
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('permissions')
+      .eq('id', user.id)
+      .single()
 
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      )
+    if (!profile || !profile.permissions.includes('create_materials')) {
+      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
-
-    // Check permissions
-    if (!user.permissions.includes('create_material_specs')) {
-      return NextResponse.json(
-        { error: 'Insufficient permissions to create material specs' },
-        { status: 403 }
-      )
-    }
-
-    const formData: MaterialSpecFormData = await request.json()
-
-    // Validate required fields
-    if (!formData.name || !formData.category || !formData.priority) {
-      return NextResponse.json(
-        { error: 'Name, category, and priority are required' },
-        { status: 400 }
-      )
-    }
-
-    // Calculate total cost if quantity and unit_cost provided
-    const total_cost = formData.quantity && formData.unit_cost 
-      ? formData.quantity * formData.unit_cost 
-      : null
 
     // Create material spec
     const { data: newSpec, error } = await supabase
       .from('material_specs')
       .insert({
-        name: formData.name,
-        category: formData.category,
-        priority: formData.priority,
-        manufacturer: formData.manufacturer,
-        model: formData.model,
-        spec_number: formData.spec_number,
-        specification: formData.specification,
-        unit: formData.unit,
-        quantity: formData.quantity,
-        unit_cost: formData.unit_cost,
-        total_cost,
-        supplier: formData.supplier,
-        notes: formData.notes,
-        image_url: formData.image_url,  // NEW: Handle image URL
-        project_id: new URL(request.url).searchParams.get('project_id'),
+        project_id: validatedData.project_id,
+        name: validatedData.name,
+        category: validatedData.category,
+        priority: validatedData.priority,
+        manufacturer: validatedData.manufacturer,
+        model: validatedData.model,
+        spec_number: validatedData.spec_number,
+        specification: validatedData.specification,
+        unit: validatedData.unit,
+        quantity: validatedData.quantity,
+        unit_cost: validatedData.unit_cost,
+        total_cost: (validatedData as any).total_cost,
+        supplier: validatedData.supplier,
+        notes: validatedData.notes,
+        image_url: validatedData.image_url,
         created_by: user.id,
         status: 'pending',
         created_at: new Date().toISOString(),
@@ -245,22 +240,18 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Create material spec error:', error)
-      return NextResponse.json(
+      return Response.json(
         { error: 'Failed to create material spec' },
         { status: 500 }
       )
     }
 
-    return NextResponse.json(newSpec, { status: 201 })
-
-  } catch (error) {
-    console.error('Material specs creation API error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return Response.json({
+      success: true,
+      data: newSpec
+    }, { status: 201 })
   }
-}
+)
 
 // ============================================================================
 // HELPER FUNCTIONS

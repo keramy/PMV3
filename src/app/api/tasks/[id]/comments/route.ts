@@ -89,7 +89,7 @@ export async function GET(
         project_id, 
         title, 
         assigned_to,
-        projects!inner(name)
+        projects!tasks_project_id_fkey(name)
       `)
       .eq('id', (await params).id)
       .single()
@@ -190,7 +190,7 @@ export async function POST(
         project_id, 
         title, 
         assigned_to,
-        projects!inner(name)
+        projects!tasks_project_id_fkey(name)
       `)
       .eq('id', (await params).id)
       .single()
