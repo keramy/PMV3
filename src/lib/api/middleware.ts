@@ -101,39 +101,31 @@ export function withAuth(handler: AuthenticatedHandler) {
           email: middlewareUserEmail || undefined
         }
         
-        // Get user permissions from database using service role key
+        // Get user permissions from database using regular auth (now allowed by new RLS policy)
         try {
           console.log('🔍 [DEBUG] Loading permissions for user:', middlewareUserId)
           
-          // Create service client with proper service role authentication
-          const { createClient } = await import('@supabase/supabase-js')
-          const serviceClient = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!,
-            {
-              auth: {
-                autoRefreshToken: false,
-                persistSession: false
-              }
-            }
-          )
+          // Use regular authenticated client - new RLS policy allows project members to see each other
+          const supabase = await createClient()
           
-          const { data: profile, error: dbError } = await serviceClient
+          const { data: profile, error: dbError } = await supabase
             .from('user_profiles')
             .select('permissions')
             .eq('id', middlewareUserId)
             .single()
           
-          console.log('🔍 [DEBUG] Database query result:', { profile, dbError })
-          
-          if (profile?.permissions) {
+          if (!dbError && profile?.permissions) {
             user.permissions = profile.permissions as Permission[]
-            console.log('🔍 [DEBUG] Loaded permissions:', user.permissions)
-          } else {
-            console.log('🔍 [DEBUG] No permissions found in profile')
+            console.log('✅ [API Auth] Permissions loaded successfully:', user.permissions)
+          } else if (dbError) {
+            console.warn('⚠️ [API Auth] Could not load permissions:', dbError.message)
+            // Continue without permissions - don't fail the request
+            user.permissions = []
           }
         } catch (error) {
-          console.warn('🔐 [API Auth] Failed to load user permissions:', error)
+          console.warn('⚠️ [API Auth] Permission loading failed:', error)
+          // Continue without permissions - don't fail the request
+          user.permissions = []
         }
         
         return await handler(user, request)
@@ -149,10 +141,8 @@ export function withAuth(handler: AuthenticatedHandler) {
         return ApiResponses.unauthorized()
       }
 
-      // Get user profile with permissions using service client to bypass RLS
-      const { createServiceClient } = await import('@/lib/supabase/server')
-      const serviceSupabase = createServiceClient()
-      const { data: profile } = await serviceSupabase
+      // Get user profile with permissions using regular client (allowed by new RLS policy)
+      const { data: profile } = await supabase
         .from('user_profiles')
         .select('permissions')
         .eq('id', session.user.id)

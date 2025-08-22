@@ -34,16 +34,16 @@ const jwtExpiry = parseInt(process.env.NEXT_PUBLIC_JWT_EXPIRY || '14400')
 
 /**
  * Enhanced browser client using @supabase/ssr for proper cookie handling
- * FIXED: No localStorage - uses cookies for SSR compatibility
+ * FOLLOWS 2024 BEST PRACTICES for Next.js 15 + Supabase SSR
  */
 export function createClient() {
   // Development debugging (only in dev mode)
   if (isDevelopment) {
-    console.log('🔍 Supabase Client Creation (Fixed):', {
+    console.log('🔍 Supabase Browser Client (2024):', {
       supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
       supabaseAnonKey: supabaseAnonKey ? 'Present' : 'MISSING',
       env: process.env.NODE_ENV,
-      storageType: 'cookies' // FIXED: No more localStorage
+      sessionType: 'cookie-based SSR'
     })
   }
 
@@ -69,15 +69,34 @@ export function createClient() {
     throw new Error(error)
   }
 
-  // SIMPLIFIED: Use createBrowserClient with error catching
+  // 2024 BEST PRACTICE: Use createBrowserClient with proper session management
   try {
-    console.log('🔍 Creating Supabase client...')
+    console.log('🔍 Creating Supabase browser client (2024 pattern)...')
     const client = createBrowserClient<Database>(
       supabaseUrl,
       supabaseAnonKey
-      // NO CUSTOM OPTIONS - let @supabase/ssr handle cookies automatically
+      // Let @supabase/ssr handle cookies automatically for Next.js 15
+      // This ensures session synchronization between server and client
     )
-    console.log('✅ Supabase client created successfully')
+
+    // 2024 ENHANCEMENT: Add session validation debugging
+    if (isDevelopment) {
+      client.auth.getSession().then(({ data: { session }, error }) => {
+        if (error) {
+          console.warn('⚠️ [Client] Session retrieval error:', error.message)
+        } else if (session) {
+          console.log('✅ [Client] Session found:', {
+            user: session.user?.id,
+            expiresAt: session.expires_at,
+            tokenType: session.token_type
+          })
+        } else {
+          console.log('ℹ️ [Client] No active session found')
+        }
+      })
+    }
+
+    console.log('✅ Supabase client created successfully (2024)')
     return client
   } catch (error) {
     console.error('❌ CRITICAL: Failed to create Supabase client:', error)

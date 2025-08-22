@@ -63,6 +63,10 @@ export type UserProfileRaw = Tables['user_profiles']['Row']
 export interface AppUserProfile extends UserProfileRaw {
   full_name: string
   permissions: Permission[]
+  // Enhanced role system fields (populated by auth hook)
+  role?: string
+  can_view_costs?: boolean | null
+  assigned_projects?: string[]
 }
 
 // Type alias for the raw user profile (for database operations)

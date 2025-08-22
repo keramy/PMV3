@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
 import { toast } from '@/hooks/use-toast'
 import { useCreateScopeItem } from '@/hooks/useScope'
 import { EmptyScope, EmptyState } from '@/components/ui/empty-state'
@@ -127,6 +128,9 @@ interface SubcontractorOption {
 }
 
 export function ScopeTable({ projectId }: ScopeTableProps) {
+  // Enhanced permissions hook for cost visibility
+  const { canViewCosts, canEditCosts, isAdmin, filterCosts } = usePermissionsEnhanced()
+  
   const [selectedProject, setSelectedProject] = useState(projectId || 'all')
   const [searchTerm, setSearchTerm] = useState('')
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
@@ -207,7 +211,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
       params.set('limit', itemsPerPage.toString())
       
       const response = await fetch(`/api/scope?${params}`, {
-        headers: { 'x-user-id': profile?.id || '' }
+        credentials: 'include' // Include session cookies for authentication
       })
       
       if (!response.ok) {
@@ -820,35 +824,44 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                   </span>
                 </div>
                 
-                {/* Essential Financial Metrics - Prioritized */}
+                {/* Essential Financial Metrics - Prioritized (Role-Based Visibility) */}
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <span className="flex items-center gap-1">
-                    <span className="text-gray-800">Revenue:</span>
-                    <span className="text-blue-700 font-bold text-base">
-                      {formatCurrency(filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + (item.total_cost || 0), 0))}
-                    </span>
+                    <span className="text-gray-800">Total Items:</span>
+                    <span className="text-blue-700 font-bold text-base">{filteredScopeItems.length}</span>
                   </span>
                   
-                  <span className="flex items-center gap-1">
-                    <span className="text-gray-800">Profit:</span>
-                    <span className={`font-bold text-base ${
-                      filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfit(item.total_cost, item.actual_cost), 0) >= 0 
-                        ? 'text-green-700' 
-                        : 'text-red-700'
-                    }`}>
-                      {formatCurrency(filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfit(item.total_cost, item.actual_cost), 0))}
-                    </span>
-                  </span>
-                  
-                  <span className="flex items-center gap-1">
-                    <span className="text-gray-800">Margin:</span>
-                    <span className="text-purple-700 font-bold text-base">
-                      {filteredScopeItems.length > 0 
-                        ? (filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfitPercentage(item.total_cost, item.actual_cost), 0) / filteredScopeItems.length).toFixed(1)
-                        : '0.0'
-                      }%
-                    </span>
-                  </span>
+                  {canViewCosts && (
+                    <>
+                      <span className="flex items-center gap-1">
+                        <span className="text-gray-800">Revenue:</span>
+                        <span className="text-blue-700 font-bold text-base">
+                          {formatCurrency(filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + (item.total_cost || 0), 0))}
+                        </span>
+                      </span>
+                      
+                      <span className="flex items-center gap-1">
+                        <span className="text-gray-800">Profit:</span>
+                        <span className={`font-bold text-base ${
+                          filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfit(item.total_cost, item.actual_cost), 0) >= 0 
+                            ? 'text-green-700' 
+                            : 'text-red-700'
+                        }`}>
+                          {formatCurrency(filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfit(item.total_cost, item.actual_cost), 0))}
+                        </span>
+                      </span>
+                      
+                      <span className="flex items-center gap-1">
+                        <span className="text-gray-800">Margin:</span>
+                        <span className="text-purple-700 font-bold text-base">
+                          {filteredScopeItems.length > 0 
+                            ? (filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfitPercentage(item.total_cost, item.actual_cost), 0) / filteredScopeItems.length).toFixed(1)
+                            : '0.0'
+                          }%
+                        </span>
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               
@@ -891,8 +904,12 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
               <TableHead className="font-bold text-gray-800 py-4">Title</TableHead>
               <TableHead className="text-center font-bold text-gray-800 w-20 py-4">Qty</TableHead>
               <TableHead className="w-20 font-bold text-gray-800 py-4">Unit</TableHead>
-              <TableHead className="text-right font-bold text-gray-800 w-28 py-4">Unit Price</TableHead>
-              <TableHead className="text-right font-bold text-gray-800 w-32 py-4">Total Price</TableHead>
+              {canViewCosts && (
+                <>
+                  <TableHead className="text-right font-bold text-gray-800 w-28 py-4">Unit Price</TableHead>
+                  <TableHead className="text-right font-bold text-gray-800 w-32 py-4">Total Price</TableHead>
+                </>
+              )}
               <TableHead className="w-16 font-bold text-gray-800 py-4">Assigned</TableHead>
               <TableHead className="text-center font-bold text-gray-800 w-16 py-4">Actions</TableHead>
             </TableRow>
@@ -933,10 +950,16 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     <TableCell className="font-semibold py-4 text-gray-900">{item.title}</TableCell>
                     <TableCell className="text-center font-bold py-4 text-base">{item.quantity}</TableCell>
                     <TableCell className="text-sm py-4 font-medium text-gray-800">{item.unit}</TableCell>
-                    <TableCell className="text-right py-4 font-mono text-base font-medium text-gray-800">{formatCurrency(item.unit_cost)}</TableCell>
-                    <TableCell className="text-right py-4 font-mono text-lg font-bold text-blue-700">
-                      {formatCurrency(item.total_cost)}
-                    </TableCell>
+                    {canViewCosts && (
+                      <>
+                        <TableCell className="text-right py-4 font-mono text-base font-medium text-gray-800">
+                          {formatCurrency(item.unit_cost)}
+                        </TableCell>
+                        <TableCell className="text-right py-4 font-mono text-lg font-bold text-blue-700">
+                          {formatCurrency(item.total_cost)}
+                        </TableCell>
+                      </>
+                    )}
                     <TableCell className="py-4">
                       <div className="flex justify-center">
                         <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold ${getCategoryColor(item.category).split(' ')[0]} ${getCategoryColor(item.category).split(' ')[1]} cursor-pointer shadow-sm hover:shadow-md transition-shadow`} 
@@ -1000,42 +1023,44 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                             </div>
                           </div>
 
-                          {/* Profit Analysis Section (30%) */}
-                          <div className="flex-1 lg:flex-[2]">
-                            <div className={`bg-white rounded-lg p-3 border-l-4 ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('green') ? 'border-l-green-500' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('yellow') ? 'border-l-yellow-500' : 'border-l-red-500'} border border-gray-200`}>
-                              <div className="space-y-2">
-                                <div className="flex justify-between text-xs text-gray-800">
-                                  <span>Sales:</span>
-                                  <span className="font-medium">{formatCurrency(item.total_cost)}</span>
-                                </div>
-                                <div className="flex justify-between text-xs text-gray-800">
-                                  <span>Cost:</span>
-                                  <span className="font-medium">{formatCurrency(item.actual_cost)}</span>
-                                </div>
-                                <div className="border-t pt-2">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-sm font-medium">Profit:</span>
-                                    <div className="text-right">
-                                      <div className={`font-bold ${calculateProfitPercentage(item.total_cost, item.actual_cost) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                        {formatCurrency(calculateProfit(item.total_cost, item.actual_cost))}
-                                      </div>
-                                      <div className={`text-lg font-bold ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('green') ? 'text-green-700' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('yellow') ? 'text-yellow-700' : 'text-red-700'}`}>
-                                        {calculateProfitPercentage(item.total_cost, item.actual_cost).toFixed(1)}%
+                          {/* Profit Analysis Section (30%) - Role-Based Visibility */}
+                          {canViewCosts && (
+                            <div className="flex-1 lg:flex-[2]">
+                              <div className="bg-white rounded-lg p-3 border-l-4 border-l-green-500 border border-gray-200">
+                                <div className="space-y-2">
+                                  <div className="flex justify-between text-xs text-gray-800">
+                                    <span>Sales:</span>
+                                    <span className="font-medium">{formatCurrency(item.total_cost || 0)}</span>
+                                  </div>
+                                  <div className="flex justify-between text-xs text-gray-800">
+                                    <span>Cost:</span>
+                                    <span className="font-medium">{formatCurrency(item.actual_cost || 0)}</span>
+                                  </div>
+                                  <div className="border-t pt-2">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-sm font-medium">Profit:</span>
+                                      <div className="text-right">
+                                        <div className="font-bold text-green-700">
+                                          {formatCurrency(calculateProfit(item.total_cost || 0, item.actual_cost || 0))}
+                                        </div>
+                                        <div className="text-lg font-bold text-green-700">
+                                          {calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0).toFixed(1)}%
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
-                                </div>
-                                <div className="flex items-center justify-center pt-1">
-                                  <span className={`text-xs px-2 py-1 rounded ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost))} font-medium flex items-center gap-1`}>
-                                    {getProfitHealthIcon(calculateProfitPercentage(item.total_cost, item.actual_cost))}
-                                    {getProfitHealth(calculateProfitPercentage(item.total_cost, item.actual_cost)) === 'healthy' ? 'Healthy Margin' : 
-                                     getProfitHealth(calculateProfitPercentage(item.total_cost, item.actual_cost)) === 'acceptable' ? 'Acceptable Margin' : 
-                                     calculateProfitPercentage(item.total_cost, item.actual_cost) < 0 ? 'Loss - Review!' : 'Thin Margin'}
-                                  </span>
+                                  <div className="flex items-center justify-center pt-1">
+                                    <span className="text-xs px-2 py-1 rounded bg-green-50 text-green-700 border-green-200 font-medium flex items-center gap-1">
+                                      💰 Profit Analysis
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          </div>
+                          )}
+                          
+                          {/* Spacer for layout when costs are hidden */}
+                          {!canViewCosts && <div className="flex-1 lg:flex-[2]" />}
 
                           {/* Quick Actions Section (10%) */}
                           <div className="flex lg:flex-col gap-2 lg:flex-[1]">
@@ -1351,35 +1376,39 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                   </Select>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
-                    Unit Cost (₺)
-                  </label>
-                  <Input
-                    type="number"
-                    value={newScopeItem.unit_cost}
-                    onChange={(e) => setNewScopeItem(prev => ({ 
-                      ...prev, 
-                      unit_cost: parseFloat(e.target.value) || 0 
-                    }))}
-                    min="0"
-                    step="0.01"
-                    className="border-gray-400 focus:border-blue-500"
-                  />
-                </div>
+                {canEditCosts && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-2">
+                      Unit Cost (₺)
+                    </label>
+                    <Input
+                      type="number"
+                      value={newScopeItem.unit_cost}
+                      onChange={(e) => setNewScopeItem(prev => ({ 
+                        ...prev, 
+                        unit_cost: parseFloat(e.target.value) || 0 
+                      }))}
+                      min="0"
+                      step="0.01"
+                      className="border-gray-400 focus:border-blue-500"
+                    />
+                  </div>
+                )}
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-800 mb-2">
-                    Total Cost (₺)
-                  </label>
-                  <Input
-                    type="number"
-                    value={newScopeItem.total_cost}
-                    disabled
-                    className="bg-gray-100 border-gray-300 text-gray-700 font-semibold"
-                  />
-                  <p className="text-xs text-gray-600 mt-1">Auto-calculated</p>
-                </div>
+                {canEditCosts && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-2">
+                      Total Cost (₺)
+                    </label>
+                    <Input
+                      type="number"
+                      value={newScopeItem.total_cost}
+                      disabled
+                      className="bg-gray-100 border-gray-300 text-gray-700 font-semibold"
+                    />
+                    <p className="text-xs text-gray-600 mt-1">Auto-calculated</p>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -1407,11 +1436,13 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="unassigned">Unassigned</SelectItem>
-                      {uniqueSubcontractors.map((sub) => (
-                        <SelectItem key={sub.id} value={sub.id || ''}>
-                          {sub.name} - {sub.trade}
-                        </SelectItem>
-                      ))}
+                      {uniqueSubcontractors
+                        .filter(sub => sub.id !== null && sub.id !== '')
+                        .map((sub) => (
+                          <SelectItem key={sub.id} value={sub.id!}>
+                            {sub.name} - {sub.trade}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 </div>
