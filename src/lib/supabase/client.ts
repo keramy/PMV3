@@ -20,6 +20,8 @@ const connectionTimeout = parseInt(process.env.NEXT_PUBLIC_CONNECTION_TIMEOUT ||
 const enableOfflineMode = process.env.NEXT_PUBLIC_OFFLINE_MODE === 'true'
 const jwtExpiry = parseInt(process.env.NEXT_PUBLIC_JWT_EXPIRY || '14400')
 
+// Removed client caching - Supabase 2024 best practice is to create fresh instances
+
 // ============================================================================
 // TYPE-SAFE CLIENT CONFIGURATION
 // ============================================================================
@@ -39,7 +41,7 @@ const jwtExpiry = parseInt(process.env.NEXT_PUBLIC_JWT_EXPIRY || '14400')
 export function createClient() {
   // Development debugging (only in dev mode)
   if (isDevelopment) {
-    console.log('🔍 Supabase Browser Client (2024):', {
+    console.log('🔍 Supabase Browser Client (2024 Best Practice):', {
       supabaseUrl: supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : 'MISSING',
       supabaseAnonKey: supabaseAnonKey ? 'Present' : 'MISSING',
       env: process.env.NODE_ENV,
@@ -69,34 +71,28 @@ export function createClient() {
     throw new Error(error)
   }
 
-  // 2024 BEST PRACTICE: Use createBrowserClient with proper session management
+  // 2024 BEST PRACTICE: Create fresh client instances (no caching)
+  // @supabase/ssr handles session management and cookie synchronization automatically
   try {
-    console.log('🔍 Creating Supabase browser client (2024 pattern)...')
     const client = createBrowserClient<Database>(
       supabaseUrl,
       supabaseAnonKey
-      // Let @supabase/ssr handle cookies automatically for Next.js 15
-      // This ensures session synchronization between server and client
+      // Use default Supabase cookie handling - don't override
     )
 
-    // 2024 ENHANCEMENT: Add session validation debugging
-    if (isDevelopment) {
+    // Light session debugging (reduced logging)
+    if (isDevelopment && Math.random() < 0.1) { // Only log 10% of the time
       client.auth.getSession().then(({ data: { session }, error }) => {
         if (error) {
           console.warn('⚠️ [Client] Session retrieval error:', error.message)
         } else if (session) {
-          console.log('✅ [Client] Session found:', {
-            user: session.user?.id,
-            expiresAt: session.expires_at,
-            tokenType: session.token_type
-          })
+          console.log('✅ [Client] Session validated')
         } else {
-          console.log('ℹ️ [Client] No active session found')
+          console.log('ℹ️ [Client] No active session')
         }
       })
     }
 
-    console.log('✅ Supabase client created successfully (2024)')
     return client
   } catch (error) {
     console.error('❌ CRITICAL: Failed to create Supabase client:', error)
@@ -271,30 +267,20 @@ export function validateClientDatabaseTypes(
 }
 
 // ============================================================================
-// SINGLETON CLIENT INSTANCE
+// CLIENT UTILITIES - 2024 BEST PRACTICE
 // ============================================================================
 
-let clientInstance: ReturnType<typeof createClient> | null = null
-
 /**
- * Get singleton client instance for consistent usage across the application
+ * Get fresh client instance (replaces deprecated singleton pattern)
+ * Supabase 2024 best practice: create fresh instances for proper session management
  */
 export function getClient(): ReturnType<typeof createClient> {
-  if (!clientInstance) {
-    clientInstance = createClient()
-    
-    // Validate types in development
-    if (isDevelopment) {
-      validateClientDatabaseTypes(clientInstance)
-    }
+  const client = createClient()
+  
+  // Validate types in development
+  if (isDevelopment) {
+    validateClientDatabaseTypes(client)
   }
   
-  return clientInstance
-}
-
-/**
- * Reset client instance (useful for testing or configuration changes)
- */
-export function resetClient(): void {
-  clientInstance = null
+  return client
 }
