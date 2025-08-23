@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { useAuth } from '@/hooks/useAuth'
@@ -41,7 +41,8 @@ import {
 import { EmptyProjects } from '@/components/ui/empty-state'
 import { ProjectCreateDialog } from '@/components/projects/ProjectCreateDialog'
 
-export default function ProjectsPage() {
+// Main component that uses useSearchParams
+function ProjectsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { profile } = useAuth()
@@ -462,5 +463,14 @@ export default function ProjectsPage() {
         onProjectCreated={handleProjectCreated}
       />
     </div>
+  )
+}
+
+// Wrapper component with Suspense boundary
+export default function ProjectsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading projects...</div>}>
+      <ProjectsPageContent />
+    </Suspense>
   )
 }
