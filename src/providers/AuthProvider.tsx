@@ -1,23 +1,47 @@
 /**
- * Formula PM V3 - Centralized Authentication Provider
- * Single source of truth for auth state, replacing all useAuth() hooks
+ * Formula PM V3 - Enhanced Authentication Provider with Bitwise Permissions
+ * Single source of truth for auth state with high-performance permission checking
  * Based on official Supabase SSR patterns and React 18 best practices
  */
 
 'use client'
 
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { getSupabaseSingleton } from '@/lib/supabase/singleton'
+import { PermissionManager, PERMISSIONS, hasPermission, canViewCosts, isAdmin, canManageProject } from '@/lib/permissions/bitwise'
 import type { User } from '@supabase/supabase-js'
 import type { AppUserProfile } from '@/types/database'
-import type { Permission } from '@/types/auth'
+import type { Project } from '@/lib/permissions/bitwise'
 
 interface AuthContextType {
+  // Core auth state
   user: User | null
   profile: AppUserProfile | null
   loading: boolean
   isAuthenticated: boolean
   refreshProfile: () => Promise<void>
+  
+  // Bitwise permission system
+  permissions: number
+  hasPermission: (permission: number) => boolean
+  hasAnyPermission: (permissions: number[]) => boolean
+  hasAllPermissions: (permissions: number[]) => boolean
+  
+  // Construction-specific permission checks
+  canViewFinancials: boolean
+  canManageProjects: boolean
+  canManageUsers: boolean
+  isAdmin: boolean
+  isProjectOwner: (project: Project) => boolean
+  canManageProject: (project: Project) => boolean
+  canApproveShopDrawings: (project: Project, isProjectApprover?: boolean) => boolean
+  
+  // Data filtering
+  filterFinancialData: <T extends Record<string, any>>(data: T[], costFields?: (keyof T)[]) => T[]
+  
+  // Role information
+  roleDisplayName: string
+  permissionNames: string[]
 }
 
 const AuthContext = createContext<AuthContextType | null>(null)
@@ -188,12 +212,89 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  // Bitwise permission computations
+  const permissions = profile?.permissions_bitwise || 0;
+  
+  // Memoized permission checking functions for performance
+  const permissionChecks = useMemo(() => ({
+    hasPermission: (permission: number) => PermissionManager.hasPermission(permissions, permission),
+    hasAnyPermission: (perms: number[]) => PermissionManager.hasAnyPermission(permissions, perms),
+    hasAllPermissions: (perms: number[]) => PermissionManager.hasAllPermissions(permissions, perms),
+    canViewFinancials: PermissionManager.canViewCosts(permissions),
+    canManageProjects: PermissionManager.hasPermission(permissions, PERMISSIONS.MANAGE_ALL_PROJECTS),
+    canManageUsers: PermissionManager.hasPermission(permissions, PERMISSIONS.MANAGE_ALL_USERS),
+    isAdmin: PermissionManager.hasPermission(permissions, PERMISSIONS.MANAGE_ALL_USERS),
+    permissionNames: PermissionManager.getPermissionNames(permissions)
+  }), [permissions]);
+
+  // Memoized callback functions
+  const isProjectOwner = useCallback(
+    (project: Project) => project.created_by === user?.id,
+    [user?.id]
+  );
+  
+  const canManageProjectCallback = useCallback(
+    (project: Project) => PermissionManager.canManageProject(permissions, project, user?.id || ''),
+    [permissions, user?.id]
+  );
+  
+  const canApproveShopDrawings = useCallback(
+    (project: Project, isProjectApprover?: boolean) => 
+      PermissionManager.canApproveShopDrawings(permissions, project, user?.id || '', isProjectApprover),
+    [permissions, user?.id]
+  );
+  
+  const filterFinancialData = useCallback(
+    <T extends Record<string, any>>(data: T[], costFields?: (keyof T)[]) => 
+      PermissionManager.filterFinancialData(data, permissions, costFields),
+    [permissions]
+  );
+
+  // Role display name
+  const roleDisplayName = useMemo(() => {
+    if (!profile?.role) return 'Unknown';
+    
+    const roleNames: Record<string, string> = {
+      'admin': 'Administrator',
+      'technical_manager': 'Technical Manager',  
+      'project_manager': 'Project Manager',
+      'team_member': 'Team Member',
+      'client': 'Client',
+      'accountant': 'Accountant'
+    };
+    
+    return roleNames[profile.role] || profile.role;
+  }, [profile?.role]);
+
   const value: AuthContextType = {
+    // Core auth state
     user,
     profile,
     loading,
     isAuthenticated: !!user,
-    refreshProfile
+    refreshProfile,
+    
+    // Bitwise permission system
+    permissions,
+    hasPermission: permissionChecks.hasPermission,
+    hasAnyPermission: permissionChecks.hasAnyPermission,
+    hasAllPermissions: permissionChecks.hasAllPermissions,
+    
+    // Construction-specific permission checks
+    canViewFinancials: permissionChecks.canViewFinancials,
+    canManageProjects: permissionChecks.canManageProjects,
+    canManageUsers: permissionChecks.canManageUsers,
+    isAdmin: permissionChecks.isAdmin,
+    isProjectOwner,
+    canManageProject: canManageProjectCallback,
+    canApproveShopDrawings,
+    
+    // Data filtering
+    filterFinancialData,
+    
+    // Role information
+    roleDisplayName,
+    permissionNames: permissionChecks.permissionNames
   }
 
   return (
