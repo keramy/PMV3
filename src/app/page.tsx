@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +20,7 @@ import {
 
 export default function HomePage() {
   // Always call useAuth hook to avoid conditional hook calls
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuthContext()
   const useAuthBypass = process.env.NEXT_PUBLIC_DISABLE_AUTH === 'true'
 
   if (loading) {

@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
 import { toast } from '@/hooks/use-toast'
 import { useCreateScopeItem } from '@/hooks/useScope'
 import { EmptyScope, EmptyState } from '@/components/ui/empty-state'
+import { FormulaLoading } from '@/components/ui/formula-loader'
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CostVarianceBadge, CostSummaryCard } from '@/components/ui/cost-variance-badge'
 import {
   Select,
   SelectContent,
@@ -69,12 +71,14 @@ import {
   ChevronsLeft,
   ChevronsRight
 } from 'lucide-react'
+import type { ScopeCategory } from '@/types/scope'
 
 // Scope Item interface matching actual database schema
 interface ScopeItemWithSubcontractor {
   id: string
   project_id: string
   project_name?: string  // Optional project name for display
+  scope_code?: string | null  // Scope identifier code
   title: string
   description: string | null
   category: string | null
@@ -162,7 +166,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
     unit: 'pcs' as const,
     unit_cost: 0,
     total_cost: 0,
-    priority: 'medium' as const,
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'critical',
     status: 'not_started',
     assigned_to: '',
     subcontractor_id: '',
@@ -171,7 +175,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
     notes: ''
   })
 
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   // Mutation hooks for API operations
   const createScopeItem = useCreateScopeItem()
@@ -250,7 +254,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                          (item.specification && item.specification.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (item.notes && item.notes.toLowerCase().includes(searchTerm.toLowerCase()))
     const matchesCategory = selectedCategories.length === 0 || (item.category && selectedCategories.includes(item.category))
-    const matchesSubcontractor = selectedSubcontractors.length === 0 || selectedSubcontractors.includes(item.assigned_to)
+    const matchesSubcontractor = selectedSubcontractors.length === 0 || (item.assigned_to && selectedSubcontractors.includes(item.assigned_to))
     
     return matchesProject && matchesSearch && matchesCategory && matchesSubcontractor
   })
@@ -269,7 +273,14 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
 
   // Show loading state
   if (isLoading) {
-    return <div className="p-6"><div className="animate-pulse text-center">Loading scope items...</div></div>
+    return (
+      <div className="p-6">
+        <FormulaLoading 
+          text="Loading scope items..." 
+          description="Fetching project data from database"
+        />
+      </div>
+    )
   }
 
   // Show error state with proper handling
@@ -565,7 +576,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
         project_id: projectIdToUse,
         title: newScopeItem.title,
         description: newScopeItem.description,
-        category: newScopeItem.category,
+        category: newScopeItem.category as ScopeCategory | undefined,
         specification: newScopeItem.specification,
         quantity: newScopeItem.quantity,
         unit: newScopeItem.unit,
@@ -843,11 +854,11 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                       <span className="flex items-center gap-1">
                         <span className="text-gray-800">Profit:</span>
                         <span className={`font-bold text-base ${
-                          filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfit(item.total_cost, item.actual_cost), 0) >= 0 
+                          filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfit(item.total_cost || 0, item.actual_cost || 0), 0) >= 0 
                             ? 'text-green-700' 
                             : 'text-red-700'
                         }`}>
-                          {formatCurrency(filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfit(item.total_cost, item.actual_cost), 0))}
+                          {formatCurrency(filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfit(item.total_cost || 0, item.actual_cost || 0), 0))}
                         </span>
                       </span>
                       
@@ -855,7 +866,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                         <span className="text-gray-800">Margin:</span>
                         <span className="text-purple-700 font-bold text-base">
                           {filteredScopeItems.length > 0 
-                            ? (filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfitPercentage(item.total_cost, item.actual_cost), 0) / filteredScopeItems.length).toFixed(1)
+                            ? (filteredScopeItems.reduce((sum: number, item: ScopeItemWithSubcontractor) => sum + calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0), 0) / filteredScopeItems.length).toFixed(1)
                             : '0.0'
                           }%
                         </span>
@@ -908,6 +919,8 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                 <>
                   <TableHead className="text-right font-bold text-gray-800 w-28 py-4">Unit Price</TableHead>
                   <TableHead className="text-right font-bold text-gray-800 w-32 py-4">Total Price</TableHead>
+                  <TableHead className="text-right font-bold text-gray-800 w-28 py-4">Budgeted</TableHead>
+                  <TableHead className="text-center font-bold text-gray-800 w-32 py-4">Variance</TableHead>
                 </>
               )}
               <TableHead className="w-16 font-bold text-gray-800 py-4">Assigned</TableHead>
@@ -920,7 +933,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
               return (
                 <React.Fragment key={item.id}>
                   <TableRow 
-                    className={`group hover:bg-gray-100/80 transition-all duration-200 ${getRowAccentColor(item.category)} ${getCostPriority(item.total_cost) === 'cost-high' ? 'bg-gradient-to-r from-yellow-50/30 to-transparent' : ''} ${isExpanded ? 'bg-blue-50/40' : ''} cursor-pointer`}
+                    className={`group hover:bg-gray-100/80 transition-all duration-200 ${getRowAccentColor(item.category || 'default')} ${getCostPriority(item.total_cost || 0) === 'cost-high' ? 'bg-gradient-to-r from-yellow-50/30 to-transparent' : ''} ${isExpanded ? 'bg-blue-50/40' : ''} cursor-pointer`}
                     onClick={() => toggleRow(item.id)}
                   >
                     <TableCell className="py-4">
@@ -941,10 +954,10 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     </TableCell>
                     <TableCell className="py-4">
                       <Badge 
-                        className={`${getCategoryColor(item.category)} font-semibold transition-colors border text-sm px-3 py-2`}
+                        className={`${getCategoryColor(item.category || 'default')} font-semibold transition-colors border text-sm px-3 py-2`}
                       >
-                        {getCategoryIcon(item.category)}
-                        <span className="ml-1">{getCategoryLabel(item.category)}</span>
+                        {getCategoryIcon(item.category || 'default')}
+                        <span className="ml-1">{getCategoryLabel(item.category || 'default')}</span>
                       </Badge>
                     </TableCell>
                     <TableCell className="font-semibold py-4 text-gray-900">{item.title}</TableCell>
@@ -953,16 +966,27 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     {canViewCosts && (
                       <>
                         <TableCell className="text-right py-4 font-mono text-base font-medium text-gray-800">
-                          {formatCurrency(item.unit_cost)}
+                          {formatCurrency(item.unit_cost || 0)}
                         </TableCell>
                         <TableCell className="text-right py-4 font-mono text-lg font-bold text-blue-700">
-                          {formatCurrency(item.total_cost)}
+                          {formatCurrency(item.total_cost || 0)}
+                        </TableCell>
+                        <TableCell className="text-right py-4 font-mono text-base font-medium text-gray-800">
+                          {formatCurrency(item.initial_cost || 0)}
+                        </TableCell>
+                        <TableCell className="text-center py-4">
+                          <CostVarianceBadge 
+                            initialCost={item.initial_cost}
+                            actualCost={item.actual_cost}
+                            costVariance={item.cost_variance}
+                            costVariancePercentage={item.cost_variance_percentage}
+                          />
                         </TableCell>
                       </>
                     )}
                     <TableCell className="py-4">
                       <div className="flex justify-center">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold ${getCategoryColor(item.category).split(' ')[0]} ${getCategoryColor(item.category).split(' ')[1]} cursor-pointer shadow-sm hover:shadow-md transition-shadow`} 
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold ${getCategoryColor(item.category || 'default').split(' ')[0]} ${getCategoryColor(item.category || 'default').split(' ')[1]} cursor-pointer shadow-sm hover:shadow-md transition-shadow`} 
                              title={`${item.subcontractor?.name || 'Unassigned'}\n${item.subcontractor?.trade || ''}\n${item.subcontractor?.contact_person || ''}\n${item.subcontractor?.phone || ''}`}>
                           {(item.subcontractor?.name || 'UN').split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
@@ -1005,7 +1029,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                   </TableRow>
                   {isExpanded && (
                     <TableRow>
-                      <TableCell colSpan={10} className={`bg-gray-100 py-4 ${getRowAccentColor(item.category)}`}>
+                      <TableCell colSpan={10} className={`bg-gray-100 py-4 ${getRowAccentColor(item.category || 'default')}`}>
                         <div className="flex flex-col lg:flex-row gap-4 px-4">
                           {/* Main Details Section (60%) */}
                           <div className="flex-1 lg:flex-[3] space-y-3">
@@ -1073,7 +1097,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                               View Details
                             </Button>
                             <div className="text-xs text-gray-700 lg:mt-2">
-                              {new Date(item.created_at).toLocaleDateString()}
+                              {new Date(item.created_at || new Date()).toLocaleDateString()}
                             </div>
                           </div>
                         </div>

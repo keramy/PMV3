@@ -3,7 +3,7 @@
  * Tools to diagnose session, token, and RLS issues
  */
 
-import { getClient } from '@/lib/supabase/client'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 import type { AuthHeaderTestResult, TaskProjectLookup } from '@/types/auth-debug'
 
 export interface AuthDebugInfo {
@@ -40,7 +40,7 @@ export interface AuthDebugInfo {
  * Client-side authentication debugging
  */
 export async function debugClientAuth(): Promise<AuthDebugInfo> {
-  const supabase = getClient()
+  const supabase = getSupabaseSingleton()
   
   const debugInfo: AuthDebugInfo = {
     session: { exists: false },

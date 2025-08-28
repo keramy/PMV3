@@ -3,22 +3,19 @@
  * Replaces mock data with actual Supabase queries
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { apiMiddleware } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 import type { Project } from '@/types/database'
+import { 
+  ProjectCreateApiSchema,
+  ProjectResponseSchema,
+  validateProjectForm 
+} from '@/schemas/project'
 
-export async function GET(request: NextRequest) {
+export const GET = apiMiddleware.auth(async (user, request) => {
   try {
-    const userId = request.headers.get('x-user-id')
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID required' },
-        { status: 401 }
-      )
-    }
-
-    console.log('🔍 Projects API - Fetching projects for user:', userId)
+    console.log('🔍 Projects API - Fetching projects for user:', user.id)
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status')
@@ -71,45 +68,50 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})
 
-export async function POST(request: NextRequest) {
+export const POST = apiMiddleware.auth(async (user, request) => {
   try {
-    const userId = request.headers.get('x-user-id')
-    
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID required' },
-        { status: 401 }
-      )
-    }
 
     const body = await request.json()
-    const { name, description, start_date, end_date, budget, client_name, status = 'planning' } = body
-
-    if (!name) {
+    
+    // Validate request body using Zod schema
+    const validationResult = ProjectCreateApiSchema.safeParse(body)
+    
+    if (!validationResult.success) {
+      console.error('🚨 Project API - Validation failed:', validationResult.error.issues)
       return NextResponse.json(
-        { error: 'Project name is required' },
+        { 
+          error: 'Invalid project data', 
+          details: validationResult.error.issues.map(issue => ({
+            field: issue.path.join('.'),
+            message: issue.message
+          }))
+        },
         { status: 400 }
       )
     }
-
-    console.log('🔍 Projects API - Creating project:', { name, client_name })
+    
+    const validatedData = validationResult.data
+    console.log('🚀 Project API - Creating project:', { name: validatedData.name, client: validatedData.client_name })
 
     const supabase = await createClient()
     
-    // Create project (no company_id needed - we removed company structure)
+    // Insert project using validated data
     const projectData = {
-      name,
-      description,
-      created_by: userId,
-      start_date,
-      end_date,
-      budget: budget ? parseFloat(budget) : null,
-      client_name,
-      status,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      name: validatedData.name,
+      description: validatedData.description,
+      start_date: validatedData.start_date,
+      end_date: validatedData.end_date,
+      budget: validatedData.budget,
+      client_name: validatedData.client_name,
+      status: validatedData.status,
+      priority: validatedData.priority,
+      project_number: validatedData.project_number,
+      address: validatedData.address,
+      created_by: user.id,
+      created_at: validatedData.created_at,
+      updated_at: validatedData.updated_at
     }
 
     const { data: project, error } = await supabase
@@ -128,8 +130,11 @@ export async function POST(request: NextRequest) {
 
     console.log('🔍 Projects API - Created project:', project.id)
 
+    // Validate response data for type safety
+    const validatedProject = ProjectResponseSchema.parse(project)
+    
     return NextResponse.json({
-      project,
+      project: validatedProject,
       status: 'success',
       message: 'Project created successfully'
     })
@@ -141,4 +146,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

@@ -1,12 +1,12 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Temporarily ignore TypeScript and ESLint errors for deployment
+  // Enable TypeScript and ESLint error checking for quality assurance
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   
   // Enable experimental features for better performance
@@ -82,6 +82,17 @@ const nextConfig: NextConfig = {
 
   // Optimize bundle for construction workflows
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Fix Jest worker errors by optimizing worker pool
+    if (dev && !isServer) {
+      // Reduce parallelism in development to prevent worker thread issues
+      config.parallelism = parseInt(process.env.WEBPACK_WORKER_PARALLELISM || '2')
+      
+      // Configure worker pool for Windows/OneDrive compatibility
+      config.infrastructureLogging = {
+        level: 'warn' // Reduce log noise from workers
+      }
+    }
+
     // Optimize bundle splitting for construction app patterns
     if (!isServer) {
       config.resolve.fallback = {
@@ -100,6 +111,23 @@ const nextConfig: NextConfig = {
       test: /\.(test|spec)\.(js|jsx|ts|tsx)$/,
       loader: 'ignore-loader'
     })
+
+    // Add memory-conscious optimization
+    if (dev) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          cacheGroups: {
+            default: false,
+            vendors: {
+              name: 'vendors',
+              chunks: 'all',
+              test: /node_modules/
+            }
+          }
+        }
+      }
+    }
 
     return config
   },

@@ -1,0 +1,278 @@
+-- ============================================
+-- FORMULA PM V3 - PERMISSION-BASED RLS POLICIES
+-- ============================================
+-- This implements a flexible permission system where:
+-- 1. Permissions are stored in user_profiles.permissions array
+-- 2. Admin panel can dynamically grant/revoke permissions
+-- 3. No code changes needed for access control
+-- 4. No infinite recursion issues
+-- ============================================
+
+-- Step 1: Drop ALL existing policies to start fresh
+DROP POLICY IF EXISTS "users_view_own_and_project_profiles" ON user_profiles;
+DROP POLICY IF EXISTS "users_update_own_profile" ON user_profiles;
+DROP POLICY IF EXISTS "users_insert_own_profile" ON user_profiles;
+DROP POLICY IF EXISTS "users_delete_own_profile" ON user_profiles;
+
+DROP POLICY IF EXISTS "users_view_own_project_members" ON project_members;
+DROP POLICY IF EXISTS "users_insert_project_members" ON project_members;
+DROP POLICY IF EXISTS "users_update_project_members" ON project_members;
+DROP POLICY IF EXISTS "users_delete_project_members" ON project_members;
+
+DROP POLICY IF EXISTS "users_view_own_projects" ON projects;
+DROP POLICY IF EXISTS "users_manage_own_projects" ON projects;
+DROP POLICY IF EXISTS "users_view_member_projects" ON projects;
+DROP POLICY IF EXISTS "users_create_projects" ON projects;
+DROP POLICY IF EXISTS "users_update_own_projects" ON projects;
+DROP POLICY IF EXISTS "users_delete_own_projects" ON projects;
+
+DROP POLICY IF EXISTS "users_view_scope_items" ON scope_items;
+DROP POLICY IF EXISTS "users_manage_scope_items" ON scope_items;
+
+-- ============================================
+-- USER PROFILES POLICIES (SIMPLE - NO RECURSION)
+-- ============================================
+-- Users can only see and edit their own profile
+-- Team visibility handled at application layer
+
+CREATE POLICY "users_view_own_profile" ON user_profiles
+FOR SELECT TO authenticated
+USING (id = auth.uid());
+
+CREATE POLICY "users_update_own_profile" ON user_profiles
+FOR UPDATE TO authenticated
+USING (id = auth.uid());
+
+CREATE POLICY "users_insert_own_profile" ON user_profiles
+FOR INSERT TO authenticated
+WITH CHECK (id = auth.uid());
+
+CREATE POLICY "users_delete_own_profile" ON user_profiles
+FOR DELETE TO authenticated
+USING (id = auth.uid());
+
+-- ============================================
+-- PROJECTS POLICIES (PERMISSION & MEMBERSHIP BASED)
+-- ============================================
+-- View: Members OR users with view_all_projects permission
+-- Create: Users with create_projects permission
+-- Update/Delete: Project creators OR users with manage_all_projects
+
+CREATE POLICY "users_view_projects" ON projects
+FOR SELECT TO authenticated
+USING (
+  -- User is a member of the project
+  EXISTS (
+    SELECT 1 FROM project_members
+    WHERE project_id = projects.id
+    AND user_id = auth.uid()
+  )
+  OR
+  -- User has permission to view all projects (boss/admin)
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'view_all_projects' = ANY(permissions)
+  )
+);
+
+CREATE POLICY "users_create_projects" ON projects
+FOR INSERT TO authenticated
+WITH CHECK (
+  created_by = auth.uid()
+  AND EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'create_projects' = ANY(permissions)
+  )
+);
+
+CREATE POLICY "users_update_projects" ON projects
+FOR UPDATE TO authenticated
+USING (
+  created_by = auth.uid()
+  OR EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'manage_all_projects' = ANY(permissions)
+  )
+);
+
+CREATE POLICY "users_delete_projects" ON projects
+FOR DELETE TO authenticated
+USING (
+  created_by = auth.uid()
+  OR EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'manage_all_projects' = ANY(permissions)
+  )
+);
+
+-- ============================================
+-- PROJECT MEMBERS POLICIES
+-- ============================================
+-- View: See members of your projects OR admin permission
+-- Manage: Project creators OR admin permission
+
+CREATE POLICY "users_view_project_members" ON project_members
+FOR SELECT TO authenticated
+USING (
+  -- You're on this project
+  project_id IN (
+    SELECT project_id FROM project_members
+    WHERE user_id = auth.uid()
+  )
+  OR
+  -- You have admin permission
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND ('view_all_projects' = ANY(permissions) OR 'manage_all_users' = ANY(permissions))
+  )
+);
+
+CREATE POLICY "users_manage_project_members" ON project_members
+FOR INSERT TO authenticated
+WITH CHECK (
+  -- You created this project
+  EXISTS (
+    SELECT 1 FROM projects
+    WHERE id = project_members.project_id
+    AND created_by = auth.uid()
+  )
+  OR
+  -- You have admin permission
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'manage_all_users' = ANY(permissions)
+  )
+);
+
+CREATE POLICY "users_update_project_members" ON project_members
+FOR UPDATE TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM projects
+    WHERE id = project_members.project_id
+    AND created_by = auth.uid()
+  )
+  OR
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'manage_all_users' = ANY(permissions)
+  )
+);
+
+CREATE POLICY "users_delete_project_members" ON project_members
+FOR DELETE TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM projects
+    WHERE id = project_members.project_id
+    AND created_by = auth.uid()
+  )
+  OR
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'manage_all_users' = ANY(permissions)
+  )
+);
+
+-- ============================================
+-- SCOPE ITEMS POLICIES
+-- ============================================
+-- View based on project membership or permissions
+
+CREATE POLICY "users_view_scope_items" ON scope_items
+FOR SELECT TO authenticated
+USING (
+  -- You're on this project
+  EXISTS (
+    SELECT 1 FROM project_members
+    WHERE project_id = scope_items.project_id
+    AND user_id = auth.uid()
+  )
+  OR
+  -- You have permission to view all projects
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'view_all_projects' = ANY(permissions)
+  )
+);
+
+CREATE POLICY "users_manage_scope_items" ON scope_items
+FOR ALL TO authenticated
+USING (
+  -- You created this project
+  EXISTS (
+    SELECT 1 FROM projects
+    WHERE id = scope_items.project_id
+    AND created_by = auth.uid()
+  )
+  OR
+  -- You have admin permission
+  EXISTS (
+    SELECT 1 FROM user_profiles
+    WHERE id = auth.uid()
+    AND 'manage_all_projects' = ANY(permissions)
+  )
+);
+
+-- ============================================
+-- GRANT YOUR ADMIN USER ALL PERMISSIONS
+-- ============================================
+-- ⚠️ IMPORTANT: YOU MUST REPLACE THE EMAIL BELOW WITH YOUR ACTUAL ADMIN EMAIL!
+-- 
+-- INSTRUCTIONS:
+-- 1. Find your admin email address
+-- 2. Replace 'YOUR_ADMIN_EMAIL@DOMAIN.COM' below with your actual email
+-- 3. Run this migration
+-- 
+-- Example:
+-- UPDATE user_profiles 
+-- SET permissions = ARRAY[
+--   'view_all_projects',
+--   'create_projects',
+--   'manage_all_projects',
+--   'view_financial_data',
+--   'manage_all_users',
+--   'export_data',
+--   'import_data',
+--   'delete_data',
+--   'approve_expenses',
+--   'archive_projects',
+--   'export_financial_reports',
+--   'view_all_users',
+--   'manage_team_members'
+-- ]
+-- WHERE email = 'your.actual.email@company.com';
+
+-- UNCOMMENT AND CUSTOMIZE THE LINES BELOW:
+ UPDATE user_profiles 
+ SET permissions = ARRAY[
+   'view_all_projects',
+   'create_projects',
+   'manage_all_projects',
+   'view_financial_data',
+   'manage_all_users',
+   'export_data',
+   'import_data',
+   'delete_data',
+   'approve_expenses',
+   'archive_projects',
+   'export_financial_reports',
+   'view_all_users',
+   'manage_team_members'
+ ]
+ WHERE email = 'admin@formulapm.com';  -- ← CHANGE THIS TO YOUR ADMIN EMAIL!
+
+-- ============================================
+-- VERIFY ADMIN PERMISSIONS (Optional)
+-- ============================================
+-- After running the migration, you can verify your admin user has permissions with:
+-- SELECT id, email, permissions FROM user_profiles WHERE email = 'YOUR_ADMIN_EMAIL@DOMAIN.COM';

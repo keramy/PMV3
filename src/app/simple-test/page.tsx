@@ -28,10 +28,10 @@ export default function SimpleTestPage() {
   const testSupabaseImport = async () => {
     try {
       console.log('🔍 Testing Supabase import...')
-      const { getClient } = await import('@/lib/supabase/client')
+      const { getSupabaseSingleton } = await import('@/lib/supabase/singleton')
       console.log('🔍 Supabase client import successful')
       
-      const supabase = getClient()
+      const supabase = getSupabaseSingleton()
       console.log('🔍 Supabase client created:', !!supabase)
       
       const { data, error } = await supabase.auth.getSession()

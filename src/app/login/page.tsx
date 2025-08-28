@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Logo } from '@/components/ui/logo'
-import { getClient } from '@/lib/supabase/client'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
+import { useAuthContext } from '@/providers/AuthProvider'
 import { useToast } from '@/hooks/use-toast'
+import { forceSignOut, hasPersistedSession } from '@/lib/auth/session-manager'
 
+// Performance optimizations for construction site connectivity
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,6 +22,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { toast } = useToast()
+  const router = useRouter()
+  const { isAuthenticated, user } = useAuthContext()
+  
+  const supabase = getSupabaseSingleton()
+
+  // Clear any existing sessions when login page loads (prevents auto-login)
+  useEffect(() => {
+    const clearOldSessions = async () => {
+      // Only clear if we have persisted session data but user is not authenticated
+      if (hasPersistedSession() && !isAuthenticated) {
+        console.log('🔍 Login Page: Clearing old session data to prevent auto-login')
+        await forceSignOut()
+      }
+    }
+    
+    clearOldSessions()
+  }, [isAuthenticated])
 
   // Load remembered email on component mount
   useEffect(() => {
@@ -27,6 +48,22 @@ export default function LoginPage() {
       setRememberMe(true)
     }
   }, [])
+
+  // Handle navigation when user is authenticated (using AuthProvider state)
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      
+      // Show success toast
+      toast({
+        title: 'Welcome Back!',
+        description: `Successfully signed in as ${user.email}`,
+        duration: 3000,
+      })
+      
+      // Navigate to dashboard
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, user, toast, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,20 +77,12 @@ export default function LoginPage() {
       setLoading(true)
       setError(null)
       
-      console.log('🔍 DEADLOCK-FIXED Login - Starting authentication for:', email)
-      const supabase = getClient()
-      
-      // Sign in with email and password using DEADLOCK-FIXED client
-      console.log('🔍 DEADLOCK-FIXED Login - Calling signInWithPassword')
+      // 2024 BEST PRACTICE: Auth state listener will handle success/redirect
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       })
       
-      console.log('🔍 DEADLOCK-FIXED Login - Auth result:', { 
-        user: data?.user ? { id: data.user.id, email: data.user.email } : null, 
-        error: authError 
-      })
       
       if (authError) {
         setError(authError.message)
@@ -96,7 +125,6 @@ export default function LoginPage() {
       }
 
       if (data.user) {
-        console.log('🔍 DEADLOCK-FIXED Login - User authenticated successfully:', data.user.id)
         
         // Handle Remember Me functionality
         if (rememberMe) {
@@ -104,21 +132,8 @@ export default function LoginPage() {
         } else {
           localStorage.removeItem('formulapm_remember_email')
         }
-
-        // Show success toast
-        console.log('🔍 DEADLOCK-FIXED Login - Showing success toast')
-        toast({
-          title: 'Welcome Back!',
-          description: `Successfully signed in as ${data.user.email}`,
-          duration: 3000,
-        })
-
-        // Redirect to dashboard after brief delay
-        console.log('🔍 DEADLOCK-FIXED Login - Setting redirect timeout')
-        setTimeout(() => {
-          console.log('🔍 DEADLOCK-FIXED Login - Redirecting to dashboard')
-          window.location.href = '/dashboard'
-        }, 1000)
+        
+        // AuthProvider will handle the redirect and success toast
       }
 
     } catch (err) {
@@ -170,6 +185,7 @@ export default function LoginPage() {
               </Label>
               <Input
                 id="email"
+                data-testid="email-input"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -188,6 +204,7 @@ export default function LoginPage() {
               <div className="relative">
                 <Input
                   id="password"
+                  data-testid="password-input"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -200,6 +217,8 @@ export default function LoginPage() {
                   type="button"
                   variant="ghost"
                   size="sm"
+                  aria-label="Toggle password visibility"
+                  data-testid="password-toggle"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={loading}
@@ -217,6 +236,7 @@ export default function LoginPage() {
             <div className="flex items-center space-x-3">
               <Checkbox
                 id="rememberMe"
+                data-testid="remember-me-checkbox"
                 checked={rememberMe}
                 onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                 disabled={loading}
@@ -230,6 +250,7 @@ export default function LoginPage() {
             {/* Submit Button */}
             <Button
               type="submit"
+              data-testid="login-submit"
               className="w-full h-12 bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 text-white font-medium"
               disabled={loading}
             >

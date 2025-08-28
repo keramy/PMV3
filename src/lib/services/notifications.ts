@@ -233,7 +233,7 @@ class NotificationService {
         const reminderData: TaskDueReminderData = {
           task_id: task.id,
           task_title: task.title,
-          project_id: task.project_id,
+          project_id: task.project_id || '',
           project_name: (task.projects as any)?.name || 'Unknown Project',
           due_date: task.due_date,
           days_until_due: daysUntilDue

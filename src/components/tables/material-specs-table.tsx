@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import {
   Table,
   TableBody,
@@ -12,7 +13,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PrioritySelect, PriorityBadge } from '@/components/ui/priority-select'
 import { useMaterialSpecs, useCreateMaterialSpec, useUpdateMaterialSpec, useReviewMaterialSpec } from '@/hooks/useMaterialSpecs'
+import type { MaterialSpecReviewData, MaterialSpecStatus } from '@/types/material-specs'
 import {
   Dialog,
   DialogContent,
@@ -74,6 +77,7 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
   const [newMaterial, setNewMaterial] = useState({
     name: '',
     category: '',
+    priority: 'medium',
     manufacturer: '',
     model: '',
     specification: '',
@@ -85,13 +89,19 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
   const [compressionInfo, setCompressionInfo] = useState<{originalSize: number, compressedSize: number} | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [searchCategory, setSearchCategory] = useState('all')
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
+  const [reviewingSpec, setReviewingSpec] = useState<any>(null)
+  const [reviewData, setReviewData] = useState<MaterialSpecReviewData>({
+    status: 'pending' as MaterialSpecStatus,
+    review_notes: ''
+  })
 
   // Image compression function
   const compressImage = (file: File): Promise<{blob: Blob, dataUrl: string}> => {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')!
-      const img = new Image()
+      const img = document.createElement('img')
       
       img.onload = () => {
         // Calculate new dimensions (max 800x800, maintain aspect ratio)
@@ -181,7 +191,7 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
   }
 
   const resetForm = () => {
-    setNewMaterial({ name: '', category: '', manufacturer: '', model: '', specification: '', notes: '' })
+    setNewMaterial({ name: '', category: '', priority: 'medium', manufacturer: '', model: '', specification: '', notes: '' })
     handleImageRemove()
     setIsEditMode(false)
     setEditingSpec(null)
@@ -192,6 +202,7 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
     setNewMaterial({
       name: spec.item,
       category: spec.category,
+      priority: spec.priority || 'medium',
       manufacturer: spec.manufacturer || '',
       model: spec.model || '',
       specification: spec.specification || '',
@@ -218,6 +229,33 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
   const reviewMaterialSpec = useReviewMaterialSpec()
 
   const specs = specsResponse?.specs || []
+
+  // Helper function to open review dialog
+  const openReviewDialog = (spec: any, status: MaterialSpecStatus) => {
+    setReviewingSpec(spec)
+    setReviewData({
+      status: status,
+      review_notes: status === 'approved' ? '' : `Please provide feedback for this ${status.replace('_', ' ')} status.`
+    })
+    setReviewDialogOpen(true)
+  }
+
+  // Helper function to submit review
+  const submitReview = async () => {
+    if (!reviewingSpec) return
+
+    try {
+      await reviewMaterialSpec.mutateAsync({
+        id: reviewingSpec.id,
+        reviewData: reviewData
+      })
+      setReviewDialogOpen(false)
+      setReviewingSpec(null)
+      setReviewData({ status: 'pending' as MaterialSpecStatus, review_notes: '' })
+    } catch (error) {
+      console.error('Failed to review spec:', error)
+    }
+  }
 
   // Loading and error states
   if (isLoading) {
@@ -492,10 +530,12 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
                     ) : (
                       <div className="space-y-3">
                         <div className="relative w-48 h-48 mx-auto border border-gray-400 rounded-lg overflow-hidden bg-gray-100">
-                          <img 
+                          <Image 
                             src={imagePreview} 
-                            alt="Preview" 
-                            className="w-full h-full object-cover"
+                            alt="Material specification preview" 
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           />
                           <button
                             onClick={handleImageRemove}
@@ -571,6 +611,17 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
                   </div>
                   
                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="priority" className="text-right font-medium text-gray-800">
+                      Priority
+                    </Label>
+                    <PrioritySelect
+                      value={newMaterial.priority}
+                      onValueChange={(value) => setNewMaterial({...newMaterial, priority: value})}
+                      className="col-span-3"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="manufacturer" className="text-right font-medium text-gray-800">
                       Manufacturer
                     </Label>
@@ -640,12 +691,12 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
                         const materialData = {
                           name: newMaterial.name,
                           category: newMaterial.category as any,
-                          priority: 'medium' as const, // Default priority
+                          priority: newMaterial.priority as any,
                           manufacturer: newMaterial.manufacturer,
                           model: newMaterial.model,
                           specification: newMaterial.specification,
                           notes: newMaterial.notes,
-                          image_url: imagePreview, // Use the compressed image
+                          image_url: imagePreview ?? undefined, // Use the compressed image
                           project_id: projectId || 'all' // Use passed projectId or 'all'
                         }
 
@@ -700,11 +751,13 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
           <TableHeader>
             <TableRow className="bg-gradient-to-r from-gray-100 to-white border-b-2 border-gray-400">
               <TableHead className="font-bold text-gray-800 py-4 w-20">Image</TableHead>
-              <TableHead className="font-bold text-gray-800 py-4" style={{width: '35%'}}>Material Details</TableHead>
-              <TableHead className="font-bold text-gray-800 py-4 w-32">Category</TableHead>
+              <TableHead className="font-bold text-gray-800 py-4" style={{width: '30%'}}>Material Details</TableHead>
+              <TableHead className="font-bold text-gray-800 py-4 w-28">Category</TableHead>
+              <TableHead className="font-bold text-gray-800 py-4 w-24">Priority</TableHead>
               <TableHead className="font-bold text-gray-800 py-4" style={{width: '20%'}}>Project</TableHead>
               <TableHead className="font-bold text-gray-800 py-4 text-center w-44">Status</TableHead>
               <TableHead className="font-bold text-gray-800 py-4 w-36">Submitted</TableHead>
+              <TableHead className="font-bold text-gray-800 py-4 w-32">Review</TableHead>
               <TableHead className="font-bold text-gray-800 py-4 text-center w-24">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -745,6 +798,10 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
                   </TableCell>
                   
                   <TableCell className="py-4">
+                    <PriorityBadge priority={spec.priority || 'medium'} />
+                  </TableCell>
+                  
+                  <TableCell className="py-4">
                     <div className="text-sm font-medium text-gray-900">{spec.project?.name || 'N/A'}</div>
                   </TableCell>
                   
@@ -757,6 +814,26 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
                       <p className="text-xs font-medium text-gray-900">{formatDate(spec.created_at)}</p>
                       <p className="text-xs text-gray-700">by {spec.created_by}</p>
                     </div>
+                  </TableCell>
+                  
+                  <TableCell className="py-4">
+                    {spec.reviewed_by || spec.review_date ? (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-gray-900">
+                          {spec.review_date ? formatDate(spec.review_date) : 'Reviewed'}
+                        </p>
+                        <p className="text-xs text-gray-700">
+                          by {spec.reviewed_by || 'Unknown'}
+                        </p>
+                        {spec.review_notes && (
+                          <p className="text-xs text-gray-600 italic" title={spec.review_notes}>
+                            {spec.review_notes.length > 30 ? `${spec.review_notes.substring(0, 30)}...` : spec.review_notes}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-xs text-gray-400">Not reviewed</div>
+                    )}
                   </TableCell>
                   
                   <TableCell className="py-4 text-center">
@@ -783,54 +860,21 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="text-green-700 hover:bg-green-50"
-                                onClick={async () => {
-                                  try {
-                                    await reviewMaterialSpec.mutateAsync({
-                                      id: spec.id,
-                                      reviewData: { status: 'approved' }
-                                    })
-                                  } catch (error) {
-                                    console.error('Failed to approve spec:', error)
-                                  }
-                                }}
+                                onClick={() => openReviewDialog(spec, 'approved')}
                               >
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Approve
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="text-orange-700 hover:bg-orange-50"
-                                onClick={async () => {
-                                  try {
-                                    await reviewMaterialSpec.mutateAsync({
-                                      id: spec.id,
-                                      reviewData: { 
-                                        status: 'revision_required',
-                                        review_notes: 'Please provide more details or revise the specification.'
-                                      }
-                                    })
-                                  } catch (error) {
-                                    console.error('Failed to request revision:', error)
-                                  }
-                                }}
+                                onClick={() => openReviewDialog(spec, 'revision_required')}
                               >
                                 <RotateCcw className="mr-2 h-4 w-4" />
                                 Request Revision
                               </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="text-red-700 hover:bg-red-50"
-                                onClick={async () => {
-                                  try {
-                                    await reviewMaterialSpec.mutateAsync({
-                                      id: spec.id,
-                                      reviewData: { 
-                                        status: 'rejected',
-                                        review_notes: 'This specification does not meet project requirements.'
-                                      }
-                                    })
-                                  } catch (error) {
-                                    console.error('Failed to reject spec:', error)
-                                  }
-                                }}
+                                onClick={() => openReviewDialog(spec, 'rejected')}
                               >
                                 <XCircle className="mr-2 h-4 w-4" />
                                 Reject
@@ -864,6 +908,65 @@ export function MaterialSpecsTable({ projectId }: MaterialSpecsTableProps) {
             />
           </div>
         )}
+        
+        {/* Review Dialog */}
+        <Dialog open={reviewDialogOpen} onOpenChange={setReviewDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-blue-600" />
+                Review Material Specification
+              </DialogTitle>
+              <DialogDescription>
+                Review "{reviewingSpec?.name}" and provide feedback
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              {/* Status */}
+              <div>
+                <Label className="text-sm font-medium">Status</Label>
+                <Badge 
+                  variant="outline" 
+                  className={`mt-1 capitalize ${
+                    reviewData.status === 'approved' ? 'bg-green-50 text-green-700 border-green-200' :
+                    reviewData.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                    'bg-orange-50 text-orange-700 border-orange-200'
+                  }`}
+                >
+                  {reviewData.status.replace('_', ' ')}
+                </Badge>
+              </div>
+              
+              {/* Review Notes */}
+              <div>
+                <Label htmlFor="review_notes" className="text-sm font-medium">
+                  Review Notes {reviewData.status !== 'approved' && <span className="text-red-500">*</span>}
+                </Label>
+                <Textarea
+                  id="review_notes"
+                  value={reviewData.review_notes}
+                  onChange={(e) => setReviewData({...reviewData, review_notes: e.target.value})}
+                  placeholder="Enter your review comments..."
+                  className="mt-1"
+                  rows={3}
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setReviewDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={submitReview} 
+                disabled={reviewData.status !== 'approved' && !reviewData.review_notes?.trim()}
+              >
+                Submit Review
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

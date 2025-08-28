@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { useQuickStatusUpdate, useDeleteTask } from '@/hooks/useTasks'
-import { usePermissions } from '@/hooks/usePermissions'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
 import { TaskDetail } from './TaskDetail'
 import type { Task, TaskStatus, TaskPriority } from '@/types/tasks'
 import { formatDistanceToNow, isOverdue as checkOverdue } from '@/lib/formatting'
@@ -53,7 +53,7 @@ export function TaskCard({ task }: TaskCardProps) {
   const [showDetail, setShowDetail] = useState(false)
   const updateStatus = useQuickStatusUpdate()
   const deleteTask = useDeleteTask()
-  const { hasPermission } = usePermissions()
+  const { hasPermission } = usePermissionsEnhanced()
 
   const handleStatusChange = (status: TaskStatus) => {
     updateStatus.mutate({ taskId: task.id, status })
@@ -199,7 +199,7 @@ export function TaskCard({ task }: TaskCardProps) {
               )}
 
               {/* Progress */}
-              {task.progress_percentage > 0 && (
+              {(task.progress_percentage || 0) > 0 && (
                 <div className="flex items-center gap-2">
                   <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div 

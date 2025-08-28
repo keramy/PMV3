@@ -229,7 +229,7 @@ export function ScopeTableExact({
   }
 
   // Get unique values for filters from real data
-  const uniqueCategories = Array.from(new Set(scopeItems.map(item => item.category).filter(Boolean)))
+  const uniqueCategories = Array.from(new Set(scopeItems.map(item => item.category).filter(Boolean))) as string[]
   const subcontractorMap = new Map()
   scopeItems.forEach(item => {
     if (item.assigned_to) {
@@ -456,7 +456,7 @@ export function ScopeTableExact({
                     </Button>
                   </div>
                   
-                  {uniqueCategories.map((category) => (
+                  {uniqueCategories.map((category: string) => (
                     <div key={category} className="flex items-center space-x-2">
                       <Checkbox
                         id={`category-${category}`}
@@ -583,11 +583,11 @@ export function ScopeTableExact({
               <div className="w-px h-4 bg-gray-300"></div>
               <span className="font-medium text-gray-700">
                 Net Profit: <span className={`font-bold ${
-                  filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.total_cost * 0.8), 0) >= 0 
+                  filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost || 0, (item.total_cost || 0) * 0.8), 0) >= 0 
                     ? 'text-green-600' 
                     : 'text-red-600'
                 }`}>
-                  {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.total_cost * 0.8), 0))}
+                  {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost || 0, (item.total_cost || 0) * 0.8), 0))}
                 </span>
               </span>
             </div>
@@ -737,35 +737,35 @@ export function ScopeTableExact({
 
                           {/* Profit Analysis Section (30%) */}
                           <div className="flex-1 lg:flex-[2]">
-                            <div className={`bg-white rounded-lg p-3 border-l-4 ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)).includes('green') ? 'border-l-green-500' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)).includes('yellow') ? 'border-l-yellow-500' : 'border-l-red-500'} border border-gray-200`}>
+                            <div className={`bg-white rounded-lg p-3 border-l-4 ${getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8)).includes('green') ? 'border-l-green-500' : getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8)).includes('yellow') ? 'border-l-yellow-500' : 'border-l-red-500'} border border-gray-200`}>
                               <div className="space-y-2">
                                 <div className="flex justify-between text-xs text-gray-600">
                                   <span>Sales:</span>
-                                  <span className="font-medium">{formatCurrency(item.total_cost)}</span>
+                                  <span className="font-medium">{formatCurrency(item.total_cost || 0)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs text-gray-600">
                                   <span>Cost:</span>
-                                  <span className="font-medium">{formatCurrency(item.total_cost * 0.8)}</span>
+                                  <span className="font-medium">{formatCurrency((item.total_cost || 0) * 0.8)}</span>
                                 </div>
                                 <div className="border-t pt-2">
                                   <div className="flex justify-between items-center">
                                     <span className="text-sm font-medium">Profit:</span>
                                     <div className="text-right">
-                                      <div className={`font-bold ${calculateProfitPercentage(item.total_cost, item.total_cost * 0.8) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                        {formatCurrency(calculateProfit(item.total_cost, item.total_cost * 0.8))}
+                                      <div className={`font-bold ${calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                        {formatCurrency(calculateProfit(item.total_cost || 0, (item.total_cost || 0) * 0.8))}
                                       </div>
-                                      <div className={`text-lg font-bold ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)).includes('green') ? 'text-green-700' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)).includes('yellow') ? 'text-yellow-700' : 'text-red-700'}`}>
-                                        {calculateProfitPercentage(item.total_cost, item.total_cost * 0.8).toFixed(1)}%
+                                      <div className={`text-lg font-bold ${getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8)).includes('green') ? 'text-green-700' : getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8)).includes('yellow') ? 'text-yellow-700' : 'text-red-700'}`}>
+                                        {calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8).toFixed(1)}%
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-center pt-1">
-                                  <span className={`text-xs px-2 py-1 rounded ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8))} font-medium flex items-center gap-1`}>
-                                    {getProfitHealthIcon(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8))}
-                                    {getProfitHealth(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)) === 'healthy' ? 'Healthy Margin' : 
-                                     getProfitHealth(calculateProfitPercentage(item.total_cost, item.total_cost * 0.8)) === 'acceptable' ? 'Acceptable Margin' : 
-                                     calculateProfitPercentage(item.total_cost, item.total_cost * 0.8) < 0 ? 'Loss - Review!' : 'Thin Margin'}
+                                  <span className={`text-xs px-2 py-1 rounded ${getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8))} font-medium flex items-center gap-1`}>
+                                    {getProfitHealthIcon(calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8))}
+                                    {getProfitHealth(calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8)) === 'healthy' ? 'Healthy Margin' : 
+                                     getProfitHealth(calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8)) === 'acceptable' ? 'Acceptable Margin' : 
+                                     calculateProfitPercentage(item.total_cost || 0, (item.total_cost || 0) * 0.8) < 0 ? 'Loss - Review!' : 'Thin Margin'}
                                   </span>
                                 </div>
                               </div>

@@ -7,7 +7,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from './useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 
 // User preference types
 export interface UserPreferences {
@@ -86,7 +86,7 @@ const fetchPreferencesFromServer = async (userId: string): Promise<UserPreferenc
 }
 
 export function useUserPreferences() {
-  const { user, profile } = useAuth()
+  const { user, profile } = useAuthContext()
   const [preferences, setPreferences] = useState<UserPreferences>(getDefaultPreferences())
   const [isLoading, setIsLoading] = useState(true)
   const [lastSynced, setLastSynced] = useState<Date | null>(null)

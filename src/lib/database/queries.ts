@@ -4,7 +4,7 @@
  * Only essential functions with direct Supabase calls
  */
 
-import { getClient } from '@/lib/supabase/client'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 import { isDevAuthBypassEnabled, mockUserProfile } from '@/lib/dev/mock-user'
 import type { 
   AppUserProfile,
@@ -22,79 +22,43 @@ import type { Permission } from '@/types/auth'
 
 /**
  * Get current user's profile with permissions
- * EXTREME DEBUG VERSION
  */
 export async function getCurrentUserProfile(): Promise<AppUserProfile | null> {
-  console.log('🚨 EXTREME DEBUG: getCurrentUserProfile FUNCTION CALLED!')
-  console.log('🚨 EXTREME DEBUG: Function is executing, this should appear in console')
-  
   try {
-    console.log('🚨 EXTREME DEBUG: Inside try block')
-    
     // DEVELOPMENT: Return mock user profile if auth bypass is enabled
     const devBypass = isDevAuthBypassEnabled()
-    console.log('🚨 EXTREME DEBUG: Dev bypass check:', devBypass)
-    
     if (devBypass) {
-      console.log('🚨 EXTREME DEBUG: Using mock user profile')
       return mockUserProfile as AppUserProfile
     }
     
-    console.log('🚨 EXTREME DEBUG: Getting Supabase client')
-    const client = getClient()
-    console.log('🚨 EXTREME DEBUG: Got client, calling auth.getUser()')
-    
+    const client = getSupabaseSingleton()
     const { data: { user }, error: userError } = await client.auth.getUser()
     
-    console.log('🚨 EXTREME DEBUG: Auth result:', { 
-      user: user ? { id: user.id, email: user.email } : null, 
-      userError 
-    })
-    
-    if (!user) {
-      console.log('🚨 EXTREME DEBUG: No user found, returning null')
+    if (!user || userError) {
       return null
     }
 
-    console.log('🚨 EXTREME DEBUG: Querying user_profiles table for user:', user.id)
     const { data: profile, error: profileError } = await client
       .from('user_profiles')
       .select('*')
       .eq('id', user.id)
       .single()
 
-    console.log('🚨 EXTREME DEBUG: Profile query result:', { 
-      profile: profile ? { id: profile.id, email: profile.email } : null, 
-      profileError 
-    })
-
-    if (profileError) {
-      console.error('🚨 EXTREME DEBUG: Profile query error:', profileError)
+    if (profileError || !profile) {
       return null
     }
 
-    if (!profile) {
-      console.warn('🚨 EXTREME DEBUG: No profile found for user:', user.id)
-      return null
-    }
-
-    console.log('🚨 EXTREME DEBUG: Creating app profile')
     const appProfile: AppUserProfile = {
       ...profile,
       permissions: Array.isArray(profile.permissions) ? profile.permissions as Permission[] : [],
-      full_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || 'No Name'
+      full_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || 'No Name',
+      role: profile.role || null,
+      assigned_projects: profile.assigned_projects || null
     }
-
-    console.log('🚨 EXTREME DEBUG: Returning profile:', { 
-      id: appProfile.id, 
-      email: appProfile.email,
-      permissions: appProfile.permissions?.length || 0,
-      fullName: appProfile.full_name
-    })
 
     return appProfile
   } catch (error) {
-    console.error('🚨 EXTREME DEBUG: Caught error:', error)
+    console.error('Error getting current user profile:', error)
     return null
   }
 }
@@ -127,7 +91,7 @@ export async function getUserProfile(userId: string): Promise<AppUserProfile | n
   try {
     console.log('🔍 getUserProfile - Fetching profile for user:', userId)
     
-    const client = getClient()
+    const client = getSupabaseSingleton()
     const { data: profile, error } = await client
       .from('user_profiles')
       .select('*')
@@ -148,7 +112,9 @@ export async function getUserProfile(userId: string): Promise<AppUserProfile | n
     const appProfile: AppUserProfile = {
       ...profile,
       permissions: Array.isArray(profile.permissions) ? profile.permissions as Permission[] : [],
-      full_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || 'No Name'
+      full_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || 'No Name',
+      role: profile.role || null,
+      assigned_projects: profile.assigned_projects || null
     }
 
     console.log('🔍 getUserProfile - Profile found:', { id: appProfile.id, email: appProfile.email })
@@ -174,7 +140,7 @@ export async function getCompanyProjects(
   try {
     console.log('🔍 getCompanyProjects - Fetching projects with filters:', filters)
     
-    const client = getClient()
+    const client = getSupabaseSingleton()
     let query = client
       .from('projects')
       .select('*', { count: 'exact' })
@@ -232,7 +198,7 @@ export async function getCompanyProjects(
  */
 export async function getDashboardData() {
   try {
-    const client = getClient()
+    const client = getSupabaseSingleton()
     
     // Get basic counts for dashboard
     const [projectsResult, tasksResult] = await Promise.all([

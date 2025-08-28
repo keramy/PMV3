@@ -32,6 +32,18 @@ export async function GET(
 
     const supabase = await createClient()
     
+    // Verify user authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      console.warn('🔍 Project Detail API - Authentication failed:', authError?.message)
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    
+    console.log('🔍 Project Detail API - User authenticated:', user.id)
+    
     // Fetch project data
     const { data: project, error } = await supabase
       .from('projects')

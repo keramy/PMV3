@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { getClient } from '@/lib/supabase/client'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 
 export default function DebugDatabasePage() {
   const [testResults, setTestResults] = useState<string[]>([])
@@ -18,7 +18,7 @@ export default function DebugDatabasePage() {
     
     try {
       addLog('🔍 Step 1: Creating Supabase client')
-      const client = getClient()
+      const client = getSupabaseSingleton()
       addLog('✅ Step 1: Client created successfully')
       
       addLog('🔍 Step 2: Testing simple query with timeout')

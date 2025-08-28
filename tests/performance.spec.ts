@@ -117,7 +117,7 @@ test.describe('Performance and Reliability', () => {
 
   test('should have reasonable bundle size (indirect test)', async ({ page }) => {
     // Monitor network requests to get an idea of bundle size
-    const responses = [];
+    const responses: Array<{ url: string; size: string }> = [];
     
     page.on('response', response => {
       if (response.url().includes('.js') || response.url().includes('.css')) {

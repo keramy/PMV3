@@ -86,28 +86,26 @@ export function UserPermissionManager() {
   const [searchTerm, setSearchTerm] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all')
 
-  // Don't render if not admin
-  if (loading) return <div>Loading permissions...</div>
-  if (!isAdmin) return <div>Access denied. Admin privileges required.</div>
-
-  // Fetch all users with their permission data
+  // Fetch all users with their permission data (always call hooks first)
   const { data: users, isLoading: usersLoading } = useQuery({
     queryKey: ['admin-users'],
-    queryFn: async () => {
+    queryFn: async (): Promise<UserWithPermissions[]> => {
       const response = await fetch('/api/admin/users')
       if (!response.ok) throw new Error('Failed to fetch users')
-      return response.json() as UserWithPermissions[]
+      return await response.json()
     },
+    enabled: !loading && isAdmin, // Only fetch when user is authenticated and admin
   })
 
   // Fetch all projects for client assignment
   const { data: projects } = useQuery({
     queryKey: ['admin-projects'],
-    queryFn: async () => {
+    queryFn: async (): Promise<Project[]> => {
       const response = await fetch('/api/projects')
       if (!response.ok) throw new Error('Failed to fetch projects')
-      return response.json() as Project[]
+      return await response.json()
     },
+    enabled: !loading && isAdmin, // Only fetch when user is authenticated and admin
   })
 
   // Mutation to update user permissions
@@ -142,6 +140,10 @@ export function UserPermissionManager() {
       })
     },
   })
+
+  // Don't render if not admin (after hooks are called)
+  if (loading) return <div>Loading permissions...</div>
+  if (!isAdmin) return <div>Access denied. Admin privileges required.</div>
 
   // Filter users based on search and role
   const filteredUsers = users?.filter(user => {
@@ -382,7 +384,7 @@ function EditUserDialog({ user, projects, open, onOpenChange, onSave, loading }:
   useEffect(() => {
     if (user) {
       setRole(user.role as UserRole || 'team_member')
-      setCostOverride(user.can_view_costs)
+      setCostOverride(user.can_view_costs ?? null)
       setSelectedProjects(user.assigned_projects || [])
       setUseCustomCosts(user.can_view_costs !== null)
     }

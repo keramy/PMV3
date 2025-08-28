@@ -4,7 +4,7 @@
  * Provides enhanced type definitions and query builders
  */
 
-import { getClient } from '@/lib/supabase/client'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 import { createLogger } from '@/lib/logger'
 import type { 
   Database,
@@ -61,7 +61,7 @@ export class TypedQueryBuilder {
 
   constructor(tableName: keyof Database['public']['Tables'] | string, useAdmin = false) {
     this.tableName = tableName as string
-    const client = getClient() // Note: admin functionality removed for now, using only client
+    const client = getSupabaseSingleton() // Note: admin functionality removed for now, using only client
     this.query = (client as any).from(tableName)
   }
 
@@ -365,8 +365,10 @@ export function transformUserProfile(rawProfile: UserProfile): AppUserProfile {
   return {
     ...rawProfile,
     full_name: fullName,
-    permissions
-  }
+    permissions,
+    // Ensure type compatibility
+    assigned_projects: rawProfile.assigned_projects || null
+  } as AppUserProfile
 }
 
 /**
@@ -880,7 +882,7 @@ export async function insertRecord<T extends TableName>(
   
   return withErrorHandling(async () => {
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    const client = getClient()
+    const client = getSupabaseSingleton()
     let query = (client as any).from(tableName).insert(data)
     
     if (options.select) {
@@ -910,7 +912,7 @@ export async function updateRecord<T extends TableName>(
   
   return withErrorHandling(async () => {
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    const client = getClient()
+    const client = getSupabaseSingleton()
     let query = (client as any).from(tableName).update(data).eq('id', id)
     
     if (options.select) {
@@ -932,7 +934,7 @@ export async function deleteRecord<T extends TableName>(
   
   return withErrorHandling(async () => {
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    const client = getClient()
+    const client = getSupabaseSingleton()
     return (client as any).from(tableName).delete().eq('id', id)
   }, context)
 }
@@ -952,7 +954,7 @@ export async function findById<T extends TableName>(
   return withErrorHandling(async () => {
     const select = options.select || createStandardSelect(tableName)
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    const client = getClient()
+    const client = getSupabaseSingleton()
     return (client as any).from(tableName).select(select).eq('id', id).single()
   }, context)
 }
@@ -975,7 +977,7 @@ export async function findMany<T extends TableName>(
   return withArrayErrorHandling(async () => {
     const select = options.select || createStandardSelect(tableName)
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    const client = getClient()
+    const client = getSupabaseSingleton()
     let query = (client as any).from(tableName).select(select, { count: 'exact' })
     
     // Apply filters
@@ -1016,7 +1018,7 @@ export async function countRecords<T extends TableName>(
   
   return withErrorHandling(async () => {
     // Cast to any to bypass complex union type issues while maintaining type safety at the API level
-    const client = getClient()
+    const client = getSupabaseSingleton()
     let query = (client as any).from(tableName).select('*', { count: 'exact', head: true })
     
     if (filters) {

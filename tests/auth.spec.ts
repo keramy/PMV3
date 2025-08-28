@@ -38,36 +38,46 @@ test.describe('Authentication Flow', () => {
   test('should show validation errors for empty form', async ({ page }) => {
     await page.goto('/login');
     
-    // Try to submit empty form
-    await page.click('button[type="submit"]');
+    // Clear any existing values and ensure fields are empty
+    await page.fill('[data-testid="email-input"]', '');
+    await page.fill('[data-testid="password-input"]', '');
     
-    // Should show error message
-    await expect(page.locator('text=Please fill in both email and password')).toBeVisible();
+    // Try to submit empty form (use evaluate to bypass HTML5 validation)
+    await page.evaluate(() => {
+      const form = document.querySelector('form');
+      if (form) {
+        const event = new Event('submit', { bubbles: true, cancelable: true });
+        form.dispatchEvent(event);
+      }
+    });
+    
+    // Should show error message - check for the actual error display
+    await expect(page.locator('text=Please fill in both email and password')).toBeVisible({ timeout: 10000 });
   });
 
   test('should show error for invalid credentials', async ({ page }) => {
     await page.goto('/login');
     
     // Fill in invalid credentials
-    await page.fill('#email', 'invalid@test.com');
-    await page.fill('#password', 'wrongpassword');
+    await page.fill('[data-testid="email-input"]', 'invalid@test.com');
+    await page.fill('[data-testid="password-input"]', 'wrongpassword');
     
     // Submit form
-    await page.click('button[type="submit"]');
+    await page.click('[data-testid="login-submit"]');
     
-    // Wait for error message to appear
-    await expect(page.locator('text=Invalid login credentials').or(page.locator('text=Authentication Error'))).toBeVisible({ timeout: 10000 });
+    // Wait for error message to appear (either message is acceptable)
+    await expect(page.locator('text=Invalid login credentials').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('should login successfully with valid credentials', async ({ page }) => {
     await page.goto('/login');
     
     // Fill in valid credentials
-    await page.fill('#email', 'admin@formulapm.com');
-    await page.fill('#password', 'admin123');
+    await page.fill('[data-testid="email-input"]', 'admin@formulapm.com');
+    await page.fill('[data-testid="password-input"]', 'admin123');
     
     // Submit form
-    await page.click('button[type="submit"]');
+    await page.click('[data-testid="login-submit"]');
     
     // Should show loading state
     await expect(page.locator('text=Signing In...')).toBeVisible();
@@ -76,19 +86,19 @@ test.describe('Authentication Flow', () => {
     await expect(page).toHaveURL('/dashboard', { timeout: 15000 });
     
     // Should show dashboard content
-    await expect(page.locator('text=Welcome').or(page.locator('text=Dashboard'))).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Dashboard').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('should handle remember me functionality', async ({ page }) => {
     await page.goto('/login');
     
     // Fill in credentials and check remember me
-    await page.fill('#email', 'admin@formulapm.com');
-    await page.check('#rememberMe');
-    await page.fill('#password', 'admin123');
+    await page.fill('[data-testid="email-input"]', 'admin@formulapm.com');
+    await page.check('[data-testid="remember-me-checkbox"]');
+    await page.fill('[data-testid="password-input"]', 'admin123');
     
     // Submit form
-    await page.click('button[type="submit"]');
+    await page.click('[data-testid="login-submit"]');
     
     // Wait for redirect
     await page.waitForURL('/dashboard', { timeout: 15000 });
@@ -97,24 +107,24 @@ test.describe('Authentication Flow', () => {
     await page.goto('/login');
     
     // Email should be pre-filled
-    await expect(page.locator('#email')).toHaveValue('admin@formulapm.com');
-    await expect(page.locator('#rememberMe')).toBeChecked();
+    await expect(page.locator('[data-testid="email-input"]')).toHaveValue('admin@formulapm.com');
+    await expect(page.locator('[data-testid="remember-me-checkbox"]')).toBeChecked();
   });
 
   test('should toggle password visibility', async ({ page }) => {
     await page.goto('/login');
     
-    await page.fill('#password', 'testpassword');
+    await page.fill('[data-testid="password-input"]', 'testpassword');
     
     // Password should be hidden by default
-    await expect(page.locator('#password')).toHaveAttribute('type', 'password');
+    await expect(page.locator('[data-testid="password-input"]')).toHaveAttribute('type', 'password');
     
     // Click eye icon to show password
-    await page.click('button[aria-label="Toggle password visibility"]');
-    await expect(page.locator('#password')).toHaveAttribute('type', 'text');
+    await page.click('[data-testid="password-toggle"]');
+    await expect(page.locator('[data-testid="password-input"]')).toHaveAttribute('type', 'text');
     
     // Click again to hide password
-    await page.click('button[aria-label="Toggle password visibility"]');
-    await expect(page.locator('#password')).toHaveAttribute('type', 'password');
+    await page.click('[data-testid="password-toggle"]');
+    await expect(page.locator('[data-testid="password-input"]')).toHaveAttribute('type', 'password');
   });
 });

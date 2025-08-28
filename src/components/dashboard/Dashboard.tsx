@@ -309,7 +309,7 @@ export function Dashboard({ user, profile, loading }: DashboardProps) {
         // Default sort: in_progress first, then by progress percentage descending
         if (a.status === 'in_progress' && b.status !== 'in_progress') return -1
         if (b.status === 'in_progress' && a.status !== 'in_progress') return 1
-        return b.progress_percentage - a.progress_percentage
+        return (b.progress_percentage || 0) - (a.progress_percentage || 0)
       }
       
       let aValue: any = a[sortField as keyof typeof a]

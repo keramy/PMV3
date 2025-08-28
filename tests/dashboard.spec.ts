@@ -70,7 +70,7 @@ test.describe('Dashboard Functionality', () => {
       await page.goto('/');
       
       // Should show landing page for unauthenticated or authenticated state
-      await expect(page.locator('text=Formula PM V3')).toBeVisible();
+      await expect(page.locator('h1:has-text("Formula PM V3"), h2:has-text("Formula PM V3"), p:has-text("Formula PM V3")').first()).toBeVisible();
     }
   });
 
@@ -89,7 +89,7 @@ test.describe('Dashboard Functionality', () => {
 
   test('should handle network errors gracefully', async ({ page }) => {
     // Simulate offline condition
-    await page.setOfflineMode(true);
+    await page.context().setOffline(true);
     
     // Try to reload the page
     await page.reload({ waitUntil: 'networkidle' }).catch(() => {
@@ -97,7 +97,7 @@ test.describe('Dashboard Functionality', () => {
     });
     
     // Go back online
-    await page.setOfflineMode(false);
+    await page.context().setOffline(false);
     
     // Page should recover
     await page.reload();

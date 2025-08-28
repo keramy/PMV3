@@ -5,7 +5,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
+import { useApiClient, handleApiResponse } from '@/lib/api-client'
 import type { 
   Task, 
   TaskFormData, 
@@ -18,7 +19,7 @@ import type {
 
 // Fetch tasks with filters
 export function useTasks(filters: TaskFilters) {
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useQuery<TaskListResponse>({
     queryKey: ['tasks', filters],
@@ -75,16 +76,12 @@ export function useTask(taskId: string | undefined) {
 // Create task mutation
 export function useCreateTask() {
   const queryClient = useQueryClient()
+  const apiClient = useApiClient()
   
   return useMutation({
     mutationFn: async (data: TaskFormData & { project_id: string }) => {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!response.ok) throw new Error('Failed to create task')
-      return response.json()
+      const response = await apiClient.post('/api/tasks', data)
+      return handleApiResponse(response)
     },
     onSuccess: (newTask) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] })
@@ -168,16 +165,12 @@ export function useTaskComments(taskId: string | undefined) {
 // Create comment mutation
 export function useCreateComment(taskId: string) {
   const queryClient = useQueryClient()
+  const apiClient = useApiClient()
   
   return useMutation({
     mutationFn: async (data: TaskCommentFormData) => {
-      const response = await fetch(`/api/tasks/${taskId}/comments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!response.ok) throw new Error('Failed to create comment')
-      return response.json()
+      const response = await apiClient.post(`/api/tasks/${taskId}/comments`, data)
+      return handleApiResponse(response)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task-comments', taskId] })

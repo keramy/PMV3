@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { MainBreadcrumb } from '@/components/ui/breadcrumb'
+import { ProjectProvider } from '@/providers/ProjectProvider'
 
 interface LayoutWithSidebarProps {
   children: React.ReactNode
@@ -35,29 +36,31 @@ export function LayoutWithSidebar({ children }: LayoutWithSidebarProps) {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      {/* Sidebar */}
-      <Sidebar 
-        activeView={activeView} 
-        setActiveView={setActiveView}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={handleToggleSidebar}
-      />
-      
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header with Breadcrumb */}
-        <header className="border-b bg-background px-6 py-4">
-          <MainBreadcrumb currentView={activeView} />
-        </header>
+    <ProjectProvider>
+      <div className="flex h-screen bg-background">
+        {/* Sidebar */}
+        <Sidebar 
+          activeView={activeView} 
+          setActiveView={setActiveView}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={handleToggleSidebar}
+        />
         
-        {/* Content Area */}
-        <main className="flex-1 overflow-auto p-6">
-          <div className="w-full">
-            {children}
-          </div>
-        </main>
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header with Breadcrumb */}
+          <header className="border-b bg-background px-6 py-4">
+            <MainBreadcrumb currentView={activeView} />
+          </header>
+          
+          {/* Content Area */}
+          <main className="flex-1 overflow-auto p-6">
+            <div className="w-full">
+              {children}
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </ProjectProvider>
   )
 }

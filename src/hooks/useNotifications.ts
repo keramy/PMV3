@@ -4,7 +4,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from './useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
+import { useApiClient, handleApiResponse } from '@/lib/api-client'
 import type {
   NotificationListResponse,
   NotificationFilters,
@@ -15,7 +16,8 @@ import type {
 
 // Fetch notifications
 export function useNotifications(filters?: NotificationFilters) {
-  const { user } = useAuth()
+  const { user } = useAuthContext()
+  const apiClient = useApiClient()
   
   return useQuery({
     queryKey: ['notifications', filters],
@@ -35,12 +37,8 @@ export function useNotifications(filters?: NotificationFilters) {
         params.set('limit', filters.limit.toString())
       }
 
-      const response = await fetch(`/api/notifications?${params.toString()}`)
-      if (!response.ok) {
-        throw new Error('Failed to fetch notifications')
-      }
-      
-      return response.json()
+      const response = await apiClient.get(`/api/notifications?${params.toString()}`)
+      return handleApiResponse(response)
     },
     enabled: !!user,
     refetchInterval: 30000, // Refetch every 30 seconds for real-time updates
@@ -50,17 +48,14 @@ export function useNotifications(filters?: NotificationFilters) {
 
 // Get unread count only (for bell icon badge)
 export function useUnreadNotificationCount() {
-  const { user } = useAuth()
+  const { user } = useAuthContext()
+  const apiClient = useApiClient()
   
   return useQuery({
     queryKey: ['notifications', { unread_only: true, limit: 1 }],
     queryFn: async (): Promise<number> => {
-      const response = await fetch('/api/notifications?unread_only=true&limit=1')
-      if (!response.ok) {
-        throw new Error('Failed to fetch notification count')
-      }
-      
-      const data: NotificationListResponse = await response.json()
+      const response = await apiClient.get('/api/notifications?unread_only=true&limit=1')
+      const data: NotificationListResponse = await handleApiResponse(response)
       return data.unread_count
     },
     enabled: !!user,
@@ -71,17 +66,14 @@ export function useUnreadNotificationCount() {
 
 // Get recent notifications (for dropdown)
 export function useRecentNotifications() {
-  const { user } = useAuth()
+  const { user } = useAuthContext()
+  const apiClient = useApiClient()
   
   return useQuery({
     queryKey: ['notifications', { limit: 10 }],
     queryFn: async (): Promise<NotificationListResponse> => {
-      const response = await fetch('/api/notifications?limit=10')
-      if (!response.ok) {
-        throw new Error('Failed to fetch recent notifications')
-      }
-      
-      return response.json()
+      const response = await apiClient.get('/api/notifications?limit=10')
+      return handleApiResponse(response)
     },
     enabled: !!user,
     refetchInterval: 20000,
@@ -92,20 +84,12 @@ export function useRecentNotifications() {
 // Mark notifications as read
 export function useMarkNotificationsAsRead() {
   const queryClient = useQueryClient()
+  const apiClient = useApiClient()
   
   return useMutation({
     mutationFn: async (data: MarkAsReadRequest): Promise<MarkAsReadResponse> => {
-      const response = await fetch('/api/notifications', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to mark notifications as read')
-      }
-      
-      return response.json()
+      const response = await apiClient.patch('/api/notifications', data)
+      return handleApiResponse(response)
     },
     onSuccess: () => {
       // Invalidate all notification queries to refresh the UI
@@ -116,17 +100,14 @@ export function useMarkNotificationsAsRead() {
 
 // Fetch notification preferences
 export function useNotificationPreferences() {
-  const { user } = useAuth()
+  const { user } = useAuthContext()
+  const apiClient = useApiClient()
   
   return useQuery({
     queryKey: ['notification-preferences'],
     queryFn: async (): Promise<NotificationPreferences> => {
-      const response = await fetch('/api/notifications/preferences')
-      if (!response.ok) {
-        throw new Error('Failed to fetch notification preferences')
-      }
-      
-      return response.json()
+      const response = await apiClient.get('/api/notifications/preferences')
+      return handleApiResponse(response)
     },
     enabled: !!user
   })
@@ -135,20 +116,12 @@ export function useNotificationPreferences() {
 // Update notification preferences
 export function useUpdateNotificationPreferences() {
   const queryClient = useQueryClient()
+  const apiClient = useApiClient()
   
   return useMutation({
     mutationFn: async (preferences: Partial<NotificationPreferences>): Promise<NotificationPreferences> => {
-      const response = await fetch('/api/notifications/preferences', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(preferences)
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to update notification preferences')
-      }
-      
-      return response.json()
+      const response = await apiClient.put('/api/notifications/preferences', preferences)
+      return handleApiResponse(response)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-preferences'] })

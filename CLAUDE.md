@@ -30,7 +30,8 @@ The documentation has been reorganized for better maintainability and faster acc
 - **Production Ready**: ✅ Core functionality + Enhanced Permissions working
 - **Active Tables**: 18+ database tables with enhanced RLS policies
 - **API Routes**: 30+ endpoints with middleware + Admin endpoints
-- **Auth Fixed**: December 2024 service role fix applied
+- **Auth Fixed**: ✅ AUGUST 2025 - Console flood & infinite loops resolved
+- **Database Schema**: ✅ AUGUST 2025 - All missing columns and relationships fixed
 - **Permission System**: ✅ COMPLETE - 5-Role hierarchy (Aug 2025) implemented
   - admin(100) → technical_manager(80) → project_manager(60) → team_member(30) → client(10)
   - Individual cost visibility overrides working
@@ -39,7 +40,8 @@ The documentation has been reorganized for better maintainability and faster acc
   - `20250122120000_enhanced_permission_system_foundation.sql` ✅
   - `20250122120100_client_isolation_rls_policies.sql` ✅  
   - `20250122120200_migrate_existing_permissions_data.sql` ✅ (optional)
-- **Dev Server**: Runs on http://localhost:3001 (port 3000 in use)
+  - `20250823_fix_missing_columns_schema.sql` ✅ (Aug 23, 2025)
+- **Dev Server**: Runs on http://localhost:3002 (changed from 3001)
 
 ---
 *For comprehensive documentation, see `/docs/claude/` directory*

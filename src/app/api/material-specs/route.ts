@@ -201,7 +201,7 @@ export const POST = apiMiddleware.validate(
       .eq('id', user.id)
       .single()
 
-    if (!profile || !profile.permissions.includes('create_materials')) {
+    if (!profile || !profile.permissions || !profile.permissions.includes('create_materials')) {
       return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
 
@@ -212,7 +212,7 @@ export const POST = apiMiddleware.validate(
         project_id: validatedData.project_id,
         name: validatedData.name,
         category: validatedData.category,
-        priority: validatedData.priority,
+        priority: validatedData.priority as 'low' | 'medium' | 'high' | 'critical',
         manufacturer: validatedData.manufacturer,
         model: validatedData.model,
         spec_number: validatedData.spec_number,

@@ -165,12 +165,12 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
   const filteredScopeItems = scopeItems.filter(item => {
     const matchesProject = selectedProject === 'all' || item.project_id === selectedProject
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.specification.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.notes.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(item.category)
-    const matchesSubcontractor = selectedSubcontractors.length === 0 || selectedSubcontractors.includes(item.subcontractor_id)
+                         (item.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (item.category || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (item.specification || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (item.notes || '').toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(item.category || '')
+    const matchesSubcontractor = selectedSubcontractors.length === 0 || selectedSubcontractors.includes(item.subcontractor_id || '')
     
     return matchesProject && matchesSearch && matchesCategory && matchesSubcontractor
   })
@@ -352,10 +352,10 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
     new Map(scopeItems.map(item => [item.project_id, { id: item.project_id, name: item.project_name }])).values()
   )
   
-  const uniqueCategories = Array.from(new Set(scopeItems.map(item => item.category)))
+  const uniqueCategories = Array.from(new Set(scopeItems.map(item => item.category).filter(Boolean))) as string[]
   const uniqueSubcontractors = Array.from(
-    new Map(scopeItems.map(item => [item.subcontractor_id, { 
-      id: item.subcontractor_id, 
+    new Map(scopeItems.filter(item => item.subcontractor_id).map(item => [item.subcontractor_id, { 
+      id: item.subcontractor_id!, 
       name: item.subcontractor?.name || 'Unassigned',
       trade: item.subcontractor?.trade || '',
       contact_person: item.subcontractor?.contact_person || '' 
@@ -645,18 +645,18 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                   <span className="flex items-center gap-1">
                     <span className="text-gray-800">Revenue:</span>
                     <span className="text-blue-700 font-bold text-base">
-                      {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + item.total_cost, 0))}
+                      {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + (item.total_cost || 0), 0))}
                     </span>
                   </span>
                   
                   <span className="flex items-center gap-1">
                     <span className="text-gray-800">Profit:</span>
                     <span className={`font-bold text-base ${
-                      filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.actual_cost), 0) >= 0 
+                      filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost || 0, item.actual_cost || 0), 0) >= 0 
                         ? 'text-green-700' 
                         : 'text-red-700'
                     }`}>
-                      {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost, item.actual_cost), 0))}
+                      {formatCurrency(filteredScopeItems.reduce((sum, item) => sum + calculateProfit(item.total_cost || 0, item.actual_cost || 0), 0))}
                     </span>
                   </span>
                   
@@ -664,7 +664,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     <span className="text-gray-800">Margin:</span>
                     <span className="text-purple-700 font-bold text-base">
                       {filteredScopeItems.length > 0 
-                        ? (filteredScopeItems.reduce((sum, item) => sum + calculateProfitPercentage(item.total_cost, item.actual_cost), 0) / filteredScopeItems.length).toFixed(1)
+                        ? (filteredScopeItems.reduce((sum, item) => sum + calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0), 0) / filteredScopeItems.length).toFixed(1)
                         : '0.0'
                       }%
                     </span>
@@ -723,7 +723,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
               return (
                 <React.Fragment key={item.id}>
                   <TableRow 
-                    className={`group hover:bg-gray-100/80 transition-all duration-200 ${getRowAccentColor(item.category)} ${getCostPriority(item.total_cost) === 'cost-high' ? 'bg-gradient-to-r from-yellow-50/30 to-transparent' : ''} ${isExpanded ? 'bg-blue-50/40' : ''} cursor-pointer`}
+                    className={`group hover:bg-gray-100/80 transition-all duration-200 ${getRowAccentColor(item.category || '')} ${getCostPriority(item.total_cost || 0) === 'cost-high' ? 'bg-gradient-to-r from-yellow-50/30 to-transparent' : ''} ${isExpanded ? 'bg-blue-50/40' : ''} cursor-pointer`}
                     onClick={() => toggleRow(item.id)}
                   >
                     <TableCell className="py-4">
@@ -742,22 +742,22 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     <TableCell className="font-mono text-sm py-4 font-medium text-gray-800">{item.id}</TableCell>
                     <TableCell className="py-4">
                       <Badge 
-                        className={`${getCategoryColor(item.category)} font-semibold transition-colors border text-sm px-3 py-2`}
+                        className={`${getCategoryColor(item.category || '')} font-semibold transition-colors border text-sm px-3 py-2`}
                       >
-                        {getCategoryIcon(item.category)}
-                        <span className="ml-1">{getCategoryLabel(item.category)}</span>
+                        {getCategoryIcon(item.category || '')}
+                        <span className="ml-1">{getCategoryLabel(item.category || '')}</span>
                       </Badge>
                     </TableCell>
                     <TableCell className="font-semibold py-4 text-gray-900">{item.title}</TableCell>
                     <TableCell className="text-center font-bold py-4 text-base">{item.quantity}</TableCell>
                     <TableCell className="text-sm py-4 font-medium text-gray-800">{item.unit}</TableCell>
-                    <TableCell className="text-right py-4 font-mono text-base font-medium text-gray-800">{formatCurrency(item.unit_cost)}</TableCell>
+                    <TableCell className="text-right py-4 font-mono text-base font-medium text-gray-800">{formatCurrency(item.unit_cost || 0)}</TableCell>
                     <TableCell className="text-right py-4 font-mono text-lg font-bold text-blue-700">
-                      {formatCurrency(item.total_cost)}
+                      {formatCurrency(item.total_cost || 0)}
                     </TableCell>
                     <TableCell className="py-4">
                       <div className="flex justify-center">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold ${getCategoryColor(item.category).split(' ')[0]} ${getCategoryColor(item.category).split(' ')[1]} cursor-pointer shadow-sm hover:shadow-md transition-shadow`} 
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-sm font-bold ${getCategoryColor(item.category || '').split(' ')[0]} ${getCategoryColor(item.category || '').split(' ')[1]} cursor-pointer shadow-sm hover:shadow-md transition-shadow`} 
                              title={`${item.subcontractor?.name || 'Unassigned'}\n${item.subcontractor?.trade || ''}\n${item.subcontractor?.contact_person || ''}\n${item.subcontractor?.phone || ''}`}>
                           {(item.subcontractor?.name || 'UN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
@@ -800,7 +800,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                   </TableRow>
                   {isExpanded && (
                     <TableRow>
-                      <TableCell colSpan={10} className={`bg-gray-100 py-4 ${getRowAccentColor(item.category)}`}>
+                      <TableCell colSpan={10} className={`bg-gray-100 py-4 ${getRowAccentColor(item.category || '')}`}>
                         <div className="flex flex-col lg:flex-row gap-4 px-4">
                           {/* Main Details Section (60%) */}
                           <div className="flex-1 lg:flex-[3] space-y-3">
@@ -820,35 +820,35 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
 
                           {/* Profit Analysis Section (30%) */}
                           <div className="flex-1 lg:flex-[2]">
-                            <div className={`bg-white rounded-lg p-3 border-l-4 ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('green') ? 'border-l-green-500' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('yellow') ? 'border-l-yellow-500' : 'border-l-red-500'} border border-gray-200`}>
+                            <div className={`bg-white rounded-lg p-3 border-l-4 ${getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0)).includes('green') ? 'border-l-green-500' : getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0)).includes('yellow') ? 'border-l-yellow-500' : 'border-l-red-500'} border border-gray-200`}>
                               <div className="space-y-2">
                                 <div className="flex justify-between text-xs text-gray-800">
                                   <span>Sales:</span>
-                                  <span className="font-medium">{formatCurrency(item.total_cost)}</span>
+                                  <span className="font-medium">{formatCurrency(item.total_cost || 0)}</span>
                                 </div>
                                 <div className="flex justify-between text-xs text-gray-800">
                                   <span>Cost:</span>
-                                  <span className="font-medium">{formatCurrency(item.actual_cost)}</span>
+                                  <span className="font-medium">{formatCurrency(item.actual_cost || 0)}</span>
                                 </div>
                                 <div className="border-t pt-2">
                                   <div className="flex justify-between items-center">
                                     <span className="text-sm font-medium">Profit:</span>
                                     <div className="text-right">
-                                      <div className={`font-bold ${calculateProfitPercentage(item.total_cost, item.actual_cost) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                        {formatCurrency(calculateProfit(item.total_cost, item.actual_cost))}
+                                      <div className={`font-bold ${calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                        {formatCurrency(calculateProfit(item.total_cost || 0, item.actual_cost || 0))}
                                       </div>
-                                      <div className={`text-lg font-bold ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('green') ? 'text-green-700' : getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost)).includes('yellow') ? 'text-yellow-700' : 'text-red-700'}`}>
-                                        {calculateProfitPercentage(item.total_cost, item.actual_cost).toFixed(1)}%
+                                      <div className={`text-lg font-bold ${getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0)).includes('green') ? 'text-green-700' : getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0)).includes('yellow') ? 'text-yellow-700' : 'text-red-700'}`}>
+                                        {calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0).toFixed(1)}%
                                       </div>
                                     </div>
                                   </div>
                                 </div>
                                 <div className="flex items-center justify-center pt-1">
-                                  <span className={`text-xs px-2 py-1 rounded ${getProfitHealthColor(calculateProfitPercentage(item.total_cost, item.actual_cost))} font-medium flex items-center gap-1`}>
-                                    {getProfitHealthIcon(calculateProfitPercentage(item.total_cost, item.actual_cost))}
-                                    {getProfitHealth(calculateProfitPercentage(item.total_cost, item.actual_cost)) === 'healthy' ? 'Healthy Margin' : 
-                                     getProfitHealth(calculateProfitPercentage(item.total_cost, item.actual_cost)) === 'acceptable' ? 'Acceptable Margin' : 
-                                     calculateProfitPercentage(item.total_cost, item.actual_cost) < 0 ? 'Loss - Review!' : 'Thin Margin'}
+                                  <span className={`text-xs px-2 py-1 rounded ${getProfitHealthColor(calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0))} font-medium flex items-center gap-1`}>
+                                    {getProfitHealthIcon(calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0))}
+                                    {getProfitHealth(calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0)) === 'healthy' ? 'Healthy Margin' : 
+                                     getProfitHealth(calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0)) === 'acceptable' ? 'Acceptable Margin' : 
+                                     calculateProfitPercentage(item.total_cost || 0, item.actual_cost || 0) < 0 ? 'Loss - Review!' : 'Thin Margin'}
                                   </span>
                                 </div>
                               </div>
@@ -866,7 +866,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                               View Details
                             </Button>
                             <div className="text-xs text-gray-700 lg:mt-2">
-                              {new Date(item.created_at).toLocaleDateString()}
+                              {new Date(item.created_at || new Date()).toLocaleDateString()}
                             </div>
                           </div>
                         </div>
@@ -1008,10 +1008,10 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3 text-xl">
-              <div className={`w-4 h-4 rounded ${selectedItem ? getRowAccentColor(selectedItem.category).replace('border-l-4 border-l-', 'bg-') : 'bg-gray-400'}`}></div>
+              <div className={`w-4 h-4 rounded ${selectedItem ? getRowAccentColor(selectedItem.category || '').replace('border-l-4 border-l-', 'bg-') : 'bg-gray-400'}`}></div>
               {selectedItem?.title}
-              <Badge className={`${selectedItem ? getCategoryColor(selectedItem.category) : 'bg-gray-100'} text-xs`}>
-                {selectedItem ? getCategoryLabel(selectedItem.category) : 'Unknown'}
+              <Badge className={`${selectedItem ? getCategoryColor(selectedItem.category || '') : 'bg-gray-100'} text-xs`}>
+                {selectedItem ? getCategoryLabel(selectedItem.category || '') : 'Unknown'}
               </Badge>
             </DialogTitle>
             <DialogDescription>
@@ -1044,7 +1044,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                       </div>
                       <div>
                         <span className="text-gray-700">Unit Price:</span>
-                        <p className="font-medium">{formatCurrency(selectedItem.unit_cost)}</p>
+                        <p className="font-medium">{formatCurrency(selectedItem.unit_cost || 0)}</p>
                       </div>
                     </div>
                     <div>
@@ -1066,48 +1066,48 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     {/* Revenue */}
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <span className="text-gray-800 text-xs uppercase tracking-wide">Total Revenue</span>
-                      <p className="text-xl font-bold text-blue-700">{formatCurrency(selectedItem.total_cost)}</p>
+                      <p className="text-xl font-bold text-blue-700">{formatCurrency(selectedItem.total_cost || 0)}</p>
                     </div>
                     
                     {/* Costs */}
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-700">Initial Budget:</span>
-                        <span className="font-medium">{formatCurrency(selectedItem.initial_cost)}</span>
+                        <span className="font-medium">{formatCurrency(selectedItem.initial_cost || 0)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-700">Actual Cost:</span>
-                        <span className={`font-medium ${selectedItem.cost_variance > 0 ? 'text-red-600' : selectedItem.cost_variance < 0 ? 'text-green-600' : 'text-blue-600'}`}>
-                          {formatCurrency(selectedItem.actual_cost)}
+                        <span className={`font-medium ${(selectedItem.cost_variance || 0) > 0 ? 'text-red-600' : (selectedItem.cost_variance || 0) < 0 ? 'text-green-600' : 'text-blue-600'}`}>
+                          {formatCurrency(selectedItem.actual_cost || 0)}
                         </span>
                       </div>
                       <div className="flex justify-between pt-2 border-t">
                         <span className="text-gray-700">Cost Variance:</span>
                         <div className="text-right">
-                          <span className={`font-medium ${selectedItem.cost_variance > 0 ? 'text-red-600' : selectedItem.cost_variance < 0 ? 'text-green-600' : 'text-blue-600'}`}>
-                            {selectedItem.cost_variance > 0 ? '+' : ''}{formatCurrency(selectedItem.cost_variance)}
+                          <span className={`font-medium ${(selectedItem.cost_variance || 0) > 0 ? 'text-red-600' : (selectedItem.cost_variance || 0) < 0 ? 'text-green-600' : 'text-blue-600'}`}>
+                            {(selectedItem.cost_variance || 0) > 0 ? '+' : ''}{formatCurrency(selectedItem.cost_variance || 0)}
                           </span>
-                          <div className={`text-xs ${selectedItem.cost_variance > 0 ? 'text-red-500' : selectedItem.cost_variance < 0 ? 'text-green-500' : 'text-blue-500'}`}>
-                            ({selectedItem.cost_variance > 0 ? '+' : ''}{selectedItem.cost_variance_percentage.toFixed(1)}%)
+                          <div className={`text-xs ${(selectedItem.cost_variance || 0) > 0 ? 'text-red-500' : (selectedItem.cost_variance || 0) < 0 ? 'text-green-500' : 'text-blue-500'}`}>
+                            ({(selectedItem.cost_variance || 0) > 0 ? '+' : ''}{(selectedItem.cost_variance_percentage || 0).toFixed(1)}%)
                           </div>
                         </div>
                       </div>
                     </div>
                     
                     {/* Profit Analysis */}
-                    <div className={`p-3 rounded-lg ${getProfitHealthColor(calculateProfitPercentage(selectedItem.total_cost, selectedItem.actual_cost))}`}>
+                    <div className={`p-3 rounded-lg ${getProfitHealthColor(calculateProfitPercentage(selectedItem.total_cost || 0, selectedItem.actual_cost || 0))}`}>
                       <div className="flex justify-between items-center">
                         <span className="font-medium">Profit Margin</span>
                         <div className="text-right">
-                          <span className="text-lg font-bold">{formatCurrency(calculateProfit(selectedItem.total_cost, selectedItem.actual_cost))}</span>
+                          <span className="text-lg font-bold">{formatCurrency(calculateProfit(selectedItem.total_cost || 0, selectedItem.actual_cost || 0))}</span>
                           <div className="text-sm">
-                            {calculateProfitPercentage(selectedItem.total_cost, selectedItem.actual_cost).toFixed(1)}% margin
+                            {calculateProfitPercentage(selectedItem.total_cost || 0, selectedItem.actual_cost || 0).toFixed(1)}% margin
                           </div>
                         </div>
                       </div>
                       <div className="mt-2 text-xs">
-                        {getProfitHealth(calculateProfitPercentage(selectedItem.total_cost, selectedItem.actual_cost)) === 'healthy' ? 'Healthy profit margin' : 
-                         getProfitHealth(calculateProfitPercentage(selectedItem.total_cost, selectedItem.actual_cost)) === 'acceptable' ? 'Acceptable profit margin' : 'Thin profit margin - review pricing'}
+                        {getProfitHealth(calculateProfitPercentage(selectedItem.total_cost || 0, selectedItem.actual_cost || 0)) === 'healthy' ? 'Healthy profit margin' : 
+                         getProfitHealth(calculateProfitPercentage(selectedItem.total_cost || 0, selectedItem.actual_cost || 0)) === 'acceptable' ? 'Acceptable profit margin' : 'Thin profit margin - review pricing'}
                       </div>
                     </div>
                   </div>
@@ -1125,12 +1125,12 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     {/* Subcontractor Info */}
                     <div className="bg-gray-100 p-3 rounded-lg">
                       <div className="flex items-start gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${getCategoryColor(selectedItem.category).split(' ')[0]} ${getCategoryColor(selectedItem.category).split(' ')[1]}`}>
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${getCategoryColor(selectedItem.category || '').split(' ')[0]} ${getCategoryColor(selectedItem.category || '').split(' ')[1]}`}>
                           {(selectedItem.subcontractor?.name || 'UN').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                         <div className="flex-1">
                           <div className="font-medium text-gray-900">{selectedItem.subcontractor?.name || 'Unassigned'}</div>
-                          <div className={`text-sm capitalize ${getCategoryColor(selectedItem.category).split(' ')[1]} font-medium`}>
+                          <div className={`text-sm capitalize ${getCategoryColor(selectedItem.category || '').split(' ')[1]} font-medium`}>
                             {selectedItem.subcontractor?.trade || ''}
                           </div>
                           <div className="text-xs text-gray-700 mt-2 space-y-1">
@@ -1151,11 +1151,11 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-gray-700">Created:</span>
-                        <span className="text-xs">{new Date(selectedItem.created_at).toLocaleDateString()}</span>
+                        <span className="text-xs">{new Date(selectedItem.created_at || new Date()).toLocaleDateString()}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-700">Last Updated:</span>
-                        <span className="text-xs">{new Date(selectedItem.updated_at).toLocaleDateString()}</span>
+                        <span className="text-xs">{new Date(selectedItem.updated_at || new Date()).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
@@ -1193,8 +1193,8 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
               <Edit className="h-5 w-5 text-emerald-600" />
               Edit Scope Item
               {selectedItem && (
-                <Badge className={`${getCategoryColor(selectedItem.category)} text-xs`}>
-                  {getCategoryLabel(selectedItem.category)}
+                <Badge className={`${getCategoryColor(selectedItem.category || '')} text-xs`}>
+                  {getCategoryLabel(selectedItem.category || '')}
                 </Badge>
               )}
             </DialogTitle>
@@ -1217,7 +1217,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-800 mb-1 block">Category</label>
-                  <Select defaultValue={selectedItem.category}>
+                  <Select defaultValue={selectedItem.category || ''}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -1236,7 +1236,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
               <div>
                 <label className="text-sm font-medium text-gray-800 mb-1 block">Description</label>
                 <Input 
-                  defaultValue={selectedItem.description}
+                  defaultValue={selectedItem.description || ''}
                   placeholder="Detailed description of the scope item"
                   className="w-full"
                 />
@@ -1245,7 +1245,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
               <div>
                 <label className="text-sm font-medium text-gray-800 mb-1 block">Specification</label>
                 <Input 
-                  defaultValue={selectedItem.specification}
+                  defaultValue={selectedItem.specification || ''}
                   placeholder="Technical specifications and requirements"
                   className="w-full"
                 />
@@ -1257,7 +1257,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                   <label className="text-sm font-medium text-gray-800 mb-1 block">Quantity</label>
                   <Input 
                     type="number"
-                    defaultValue={selectedItem.quantity}
+                    defaultValue={selectedItem.quantity || 0}
                     min="0"
                     step="0.01"
                     className="w-full"
@@ -1266,7 +1266,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                 <div>
                   <label className="text-sm font-medium text-gray-800 mb-1 block">Unit</label>
                   <Input 
-                    defaultValue={selectedItem.unit}
+                    defaultValue={selectedItem.unit || ''}
                     placeholder="EA, SF, LF, etc."
                     className="w-full"
                   />
@@ -1275,7 +1275,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                   <label className="text-sm font-medium text-gray-800 mb-1 block">Unit Price</label>
                   <Input 
                     type="number"
-                    defaultValue={selectedItem.unit_cost}
+                    defaultValue={selectedItem.unit_cost || 0}
                     min="0"
                     step="0.01"
                     className="w-full"
@@ -1284,7 +1284,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                 <div>
                   <label className="text-sm font-medium text-gray-800 mb-1 block">Total Price</label>
                   <div className="bg-gray-100 px-3 py-2 rounded-md text-sm font-semibold text-blue-700">
-                    {formatCurrency(selectedItem.total_cost)}
+                    {formatCurrency(selectedItem.total_cost || 0)}
                   </div>
                   <p className="text-xs text-gray-700 mt-1">Auto-calculated</p>
                 </div>
@@ -1302,7 +1302,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     <label className="text-sm font-medium text-gray-800 mb-1 block">Initial Budget</label>
                     <Input 
                       type="number"
-                      defaultValue={selectedItem.initial_cost}
+                      defaultValue={selectedItem.initial_cost || 0}
                       min="0"
                       step="0.01"
                       className="w-full"
@@ -1312,7 +1312,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                     <label className="text-sm font-medium text-gray-800 mb-1 block">Actual Cost</label>
                     <Input 
                       type="number"
-                      defaultValue={selectedItem.actual_cost}
+                      defaultValue={selectedItem.actual_cost || 0}
                       min="0"
                       step="0.01"
                       className="w-full"
@@ -1325,11 +1325,11 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-gray-800">Estimated Profit:</span>
                     <div className="text-right">
-                      <span className={`font-semibold ${calculateProfitPercentage(selectedItem.total_cost, selectedItem.actual_cost) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                        {formatCurrency(calculateProfit(selectedItem.total_cost, selectedItem.actual_cost))}
+                      <span className={`font-semibold ${calculateProfitPercentage(selectedItem.total_cost || 0, selectedItem.actual_cost || 0) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                        {formatCurrency(calculateProfit(selectedItem.total_cost || 0, selectedItem.actual_cost || 0))}
                       </span>
                       <div className="text-xs text-gray-700">
-                        {calculateProfitPercentage(selectedItem.total_cost, selectedItem.actual_cost).toFixed(1)}% margin
+                        {calculateProfitPercentage(selectedItem.total_cost || 0, selectedItem.actual_cost || 0).toFixed(1)}% margin
                       </div>
                     </div>
                   </div>
@@ -1339,7 +1339,7 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
               {/* Assignment */}
               <div>
                 <label className="text-sm font-medium text-gray-800 mb-1 block">Assigned Subcontractor</label>
-                <Select defaultValue={selectedItem.subcontractor_id}>
+                <Select defaultValue={selectedItem.subcontractor_id || ''}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -1406,14 +1406,14 @@ export function ScopeTable({ projectId }: ScopeTableProps) {
               {/* Item Summary */}
               <div className="bg-red-50 border border-red-200 rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <div className={`w-4 h-4 rounded mt-0.5 ${getRowAccentColor(selectedItem.category).replace('border-l-4 border-l-', 'bg-')}`}></div>
+                  <div className={`w-4 h-4 rounded mt-0.5 ${getRowAccentColor(selectedItem.category || '').replace('border-l-4 border-l-', 'bg-')}`}></div>
                   <div className="flex-1">
                     <div className="font-medium text-gray-900">{selectedItem.title}</div>
                     <div className="text-sm text-gray-600 mt-1">
-                      {selectedItem.id} • {getCategoryLabel(selectedItem.category)}
+                      {selectedItem.id} • {getCategoryLabel(selectedItem.category || '')}
                     </div>
                     <div className="text-sm text-gray-600">
-                      {selectedItem.quantity} {selectedItem.unit} @ {formatCurrency(selectedItem.unit_cost)} = {formatCurrency(selectedItem.total_cost)}
+                      {selectedItem.quantity} {selectedItem.unit} @ {formatCurrency(selectedItem.unit_cost || 0)} = {formatCurrency(selectedItem.total_cost || 0)}
                     </div>
                   </div>
                 </div>

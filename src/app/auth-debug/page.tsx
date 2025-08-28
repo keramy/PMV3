@@ -7,7 +7,7 @@
 
 import { useState, useEffect } from 'react'
 import { debugClientAuth, printAuthDebug, type AuthDebugInfo } from '@/lib/auth-debug'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +16,7 @@ import { RefreshCw, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 export default function AuthDebugPage() {
   const [debugInfo, setDebugInfo] = useState<AuthDebugInfo | null>(null)
   const [loading, setLoading] = useState(false)
-  const { user, profile, loading: authLoading, isAuthenticated } = useAuth()
+  const { user, profile, loading: authLoading, isAuthenticated } = useAuthContext()
 
   const runDiagnostics = async () => {
     setLoading(true)
@@ -88,7 +88,7 @@ export default function AuthDebugPage() {
               Current Auth State
             </CardTitle>
             <CardDescription>
-              Current authentication status from useAuth hook
+              Current authentication status from AuthProvider
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">

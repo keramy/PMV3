@@ -5,12 +5,12 @@
 
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { getClient } from '@/lib/supabase/client'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 import { Database } from '@/types/database'
 
 export function useTaskRealtime(projectId?: string) {
   const queryClient = useQueryClient()
-  const supabase = getClient()
+  const supabase = getSupabaseSingleton()
 
   useEffect(() => {
     if (!projectId) return
@@ -96,7 +96,7 @@ export function useTaskRealtime(projectId?: string) {
 // Hook for real-time updates on a specific task
 export function useTaskDetailRealtime(taskId?: string) {
   const queryClient = useQueryClient()
-  const supabase = getClient()
+  const supabase = getSupabaseSingleton()
 
   useEffect(() => {
     if (!taskId) return

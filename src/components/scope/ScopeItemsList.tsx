@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
-import { usePermissions } from '@/hooks/usePermissions'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
 import { SCOPE_CATEGORIES, SCOPE_STATUSES, SCOPE_PERMISSIONS } from '@/types/scope'
 import type { ScopeItem } from '@/types/scope'
 import { formatDate, formatCurrency, constructionStyles } from '@/types'
@@ -38,7 +38,7 @@ export function ScopeItemsList({
   onItemUpdated, 
   projectId 
 }: ScopeItemsListProps) {
-  const { hasPermission, hasAnyPermission } = usePermissions()
+  const { hasPermission, hasAnyPermission } = usePermissionsEnhanced()
   const [selectedItems, setSelectedItems] = useState<string[]>([])
 
   const formatCurrency = (amount: number) => {

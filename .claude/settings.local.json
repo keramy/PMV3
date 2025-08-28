@@ -41,13 +41,41 @@
       "mcp__filesystem__write_file",
       "Bash(npx playwright install:*)",
       "WebFetch(domain:supabase.com)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(powershell:*)",
+      "Bash(copy:*)",
+      "Bash(npm run test:e2e:*)",
+      "Bash(npx playwright test:*)",
+      "Bash(git add:*)",
+      "Bash(git fetch:*)",
+      "Bash(npx eslint:*)",
+      "Bash(sed:*)",
+      "Bash(npx playwright:*)",
+      "Bash(npm run seed:test-data:*)",
+      "mcp__supabase__search_docs",
+      "mcp__supabase__apply_migration",
+      "mcp__filesystem__read_multiple_files",
+      "mcp__filesystem__search_files",
+      "mcp__filesystem__read_text_file",
+      "mcp__filesystem__edit_file",
+      "mcp__filesystem__list_directory",
+      "Bash(del test-singleton.js)",
+      "mcp__filesystem__create_directory",
+      "Bash(del \"C:\\Users\\KeremSalihColakFormu\\OneDrive - Formula International\\Masaüstü\\PMV3\\src\\hooks\\useAuth.ts\")",
+      "Bash(grep:*)",
+      "mcp__filesystem__move_file"
     ],
     "deny": []
   },
   "enableAllProjectMcpServers": true,
   "enabledMcpjsonServers": [
-    "supabase"
+    "supabase",
+    "postgres",
+    "filesystem",
+    "memory",
+    "fetch",
+    "context7",
+    "playwright"
   ],
   "outputStyle": "Explanatory"
 }

@@ -1,0 +1,14 @@
+╭───────────────────────────────────────────────────╮
+│ ✻ Welcome to Claude Code!                         │
+│                                                   │
+│   /help for help, /status for your current setup  │
+│                                                   │
+│   cwd: C:\Users\Kerem\Desktop\PMV3                │
+╰───────────────────────────────────────────────────╯
+
+ ⚠ Large CLAUDE.md will impact performance (45.0k chars > 40.0k) • /memory to edit
+
+> can you check what is been done ?
+  ⎿  API Error: Connection error.
+  ⎿  Interrupted by user
+

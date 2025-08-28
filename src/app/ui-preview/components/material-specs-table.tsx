@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import {
   Table,
   TableBody,
@@ -112,7 +113,7 @@ export function MaterialSpecsTable() {
     return new Promise((resolve) => {
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')!
-      const img = new Image()
+      const img = document.createElement('img')
       
       img.onload = () => {
         // Calculate new dimensions (max 800x800, maintain aspect ratio)
@@ -476,10 +477,12 @@ export function MaterialSpecsTable() {
                     ) : (
                       <div className="space-y-3">
                         <div className="relative w-48 h-48 mx-auto border border-gray-400 rounded-lg overflow-hidden bg-gray-100">
-                          <img 
+                          <Image 
                             src={imagePreview} 
-                            alt="Preview" 
-                            className="w-full h-full object-cover"
+                            alt="Material specification preview" 
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           />
                           <button
                             onClick={handleImageRemove}
@@ -629,7 +632,7 @@ export function MaterialSpecsTable() {
                           model: newMaterial.model,
                           specification: newMaterial.specification,
                           notes: newMaterial.notes,
-                          image_url: imagePreview, // Use the compressed image
+                          image_url: imagePreview ?? undefined, // Use the compressed image
                           project_id: 'sample-project-id' // TODO: Get from project context
                         }
 

@@ -20,7 +20,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { usePermissions } from '@/hooks/usePermissions'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
 import { Permission } from '@/types/auth'
 import {
   FileImage,
@@ -239,7 +239,7 @@ export function ProjectNav({
 }: ProjectNavProps) {
   const pathname = usePathname()
   const baseUrl = `/projects/${projectId}`
-  const { hasPermission } = usePermissions()
+  const { hasPermission } = usePermissionsEnhanced()
   
   // State for pinned tabs
   const [pinnedTabIds, setPinnedTabIds] = useState<string[]>([])

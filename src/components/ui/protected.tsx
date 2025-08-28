@@ -7,8 +7,8 @@
 'use client'
 
 import React from 'react'
-import { usePermissions } from '@/hooks/usePermissions'
-import { useAuth } from '@/hooks/useAuth'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { useAuthContext } from '@/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge' 
 import { Card } from '@/components/ui/card'
@@ -56,8 +56,8 @@ export function ProtectedComponent({
   className,
   children 
 }: AdvancedPermissionProps) {
-  const { user, loading: authLoading } = useAuth()
-  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissions()
+  const { user, loading: authLoading } = useAuthContext()
+  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissionsEnhanced()
   const permLoading = false // usePermissions doesn't have loading state
 
   // Handle loading states
@@ -96,6 +96,50 @@ export function ProtectedComponent({
   }
 
   return <div className={className}>{children}</div>
+}
+
+// ============================================================================
+// AUTHENTICATION WRAPPER COMPONENTS
+// ============================================================================
+
+/**
+ * Pure authentication wrapper - only checks if user is logged in
+ * Use this to replace "checking authentication" loading states
+ */
+export function RequireAuth({ 
+  children, 
+  fallback,
+  loading 
+}: { 
+  children: React.ReactNode
+  fallback?: React.ReactNode
+  loading?: React.ReactNode
+}) {
+  const { user, loading: authLoading } = useAuthContext()
+  
+  if (authLoading) {
+    return <>{loading || (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Checking authentication...</p>
+        </div>
+      </div>
+    )}</>
+  }
+  
+  if (!user) {
+    return <>{fallback || (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto mb-4" />
+          <p className="text-muted-foreground">Authentication required. Redirecting...</p>
+        </div>
+      </div>
+    )}</>
+  }
+  
+  return <>{children}</>
 }
 
 // ============================================================================
@@ -171,7 +215,7 @@ export function ProtectedButton({
   children,
   ...buttonProps 
 }: ProtectedButtonProps) {
-  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissions()
+  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissionsEnhanced()
 
   if (!permission) {
     return <Button {...buttonProps}>{children}</Button>
@@ -404,7 +448,7 @@ export function InternalContent({
  * Hook for conditional rendering based on permissions
  */
 export function usePermissionRenderer() {
-  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissions()
+  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissionsEnhanced()
 
   return {
     renderIf: (permission: Permission | Permission[], requireAll = false) => 
@@ -441,7 +485,7 @@ export function PermissionStatus({
   permission: Permission
   className?: string 
 }) {
-  const { hasPermission } = usePermissions()
+  const { hasPermission } = usePermissionsEnhanced()
   const hasAccess = hasPermission(permission)
 
   return (
@@ -458,7 +502,7 @@ export function PermissionStatus({
  * Debug panel showing all user permissions
  */
 export function PermissionDebug({ className }: { className?: string }) {
-  const { user } = useAuth()
+  const { user } = useAuthContext()
   const userPermissions = (user as any)?.permissions || []
 
   if (process.env.NODE_ENV !== 'development') {

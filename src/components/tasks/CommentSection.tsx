@@ -207,7 +207,7 @@ export function CommentSection({ taskId, projectId }: CommentSectionProps) {
           comments.map((comment) => (
             <div key={comment.id} className="flex gap-3">
               <Avatar className="h-8 w-8 flex-shrink-0">
-                <AvatarImage src={comment.user?.avatar_url} />
+                <AvatarImage src={comment.user?.avatar_url ?? undefined} />
                 <AvatarFallback className="text-xs">
                   {comment.user?.first_name?.[0]}
                   {comment.user?.last_name?.[0]}

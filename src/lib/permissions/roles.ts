@@ -13,6 +13,9 @@ import type {
 import { DEFAULT_ROLES, ROLE_LEVELS, PERMISSION_FLAGS } from '@/types/roles'
 import type { Permission } from '@/types/auth'
 
+// Re-export for backward compatibility with UserPermissionManager
+export { DEFAULT_ROLES, ROLE_LEVELS, PERMISSION_FLAGS } from '@/types/roles'
+
 // ============================================================================
 // ROLE-BASED PERMISSION UTILITIES
 // ============================================================================
@@ -31,7 +34,7 @@ export function getEffectivePermissions(user: EnhancedUserProfile): UserPermissi
   return {
     role: user.role,
     permission_level: roleDefaults.permission_level,
-    can_view_costs: user.can_view_costs !== null 
+    can_view_costs: user.can_view_costs !== null && user.can_view_costs !== undefined
       ? user.can_view_costs 
       : roleDefaults.default_can_view_costs,
     can_edit_costs: roleDefaults.default_can_edit_costs,
@@ -243,7 +246,7 @@ export function filterSensitiveData<T extends Record<string, any>>(
     const filtered = { ...item }
     sensitiveFields.forEach(field => {
       if (field in filtered) {
-        filtered[field] = null
+        delete filtered[field]
       }
     })
     return filtered

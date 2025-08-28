@@ -52,3 +52,6 @@ next-env.d.ts
 # OS generated files
 Thumbs.db
 .mcp.json
+
+# Archived migration files - DO NOT PUSH TO SUPABASE
+supabase/migrations/archived/

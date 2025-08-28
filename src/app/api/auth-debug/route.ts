@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getClient } from '@/lib/supabase/client'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 
 export async function GET() {
   const results: any = {}
   
   try {
     // Test Supabase client creation
-    const supabase = getClient()
+    const supabase = getSupabaseSingleton()
     results.clientCreated = true
     
     // Try to get session

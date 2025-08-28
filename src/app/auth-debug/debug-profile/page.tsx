@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getClient } from '@/lib/supabase/client'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 
 export default function ProfileDebugPage() {
   const [debugInfo, setDebugInfo] = useState<any>({})
@@ -9,7 +9,7 @@ export default function ProfileDebugPage() {
 
   useEffect(() => {
     const runDebugTests = async () => {
-      const client = getClient()
+      const client = getSupabaseSingleton()
       const debug: any = {
         timestamp: new Date().toISOString(),
         tests: {}

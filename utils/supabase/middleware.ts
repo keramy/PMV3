@@ -10,41 +10,9 @@ import { createServerClient } from '@supabase/ssr'
 import { isDevAuthBypassEnabled, MOCK_DEV_USER_ID } from '@/lib/dev/mock-user'
 
 export async function updateSession(request: NextRequest) {
-  // DEVELOPMENT: Check if authentication bypass is enabled
-  if (isDevAuthBypassEnabled()) {
-    console.log('🚀 [DEV MODE] Authentication bypass enabled - skipping all auth checks')
-    
-    const path = request.nextUrl.pathname
-    
-    // Redirect root to dashboard in dev mode
-    if (path === '/') {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    
-    // Redirect login/signup to dashboard in dev mode
-    if (path.startsWith('/login') || path.startsWith('/signup')) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-    
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    })
-    
-    // Add mock user headers for API routes
-    if (path.startsWith('/api/')) {
-      response.headers.set('X-User-ID', MOCK_DEV_USER_ID)
-      response.headers.set('X-User-Email', 'developer@formulapm.com')
-    }
-    
-    return response
-  }
-  
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+  // OFFICIAL SUPABASE PATTERN: Create response once, never recreate
+  let supabaseResponse = NextResponse.next({
+    request,
   })
 
   const supabase = createServerClient(
@@ -56,35 +24,53 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          // CRITICAL: Must use both request and response cookie setting
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          response = NextResponse.next({
-            request,
+          // OFFICIAL SUPABASE PATTERN: NEVER recreate response in setAll
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value)
           })
+          // CRITICAL: Do NOT recreate supabaseResponse here!
           cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options)
           )
         },
       },
     }
   )
 
-  // CRITICAL: Always call getUser() to trigger session refresh
-  // This automatically refreshes expired tokens
+  // 2024 BEST PRACTICE: Always call getUser() to validate JWT and refresh tokens
+  console.log('🔍 MIDDLEWARE: Validating session for path:', request.nextUrl.pathname)
   const {
     data: { user },
+    error: userError
   } = await supabase.auth.getUser()
+  
+  console.log('🔍 MIDDLEWARE: Session validation result:', {
+    hasUser: !!user,
+    userId: user?.id,
+    userEmail: user?.email,
+    error: userError?.message,
+    path: request.nextUrl.pathname,
+    timestamp: new Date().toISOString()
+  })
 
   // Protected routes that require authentication
-  const protectedRoutes = ['/dashboard', '/projects', '/admin']
-  const publicRoutes = ['/login', '/signup', '/', '/auth']
+  const protectedRoutes = ['/dashboard', '/projects', '/admin', '/test-dashboard']
+  const publicRoutes = ['/login', '/signup', '/', '/auth', '/test-auth']
   
   const path = request.nextUrl.pathname
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
   const isPublicRoute = publicRoutes.some(route => path.startsWith(route))
+  const isAuthCallback = path.startsWith('/auth/callback')
+
+  // Allow auth callback to process without interference
+  if (isAuthCallback) {
+    console.log('🔍 MIDDLEWARE: Allowing auth callback to proceed:', path)
+    return supabaseResponse
+  }
 
   // Redirect unauthenticated users from protected routes
   if (isProtectedRoute && !user) {
+    console.log('🔍 MIDDLEWARE: Redirecting to login - no user for protected route:', path)
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('from', path)
     return NextResponse.redirect(loginUrl)
@@ -92,14 +78,18 @@ export async function updateSession(request: NextRequest) {
 
   // Redirect authenticated users from public routes (except home page)
   if (isPublicRoute && user && path !== '/') {
+    console.log('🔍 MIDDLEWARE: Redirecting authenticated user from public route:', path, 'to dashboard')
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
+  console.log('🔍 MIDDLEWARE: Allowing access to:', path, 'for user:', user?.email || 'anonymous')
+
   // For API routes, add user context headers if authenticated
   if (path.startsWith('/api/') && user) {
-    response.headers.set('X-User-ID', user.id)
-    response.headers.set('X-User-Email', user.email || '')
+    supabaseResponse.headers.set('X-User-ID', user.id)
+    supabaseResponse.headers.set('X-User-Email', user.email || '')
   }
 
-  return response
+  // CRITICAL: Must return the supabaseResponse object unchanged
+  return supabaseResponse
 }

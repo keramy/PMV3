@@ -135,7 +135,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Validate comment type permissions
-    const canComment = validateCommentPermissions(body.comment_type, profile.permissions)
+    const canComment = validateCommentPermissions(body.comment_type, profile.permissions || [])
     if (!canComment) {
       return Response.json({ 
         error: 'Insufficient permissions for this comment type',

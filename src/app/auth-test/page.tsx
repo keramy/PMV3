@@ -1,18 +1,18 @@
 'use client'
 
-import { useAuth } from '@/hooks/useAuth'
-import { getClient } from '@/lib/supabase/client'
+import { useAuthContext } from '@/providers/AuthProvider'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 import { useState, useEffect } from 'react'
 
 export default function AuthTestPage() {
   console.log('🔍 AuthTestPage component rendered')
-  const { user, profile, loading } = useAuth()
+  const { user, profile, loading } = useAuthContext()
   const [sessionTest, setSessionTest] = useState<any>(null)
 
   useEffect(() => {
     // Manual session check
     const checkSession = async () => {
-      const supabase = getClient()
+      const supabase = getSupabaseSingleton()
       const { data, error } = await supabase.auth.getSession()
       setSessionTest({ data, error })
     }
@@ -38,7 +38,7 @@ export default function AuthTestPage() {
       <h1>Authentication Test Page</h1>
       
       <div style={{ border: '1px solid #ccc', padding: '10px', margin: '10px 0' }}>
-        <h2>useAuth Hook State:</h2>
+        <h2>AuthProvider Hook State:</h2>
         <p><strong>Loading:</strong> {loading.toString()}</p>
         <p><strong>User:</strong> {user ? `${user.email} (ID: ${user.id})` : 'null'}</p>
         <p><strong>Profile:</strong> {profile ? `${profile.email} (ID: ${profile.id})` : 'null'}</p>

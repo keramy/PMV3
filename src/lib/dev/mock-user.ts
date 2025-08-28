@@ -81,7 +81,11 @@ export const mockUserProfile: UserProfile = {
   created_at: '2025-01-01T00:00:00Z',
   updated_at: new Date().toISOString(),
   last_login: new Date().toISOString(),
-  is_active: true
+  is_active: true,
+  // Add missing required fields from database schema
+  assigned_projects: null,
+  can_view_costs: true,
+  role: 'admin'
 }
 
 /**

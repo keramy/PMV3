@@ -61,7 +61,7 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
   if (isEditing && task) {
     return (
       <TaskForm
-        projectId={task.project_id}
+        projectId={task.project_id || ''}
         task={task}
         onClose={() => setIsEditing(false)}
       />
@@ -184,7 +184,7 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
               </div>
 
               {/* Progress */}
-              {task.progress_percentage > 0 && (
+              {(task.progress_percentage || 0) > 0 && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Progress</span>
@@ -220,7 +220,7 @@ export function TaskDetail({ taskId, onClose }: TaskDetailProps) {
               </TabsContent>
 
               <TabsContent value="comments" className="mt-4">
-                <CommentSection taskId={taskId} projectId={task.project_id} />
+                <CommentSection taskId={taskId} projectId={task.project_id || ''} />
               </TabsContent>
 
               <TabsContent value="attachments" className="mt-4">

@@ -179,12 +179,12 @@ export const POST = apiMiddleware.validate(
     // Get project code and next sequence number
     const { data: project } = await supabase
       .from('projects')
-      .select('project_code')
+      .select('project_number')
       .eq('id', validatedData.project_id)
       .single()
 
-    if (!project?.project_code) {
-      return Response.json({ error: 'Project code not found' }, { status: 400 })
+    if (!project?.project_number) {
+      return Response.json({ error: 'Project number not found' }, { status: 400 })
     }
 
     // Get next sequence number for this project
@@ -204,7 +204,7 @@ export const POST = apiMiddleware.validate(
     }
 
     const categoryPrefix = categoryPrefixes[validatedData.category || 'construction'] || '100'
-    const scopeCode = `${categoryPrefix}-${project.project_code}-${nextSequence.toString().padStart(4, '0')}`
+    const scopeCode = `${categoryPrefix}-${project.project_number}-${nextSequence.toString().padStart(4, '0')}`
 
     // Create scope item with generated scope code
       const { data: newScopeItem, error } = await supabase

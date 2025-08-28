@@ -4,7 +4,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import type { 
   ShopDrawing, 
   ShopDrawingFormData, 
@@ -29,7 +29,7 @@ export const shopDrawingsQueryKeys = {
 
 // Custom hook for fetching shop drawings list with "whose turn" tracking
 export function useShopDrawings(params: ShopDrawingListParams) {
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useQuery({
     queryKey: shopDrawingsQueryKeys.list(params),

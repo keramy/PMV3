@@ -5,11 +5,11 @@
 
 'use client'
 
-import { useAuth } from './useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import type { Permission } from '@/types/auth'
 
 export function usePermissions() {
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
 
   const hasPermission = (permission: Permission): boolean => {
     return profile?.permissions?.includes(permission) ?? false

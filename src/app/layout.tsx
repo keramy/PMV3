@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { QueryProvider } from '@/providers/QueryProvider'
+import { AuthProvider } from '@/providers/AuthProvider'
 import { Toaster } from '@/components/ui/toaster'
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
@@ -66,11 +68,48 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* Preload critical assets for construction workflows */}
+        <link rel="preload" as="image" href="/logos/logo-f.png" />
+        <link rel="preload" as="image" href="/logos/logo-formula.png" />
+        <link rel="dns-prefetch" href="https://xrrrtwrfadcilwkgwacs.supabase.co" />
+      </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <QueryProvider>
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
         </QueryProvider>
         <Toaster />
+        
+        {/* Performance optimization script for construction sites */}
+        <Script 
+          id="performance-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Optimize for construction site connectivity
+              if (typeof window !== 'undefined') {
+                // Enable resource prefetching for critical routes
+                const criticalRoutes = ['/dashboard', '/projects', '/scope'];
+                criticalRoutes.forEach(route => {
+                  const link = document.createElement('link');
+                  link.rel = 'prefetch';
+                  link.href = route;
+                  document.head.appendChild(link);
+                });
+                
+                // Detect slow connections and optimize accordingly
+                if ('connection' in navigator) {
+                  const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                  if (conn && ['slow-2g', '2g', '3g'].includes(conn.effectiveType)) {
+                    document.documentElement.classList.add('slow-connection');
+                  }
+                }
+              }
+            `
+          }}
+        />
       </body>
     </html>
   )

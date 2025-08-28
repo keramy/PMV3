@@ -5,7 +5,7 @@ test.setTimeout(180000);
 
 test.describe('Comprehensive Feature Testing', () => {
   // Helper function to login
-  async function login(page) {
+  async function login(page: any) {
     console.log('🔐 Logging in...');
     await page.goto('/login', { waitUntil: 'networkidle', timeout: 60000 });
     await page.waitForSelector('#email', { timeout: 30000 });
@@ -52,12 +52,12 @@ test.describe('Comprehensive Feature Testing', () => {
           if (text || href) {
             foundNavigation.push({
               selector,
-              text: text.trim(),
+              text: text?.trim() || '',
               href,
               role,
               index: i
             });
-            console.log(`  - Navigation item: "${text.trim()}" ${href ? `(${href})` : ''}`);
+            console.log(`  - Navigation item: "${text?.trim() || ''}" ${href ? `(${href})` : ''}`);
           }
         }
       }
@@ -83,7 +83,7 @@ test.describe('Comprehensive Feature Testing', () => {
           await page.screenshot({ path: `nav-section-${i + 1}.png`, fullPage: true });
           
         } catch (error) {
-          console.log(`  ⚠️ Could not click on "${navItem.text}": ${error.message}`);
+          console.log(`  ⚠️ Could not click on "${navItem.text}": ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
     } else {
@@ -126,7 +126,7 @@ test.describe('Comprehensive Feature Testing', () => {
           break;
         }
       } catch (error) {
-        console.log(`❌ Could not access ${url}: ${error.message}`);
+        console.log(`❌ Could not access ${url}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
     
@@ -254,7 +254,7 @@ test.describe('Comprehensive Feature Testing', () => {
           for (const element of scopeElements) {
             if (await element.isVisible().catch(() => false)) {
               const text = await element.textContent().catch(() => '');
-              console.log(`📍 Found scope element: ${text.substring(0, 50)}...`);
+              console.log(`📍 Found scope element: ${(text || '').substring(0, 50)}...`);
             }
           }
           break;
@@ -298,7 +298,7 @@ test.describe('Comprehensive Feature Testing', () => {
           for (const element of shopElements) {
             if (await element.isVisible().catch(() => false)) {
               const text = await element.textContent().catch(() => '');
-              console.log(`📍 Found shop drawings element: ${text.substring(0, 50)}...`);
+              console.log(`📍 Found shop drawings element: ${(text || '').substring(0, 50)}...`);
             }
           }
           break;
@@ -342,7 +342,7 @@ test.describe('Comprehensive Feature Testing', () => {
           for (const element of materialElements) {
             if (await element.isVisible().catch(() => false)) {
               const text = await element.textContent().catch(() => '');
-              console.log(`📍 Found material element: ${text.substring(0, 50)}...`);
+              console.log(`📍 Found material element: ${(text || '').substring(0, 50)}...`);
             }
           }
           break;
@@ -387,7 +387,7 @@ test.describe('Comprehensive Feature Testing', () => {
           for (const element of taskElements) {
             if (await element.isVisible().catch(() => false)) {
               const text = await element.textContent().catch(() => '');
-              console.log(`📍 Found task element: ${text.substring(0, 50)}...`);
+              console.log(`📍 Found task element: ${(text || '').substring(0, 50)}...`);
             }
           }
           break;
@@ -424,19 +424,19 @@ test.describe('Comprehensive Feature Testing', () => {
       const text = await button.textContent().catch(() => '');
       const disabled = await button.isDisabled().catch(() => false);
       
-      if (text.trim() && !disabled) {
-        console.log(`  - Button: "${text.trim()}"`);
+      if ((text || '').trim() && !disabled) {
+        console.log(`  - Button: "${(text || '').trim()}"`);
         
         // Try clicking non-destructive buttons
-        if (!text.toLowerCase().includes('delete') && 
-            !text.toLowerCase().includes('remove') &&
-            !text.toLowerCase().includes('logout')) {
+        if (!(text || '').toLowerCase().includes('delete') && 
+            !(text || '').toLowerCase().includes('remove') &&
+            !(text || '').toLowerCase().includes('logout')) {
           try {
             await button.click({ timeout: 3000 });
             await page.waitForTimeout(1000);
             console.log(`    ✅ Clicked successfully`);
           } catch (error) {
-            console.log(`    ⚠️ Could not click: ${error.message.substring(0, 50)}`);
+            console.log(`    ⚠️ Could not click: ${(error instanceof Error ? error.message : 'Unknown error').substring(0, 50)}`);
           }
         }
       }
@@ -449,8 +449,8 @@ test.describe('Comprehensive Feature Testing', () => {
       const href = await link.getAttribute('href').catch(() => '');
       const text = await link.textContent().catch(() => '');
       
-      if (href && href.startsWith('/') && text.trim()) {
-        console.log(`  - Link: "${text.trim()}" → ${href}`);
+      if (href && href.startsWith('/') && (text || '').trim()) {
+        console.log(`  - Link: "${(text || '').trim()}" → ${href}`);
       }
     }
     

@@ -94,8 +94,8 @@ export async function GET(
       .eq('id', (await params).id)
       .single()
 
-    if (!task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    if (!task || !task.project_id) {
+      return NextResponse.json({ error: 'Task not found or has no project' }, { status: 404 })
     }
 
     // Check if user has access to this project
@@ -195,8 +195,8 @@ export async function POST(
       .eq('id', (await params).id)
       .single()
 
-    if (!task) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 })
+    if (!task || !task.project_id) {
+      return NextResponse.json({ error: 'Task not found or has no project' }, { status: 404 })
     }
 
     // Check if user has access to this project

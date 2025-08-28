@@ -35,28 +35,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, Building2, Calendar, DollarSign, User, FileText } from 'lucide-react'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+// Remove complex schema dependency - use simple approach
 
-// Form input schema (before transformation)
-const projectCreateInputSchema = z.object({
-  name: z.string().min(1, 'Project name is required').max(200, 'Name must be under 200 characters'),
-  client_name: z.string().min(1, 'Client name is required').max(100, 'Client name must be under 100 characters'),
-  description: z.string().optional(),
-  start_date: z.string().optional(),
-  end_date: z.string().optional(),
-  budget: z.string().optional(), // String in form
-  status: z.enum(['planning', 'active', 'on_hold', 'completed']).default('planning'),
-})
-
-// Transform schema for API submission
-const projectCreateSchema = projectCreateInputSchema.transform((data) => ({
-  ...data,
-  budget: data.budget === '' ? undefined : (data.budget ? parseFloat(data.budget) : undefined)
-}))
-
-type ProjectCreateFormData = z.infer<typeof projectCreateInputSchema>
+// Schema and types now imported from centralized location
 
 interface ProjectCreateDialogProps {
   open: boolean
@@ -67,24 +52,42 @@ interface ProjectCreateDialogProps {
 export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: ProjectCreateDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
+  const { role } = usePermissionsEnhanced()
   const router = useRouter()
   const { toast } = useToast()
+  
+  // Simple form validation - no complex schemas
+  const canSetBudget = ['admin', 'technical_manager', 'project_manager'].includes(role || '')
+  const canSetPriority = ['admin', 'technical_manager', 'project_manager'].includes(role || '')
 
-  const form = useForm<ProjectCreateFormData>({
-    resolver: zodResolver(projectCreateInputSchema),
+  // Simple form interface
+  interface SimpleProjectForm {
+    name: string
+    client_name: string
+    project_code?: string
+    description?: string
+    start_date?: string
+    end_date?: string
+    budget?: string
+    status: string
+  }
+
+  const form = useForm<SimpleProjectForm>({
+    // Remove complex resolver for now
     defaultValues: {
       name: '',
       client_name: '',
+      project_code: '',
       description: '',
       start_date: '',
       end_date: '',
       budget: '',
-      status: 'planning',
+      status: 'planning'
     },
   })
 
-  const onSubmit = async (data: ProjectCreateFormData) => {
+  const onSubmit = async (data: SimpleProjectForm) => {
     if (!profile?.id) {
       setError('User authentication required')
       return
@@ -94,15 +97,21 @@ export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: Pr
     setError(null)
 
     try {
-      // Transform the data before sending to API
-      const transformedData = projectCreateSchema.parse(data)
+      // Simple data transformation
+      const apiData = {
+        ...data,
+        budget: data.budget ? parseFloat(data.budget) : undefined
+      }
+      
+      console.log('🚀 Creating project:', apiData)
+      
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'x-user-id': profile.id,
         },
-        body: JSON.stringify(transformedData),
+        body: JSON.stringify(apiData),
       })
 
       if (!response.ok) {
@@ -214,6 +223,28 @@ export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: Pr
               )}
             />
 
+            {/* Project Code */}
+            <FormField
+              control={form.control}
+              name="project_code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Project Code
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="e.g., AKB-2024-001"
+                      {...field}
+                      className="border-gray-400 font-mono"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* Description */}
             <FormField
               control={form.control}
@@ -283,27 +314,33 @@ export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: Pr
 
             {/* Budget and Status Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="budget"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
-                      Budget (₺)
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="e.g., 5000000"
-                        {...field}
-                        className="border-gray-400"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Budget field - Only shown to authorized roles */}
+              {canSetBudget && (
+                <FormField
+                  control={form.control}
+                  name="budget"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <DollarSign className="h-4 w-4" />
+                        Budget (₺)
+                        {role === 'team_member' && (
+                          <span className="text-xs text-orange-600">(Limited to ₺50,000)</span>
+                        )}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="text"
+                          placeholder={role === 'team_member' ? 'Max: 50,000' : 'e.g., 5,000,000'}
+                          {...field}
+                          className="border-gray-400"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
 
               <FormField
                 control={form.control}
@@ -319,7 +356,7 @@ export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: Pr
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="planning">Planning</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="in_progress">In Progress</SelectItem>
                         <SelectItem value="on_hold">On Hold</SelectItem>
                         <SelectItem value="completed">Completed</SelectItem>
                       </SelectContent>

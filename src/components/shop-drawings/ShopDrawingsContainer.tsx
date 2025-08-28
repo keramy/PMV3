@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { usePermissions } from '@/hooks/usePermissions'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
 import { ShopDrawingsList } from './ShopDrawingsList'
 import { ShopDrawingUploadDialog } from './ShopDrawingUploadDialog'
 import { ShopDrawingDetailDialog } from './ShopDrawingDetailDialog'
@@ -62,7 +62,7 @@ export function ShopDrawingsContainer({
   projectId, 
   initialFilters = {} 
 }: ShopDrawingsContainerProps) {
-  const { hasPermission, hasAnyPermission } = usePermissions()
+  const { hasPermission, hasAnyPermission } = usePermissionsEnhanced()
   
   // State
   const [filters, setFilters] = useState<ShopDrawingFiltersState>({

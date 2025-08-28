@@ -4,9 +4,9 @@
  */
 
 import { useMemo } from 'react'
-import { useAuth } from './useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import type { Permission } from '@/types/auth'
-import type { UserRole, UserPermissions, PermissionFlag } from '@/types/roles'
+import type { UserRole, UserPermissions, PermissionFlag, EnhancedUserProfile } from '@/types/roles'
 import { 
   getEffectivePermissions, 
   hasPermissionFlag, 
@@ -18,6 +18,20 @@ import {
   getRoleDisplayName,
   getAllRoles
 } from '@/lib/permissions/roles'
+
+/**
+ * Type guard to ensure a string is a valid UserRole
+ */
+function isValidUserRole(role: string | null): role is UserRole {
+  return role !== null && ['admin', 'technical_manager', 'project_manager', 'team_member', 'client'].includes(role)
+}
+
+/**
+ * Safely convert a string role to UserRole with fallback
+ */
+function toUserRole(role: string | null): UserRole {
+  return isValidUserRole(role) ? role : 'team_member'
+}
 
 export interface UsePermissionsEnhanced {
   // Role-based system
@@ -53,23 +67,35 @@ export interface UsePermissionsEnhanced {
 }
 
 export function usePermissionsEnhanced(): UsePermissionsEnhanced {
-  const { user, profile, loading, isAuthenticated } = useAuth()
+  const { user, profile, loading, isAuthenticated } = useAuthContext()
   
   const permissions = useMemo(() => {
     if (!profile) return null
     
     // Convert profile to EnhancedUserProfile format
-    const enhancedProfile = {
-      ...profile,
-      role: profile.role || 'team_member' as UserRole,
+    const enhancedProfile: EnhancedUserProfile = {
+      id: profile.id,
+      email: profile.email,
+      first_name: profile.first_name || undefined,
+      last_name: profile.last_name || undefined,
+      full_name: profile.full_name,
+      job_title: profile.job_title || undefined,
+      avatar_url: profile.avatar_url || undefined,
+      phone: profile.phone || undefined,
+      is_active: profile.is_active ?? undefined,
+      last_login: profile.last_login || undefined,
+      created_at: profile.created_at || new Date().toISOString(),
+      updated_at: profile.updated_at || new Date().toISOString(),
+      permissions: profile.permissions.map(p => p.toString()),
+      role: toUserRole(profile.role),
       can_view_costs: profile.can_view_costs,
-      assigned_projects: profile.assigned_projects || [],
+      assigned_projects: profile.assigned_projects || []
     }
     
     return getEffectivePermissions(enhancedProfile)
   }, [profile])
   
-  const role = profile?.role || null
+  const role: UserRole | null = profile?.role ? toUserRole(profile.role) : null
   
   // Computed permission flags
   const canViewCosts = permissions?.can_view_costs ?? false
@@ -88,7 +114,7 @@ export function usePermissionsEnhanced(): UsePermissionsEnhanced {
   }
   
   const isAtLeast = (minRole: UserRole): boolean => {
-    return role ? isAtLeastRole(role, minRole) : false
+    return role ? isAtLeastRole(role as UserRole, minRole) : false
   }
   
   const canAccess = (projectId: string, userProjectIds?: string[]): boolean => {
@@ -103,18 +129,30 @@ export function usePermissionsEnhanced(): UsePermissionsEnhanced {
   }
   
   // UI helpers
-  const roleDisplayName = role ? getRoleDisplayName(role) : 'Unknown'
+  const roleDisplayName = role ? getRoleDisplayName(role as UserRole) : 'Unknown'
   const availableRoles = getAllRoles()
   
   // Legacy compatibility functions
   const hasPermission = (permission: Permission): boolean => {
     if (!profile) return false
     
-    const enhancedProfile = {
-      ...profile,
-      role: profile.role || 'team_member' as UserRole,
+    const enhancedProfile: EnhancedUserProfile = {
+      id: profile.id,
+      email: profile.email,
+      first_name: profile.first_name || undefined,
+      last_name: profile.last_name || undefined,
+      full_name: profile.full_name,
+      job_title: profile.job_title || undefined,
+      avatar_url: profile.avatar_url || undefined,
+      phone: profile.phone || undefined,
+      is_active: profile.is_active ?? undefined,
+      last_login: profile.last_login || undefined,
+      created_at: profile.created_at || new Date().toISOString(),
+      updated_at: profile.updated_at || new Date().toISOString(),
+      permissions: profile.permissions.map(p => p.toString()),
+      role: toUserRole(profile.role),
       can_view_costs: profile.can_view_costs,
-      assigned_projects: profile.assigned_projects || [],
+      assigned_projects: profile.assigned_projects || []
     }
     
     return hasPermissionEnhanced(enhancedProfile, permission)

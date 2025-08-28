@@ -4,8 +4,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
-import { useAuth } from '@/hooks/useAuth'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
+import { useAuthContext } from '@/providers/AuthProvider'
 import type { 
   ScopeItem, 
   ScopeItemFormData, 
@@ -26,7 +26,12 @@ export const scopeQueryKeys = {
 
 // Custom hook for fetching scope items list
 export function useScopeItems(params: ScopeListParams) {
-  const { profile } = useAuth()
+  const { profile, user } = useAuthContext()
+  
+  // Auth verification - prevent queries without authentication
+  if (!user || !profile) {
+    throw new Error('Authentication required for scope items')
+  }
   
   return useQuery({
     queryKey: scopeQueryKeys.list(params),
@@ -69,7 +74,7 @@ export function useScopeItems(params: ScopeListParams) {
 
 // Custom hook for fetching a single scope item
 export function useScopeItem(id: string) {
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useQuery({
     queryKey: scopeQueryKeys.detail(id),
@@ -93,7 +98,7 @@ export function useScopeItem(id: string) {
 // Mutation hook for creating scope items
 export function useCreateScopeItem() {
   const queryClient = useQueryClient()
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useMutation({
     mutationFn: async (data: ScopeItemFormData): Promise<ScopeItem> => {
@@ -127,18 +132,16 @@ export function useCreateScopeItem() {
       // Optimistically update the list if we have the right query in cache
       const listQueryKey = scopeQueryKeys.list({ project_id: variables.project_id })
       queryClient.setQueryData(listQueryKey, (old: ScopeListResponse | undefined) => {
-        if (!old?.data?.items) return old
+        if (!old?.items) return old
         
         return {
           ...old,
-          data: {
-            ...old.data,
-            items: [newItem, ...old.data.items],
-            statistics: {
-              ...old.data.statistics,
-              total_items: (old.data.statistics?.total_items || 0) + 1,
-            }
-          }
+          items: [newItem, ...old.items],
+          statistics: {
+            ...old.statistics,
+            total_items: (old.statistics?.total_items || 0) + 1,
+          },
+          total_count: (old.total_count || 0) + 1
         }
       })
     },
@@ -148,7 +151,7 @@ export function useCreateScopeItem() {
 // Mutation hook for updating scope items
 export function useUpdateScopeItem() {
   const queryClient = useQueryClient()
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ScopeItemUpdateData }): Promise<ScopeItem> => {
@@ -184,7 +187,7 @@ export function useUpdateScopeItem() {
 // Mutation hook for deleting scope items
 export function useDeleteScopeItem() {
   const queryClient = useQueryClient()
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useMutation({
     mutationFn: async (id: string): Promise<void> => {
@@ -210,7 +213,7 @@ export function useDeleteScopeItem() {
 
 // Utility hook for scope statistics
 export function useScopeStatistics(projectId: string) {
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useQuery({
     queryKey: scopeQueryKeys.statistics(projectId),

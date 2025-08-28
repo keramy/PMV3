@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
-import { usePermissions } from '@/hooks/usePermissions'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
 import { 
   SHOP_DRAWING_STATUSES, 
   DRAWING_CATEGORIES, 
@@ -50,7 +50,7 @@ export function ShopDrawingsList({
   onDrawingUpdated, 
   projectId 
 }: ShopDrawingsListProps) {
-  const { hasPermission, hasAnyPermission } = usePermissions()
+  const { hasPermission, hasAnyPermission } = usePermissionsEnhanced()
   const [selectedDrawings, setSelectedDrawings] = useState<string[]>([])
 
   const formatDate = (dateString: string) => {
@@ -301,14 +301,14 @@ export function ShopDrawingsList({
                           {drawing.submitted_to_client_by_user && (
                             <Avatar className="h-5 w-5">
                               <AvatarFallback className="text-xs">
-                                {getInitials(drawing.submitted_to_client_by_user.first_name, drawing.submitted_to_client_by_user.last_name)}
+                                {getInitials(drawing.submitted_to_client_by_user.first_name ?? undefined, drawing.submitted_to_client_by_user.last_name ?? undefined)}
                               </AvatarFallback>
                             </Avatar>
                           )}
                           {drawing.client_contact_user && (
                             <Avatar className="h-5 w-5">
                               <AvatarFallback className="text-xs">
-                                {getInitials(drawing.client_contact_user.first_name, drawing.client_contact_user.last_name)}
+                                {getInitials(drawing.client_contact_user.first_name ?? undefined, drawing.client_contact_user.last_name ?? undefined)}
                               </AvatarFallback>
                             </Avatar>
                           )}

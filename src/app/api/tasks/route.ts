@@ -27,7 +27,7 @@ export const GET = apiMiddleware.queryValidate(
     if (!profile?.permissions?.some((p: string) => p === 'view_tasks')) {
       return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
     }
-      const { page, limit } = validatedFilters
+      const { page = 1, limit = 10 } = validatedFilters
       const offset = (page - 1) * limit
 
       // Build direct Supabase query with relationships
@@ -54,11 +54,11 @@ export const GET = apiMiddleware.queryValidate(
         tasksQuery = tasksQuery.eq('project_id', validatedFilters.project_id)
       }
 
-      if (validatedFilters.status.length > 0) {
+      if (validatedFilters.status && validatedFilters.status.length > 0) {
         tasksQuery = tasksQuery.in('status', validatedFilters.status)
       }
 
-      if (validatedFilters.priority.length > 0) {
+      if (validatedFilters.priority && validatedFilters.priority.length > 0) {
         tasksQuery = tasksQuery.in('priority', validatedFilters.priority)
       }
 
@@ -74,7 +74,7 @@ export const GET = apiMiddleware.queryValidate(
         tasksQuery = tasksQuery.or(`title.ilike.%${validatedFilters.search}%,description.ilike.%${validatedFilters.search}%`)
       }
 
-      if (validatedFilters.tags.length > 0) {
+      if (validatedFilters.tags && validatedFilters.tags.length > 0) {
         tasksQuery = tasksQuery.contains('tags', validatedFilters.tags)
       }
 
@@ -244,7 +244,7 @@ export const POST = apiMiddleware.validate(
           const taskAssignmentData: TaskAssignmentData = {
             task_id: newTask.id,
             task_title: newTask.title,
-            project_id: newTask.project_id,
+            project_id: newTask.project_id || '',
             project_name: projectName,
             assigned_by: user.id,
             assigned_by_name: userName,

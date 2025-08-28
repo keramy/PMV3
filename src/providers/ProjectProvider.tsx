@@ -8,8 +8,9 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
-import { usePermissions } from '@/hooks/usePermissions'
+import { useAuthContext } from '@/providers/AuthProvider'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { useApiClient, handleApiResponse } from '@/lib/api-client'
 
 // Project types for construction workflows
 export interface Project {
@@ -102,44 +103,42 @@ export function useProject() {
 }
 
 // Project data fetching functions
-const fetchProject = async (projectId: string): Promise<Project> => {
-  const response = await fetch(`/api/projects/${projectId}`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch project')
+const useProjectDataFetchers = () => {
+  const apiClient = useApiClient()
+
+  const fetchProject = async (projectId: string): Promise<Project> => {
+    const response = await apiClient.get(`/api/projects/${projectId}`)
+    const data = await handleApiResponse(response)
+    
+    // Convert date strings to Date objects
+    return {
+      ...data,
+      startDate: new Date(data.startDate),
+      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      createdAt: new Date(data.createdAt),
+      updatedAt: new Date(data.updatedAt),
+    }
   }
-  const data = await response.json()
-  
-  // Convert date strings to Date objects
-  return {
-    ...data,
-    startDate: new Date(data.startDate),
-    endDate: data.endDate ? new Date(data.endDate) : undefined,
-    createdAt: new Date(data.createdAt),
-    updatedAt: new Date(data.updatedAt),
+
+  const fetchProjectStats = async (projectId: string): Promise<ProjectStats> => {
+    const response = await apiClient.get(`/api/projects/${projectId}/stats`)
+    return handleApiResponse(response)
   }
+
+  const fetchProjectNotifications = async (projectId: string): Promise<ProjectNotification[]> => {
+    const response = await apiClient.get(`/api/projects/${projectId}/notifications`)
+    const data = await handleApiResponse(response)
+    
+    // Convert date strings to Date objects
+    return data.map((notification: any) => ({
+      ...notification,
+      createdAt: new Date(notification.createdAt),
+    }))
+  }
+
+  return { fetchProject, fetchProjectStats, fetchProjectNotifications }
 }
 
-const fetchProjectStats = async (projectId: string): Promise<ProjectStats> => {
-  const response = await fetch(`/api/projects/${projectId}/stats`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch project stats')
-  }
-  return response.json()
-}
-
-const fetchProjectNotifications = async (projectId: string): Promise<ProjectNotification[]> => {
-  const response = await fetch(`/api/projects/${projectId}/notifications`)
-  if (!response.ok) {
-    throw new Error('Failed to fetch project notifications')
-  }
-  const data = await response.json()
-  
-  // Convert date strings to Date objects
-  return data.map((notification: any) => ({
-    ...notification,
-    createdAt: new Date(notification.createdAt),
-  }))
-}
 
 // Provider component
 interface ProjectProviderProps {
@@ -148,9 +147,11 @@ interface ProjectProviderProps {
 }
 
 export function ProjectProvider({ children, initialProjectId }: ProjectProviderProps) {
-  const { user } = useAuth()
-  const { hasPermission } = usePermissions()
+  const { user } = useAuthContext()
+  const { hasPermission } = usePermissionsEnhanced()
   const queryClient = useQueryClient()
+  const { fetchProject, fetchProjectStats, fetchProjectNotifications } = useProjectDataFetchers()
+  const apiClient = useApiClient()
   
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(
     initialProjectId || null
@@ -198,17 +199,8 @@ export function ProjectProvider({ children, initialProjectId }: ProjectProviderP
   // Mutation for updating project
   const updateProjectMutation = useMutation({
     mutationFn: async (updates: Partial<Project>) => {
-      const response = await fetch(`/api/projects/${currentProjectId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to update project')
-      }
-      
-      return response.json()
+      const response = await apiClient.patch(`/api/projects/${currentProjectId}`, updates)
+      return handleApiResponse(response)
     },
     onSuccess: () => {
       // Invalidate and refetch project data
@@ -287,10 +279,8 @@ export function ProjectProvider({ children, initialProjectId }: ProjectProviderP
     )
     
     // API call to persist the change
-    fetch(`/api/notifications/${notificationId}/read`, {
-      method: 'POST',
-    }).catch(console.error)
-  }, [queryClient, currentProjectId])
+    apiClient.post(`/api/notifications/${notificationId}/read`).catch(console.error)
+  }, [queryClient, currentProjectId, apiClient])
   
   const clearAllNotifications = useCallback(() => {
     // Optimistic update
@@ -303,10 +293,8 @@ export function ProjectProvider({ children, initialProjectId }: ProjectProviderP
     )
     
     // API call to persist the change
-    fetch(`/api/projects/${currentProjectId}/notifications/read-all`, {
-      method: 'POST',
-    }).catch(console.error)
-  }, [queryClient, currentProjectId])
+    apiClient.post(`/api/projects/${currentProjectId}/notifications/read-all`).catch(console.error)
+  }, [queryClient, currentProjectId, apiClient])
   
   // Computed values
   const unreadCount = notifications.filter(n => !n.isRead).length

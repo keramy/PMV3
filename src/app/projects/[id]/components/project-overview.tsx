@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useQuery } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
+import type { AppTask } from '@/types/application'
 import { 
   CheckCircle, 
   Clock, 
@@ -34,6 +35,7 @@ interface ProjectData {
   end_date: string
   progress_percentage: number
   description?: string
+  project_code?: string
 }
 
 interface ProjectOverviewProps {
@@ -41,7 +43,7 @@ interface ProjectOverviewProps {
 }
 
 export function ProjectOverview({ project }: ProjectOverviewProps) {
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   // Determine if queries should be enabled
   const queriesEnabled = !!profile?.id && !!project.id
@@ -153,6 +155,39 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
 
   return (
     <div className="space-y-8">
+      {/* Project Header with Name and Code */}
+      <Card className="bg-white border border-gray-300 shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">{project.name}</h1>
+                <p className="text-sm text-gray-600 mt-1">Client: {project.client}</p>
+              </div>
+              {project.project_code && (
+                <Badge variant="outline" className="px-3 py-1 text-sm font-mono bg-blue-50 text-blue-700 border-blue-200">
+                  {project.project_code}
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge 
+                variant={project.status === 'active' ? 'default' : project.status === 'completed' ? 'secondary' : 'outline'}
+                className="capitalize"
+              >
+                {project.status}
+              </Badge>
+              {project.budget && (
+                <div className="text-right">
+                  <div className="text-sm text-gray-500">Budget</div>
+                  <div className="font-semibold text-gray-900">{formatCurrency(project.budget)}</div>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
       {/* Critical Tasks Alert Section */}
       {criticalTasks.length > 0 && (
         <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 shadow-lg">
@@ -168,7 +203,7 @@ export function ProjectOverview({ project }: ProjectOverviewProps) {
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
-            {criticalTasks.map((task, index) => (
+            {criticalTasks.map((task: AppTask, index: number) => (
               <div key={index} className="bg-white rounded-lg p-4 border border-red-100 hover:border-red-200 transition-colors">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

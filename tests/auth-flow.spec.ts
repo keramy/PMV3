@@ -67,12 +67,15 @@ test.describe('Authentication Flow Tests', () => {
     // 6. Verify dashboard content
     await page.waitForTimeout(5000); // Give dashboard time to load
     
-    // Check for dashboard indicators
-    const dashboardLoaded = await page.locator('body').evaluate(() => {
-      const text = document.body.textContent || '';
-      return !text.includes('Checking authentication') && !text.includes('Loading...');
-    });
+    // Check for specific dashboard elements that confirm it's loaded
+    const dashboardElements = await Promise.all([
+      page.locator('text=Projects Overview').isVisible().catch(() => false),
+      page.locator('text=Recent activity').isVisible().catch(() => false),
+      page.locator('[role="card"]').count().then(count => count > 0).catch(() => false),
+      page.locator('text=Critical Tasks').isVisible().catch(() => false)
+    ]);
     
+    const dashboardLoaded = dashboardElements.some(visible => visible);
     expect(dashboardLoaded).toBeTruthy();
     console.log('✅ Dashboard loaded and functional');
     

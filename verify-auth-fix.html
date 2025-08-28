@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 5: Authentication Fix Verification</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-case { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .instructions { background-color: #e7f3ff; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        code { background-color: #f4f4f4; padding: 2px 4px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Phase 5: Authentication Fix Verification</h1>
+    
+    <div class="instructions">
+        <h3>📋 Testing Instructions:</h3>
+        <ol>
+            <li>Open this page alongside your development site: <strong>http://localhost:3002</strong></li>
+            <li>Open Browser DevTools Console (F12)</li>
+            <li>Follow the test cases below and check off each result</li>
+        </ol>
+    </div>
+
+    <div class="test-case">
+        <h3>✅ Test 1: Single Client Instance</h3>
+        <p><strong>Action:</strong> Navigate to http://localhost:3002</p>
+        <p><strong>Expected:</strong> Console shows: <code>"🔍 Creating Supabase Singleton - Instance Count: 1"</code></p>
+        <p><strong>Critical:</strong> This should appear EXACTLY ONCE</p>
+        <label><input type="checkbox"> ✓ Single instance created</label><br>
+        <label><input type="checkbox"> ✓ No multiple creation logs</label>
+    </div>
+
+    <div class="test-case">
+        <h3>✅ Test 2: Single Auth Listener</h3>
+        <p><strong>Expected:</strong> Console shows: <code>"🔐 AuthProvider: Initializing single auth listener"</code></p>
+        <p><strong>Critical:</strong> Should see ONLY ONE auth listener</p>
+        <label><input type="checkbox"> ✓ Single auth listener initialized</label><br>
+        <label><input type="checkbox"> ✓ No duplicate listeners</label>
+    </div>
+
+    <div class="test-case">
+        <h3>✅ Test 3: No Deprecation Warnings</h3>
+        <p><strong>Expected:</strong> Console should NOT show: <code>"getClient() is deprecated"</code></p>
+        <label><input type="checkbox"> ✓ No deprecation warnings</label>
+    </div>
+
+    <div class="test-case">
+        <h3>✅ Test 4: Login Flow</h3>
+        <p><strong>Action:</strong> Navigate to /login and attempt login</p>
+        <p><strong>Expected:</strong> Clean login without infinite redirects</p>
+        <label><input type="checkbox"> ✓ Login page loads</label><br>
+        <label><input type="checkbox"> ✓ No authentication loops</label><br>
+        <label><input type="checkbox"> ✓ Session persists</label>
+    </div>
+
+    <div class="test-case">
+        <h3>✅ Test 5: API Authentication</h3>
+        <p><strong>Action:</strong> Navigate to dashboard, open Network tab</p>
+        <p><strong>Expected:</strong> API calls return 200 OK, not 401 Unauthorized</p>
+        <label><input type="checkbox"> ✓ API calls return 200</label><br>
+        <label><input type="checkbox"> ✓ Headers include x-user-id</label><br>
+        <label><input type="checkbox"> ✓ No 401 errors</label>
+    </div>
+
+    <div class="test-case">
+        <h3>✅ Test 6: Session Persistence</h3>
+        <p><strong>Action:</strong> Refresh page while authenticated</p>
+        <p><strong>Expected:</strong> Session remains active</p>
+        <label><input type="checkbox"> ✓ Session persists across refreshes</label>
+    </div>
+
+    <h2>🎯 Final Verification</h2>
+    <div class="test-case">
+        <h3>Success Criteria</h3>
+        <p>All checkboxes above should be checked for Phase 5 to be considered successful.</p>
+        
+        <h4>If you see any failures:</h4>
+        <ul>
+            <li><strong>Multiple singleton logs</strong> = Singleton pattern broken</li>
+            <li><strong>401 API errors</strong> = Authentication headers not working</li>
+            <li><strong>Deprecation warnings</strong> = Old client usage still active</li>
+            <li><strong>Authentication loops</strong> = Race conditions still exist</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log('🔍 Phase 5 Verification Page Loaded');
+        console.log('Open http://localhost:3002 in another tab and check console logs');
+        
+        // Count checked boxes every few seconds
+        setInterval(() => {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const checked = document.querySelectorAll('input[type="checkbox"]:checked');
+            const progress = Math.round((checked.length / checkboxes.length) * 100);
+            
+            document.title = `Phase 5 Verification - ${progress}% Complete`;
+            
+            if (progress === 100) {
+                console.log('🎉 Phase 5 Authentication Fix Verification COMPLETE!');
+                document.body.style.backgroundColor = '#d4edda';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { usePermissions } from '@/hooks/usePermissions'
+import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
 import { ScopeItemsList } from './ScopeItemsList'
 import { ScopeTableExact } from './ScopeTableExact'
 import { ScopeItemDialog } from './ScopeItemDialog'
@@ -46,7 +46,7 @@ export function ScopeManagementContainer({
   projectId, 
   initialFilters = {} 
 }: ScopeManagementContainerProps) {
-  const { hasPermission, hasAnyPermission } = usePermissions()
+  const { hasPermission, hasAnyPermission } = usePermissionsEnhanced()
   
   // State
   const [filters, setFilters] = useState<ScopeFilters>({

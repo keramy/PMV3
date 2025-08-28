@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import {
   Table,
   TableBody,
@@ -53,7 +53,7 @@ export function ShopDrawingsTable({ projectId }: ShopDrawingsTableProps) {
   const [selectedDrawingId, setSelectedDrawingId] = useState<string | null>(null)
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false)
   const [newComment, setNewComment] = useState('')
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
 
   // Fetch real shop drawings data from API
   const { data: drawingsData, isLoading, error } = useQuery({
@@ -284,9 +284,9 @@ export function ShopDrawingsTable({ projectId }: ShopDrawingsTableProps) {
           
           {/* Quick Stats */}
           <div className="flex flex-wrap items-center gap-6 mt-2 text-sm text-gray-800">
-            <span>Internal: <span className="font-medium text-blue-700">{drawings.filter(d => d.responsibility === 'internal_action').length}</span></span>
-            <span>Client Review: <span className="font-medium text-orange-700">{drawings.filter(d => d.responsibility === 'client_review').length}</span></span>
-            <span>Complete: <span className="font-medium text-green-700">{drawings.filter(d => d.responsibility === 'completed').length}</span></span>
+            <span>Internal: <span className="font-medium text-blue-700">{drawings.filter((d: any) => d.responsibility === 'internal_action').length}</span></span>
+            <span>Client Review: <span className="font-medium text-orange-700">{drawings.filter((d: any) => d.responsibility === 'client_review').length}</span></span>
+            <span>Complete: <span className="font-medium text-green-700">{drawings.filter((d: any) => d.responsibility === 'completed').length}</span></span>
           </div>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700 text-white">
@@ -310,11 +310,11 @@ export function ShopDrawingsTable({ projectId }: ShopDrawingsTableProps) {
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="border-gray-400">
               <Users className="h-4 w-4 mr-1" />
-              Internal ({drawings.filter(d => d.responsibility === 'internal_action').length})
+              Internal ({drawings.filter((d: any) => d.responsibility === 'internal_action').length})
             </Button>
             <Button variant="outline" size="sm" className="border-gray-400">
               <UserCheck className="h-4 w-4 mr-1" />
-              Client ({drawings.filter(d => d.responsibility === 'client_review').length})
+              Client ({drawings.filter((d: any) => d.responsibility === 'client_review').length})
             </Button>
           </div>
         </div>
@@ -336,7 +336,7 @@ export function ShopDrawingsTable({ projectId }: ShopDrawingsTableProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {drawings.map((drawing) => {
+            {drawings.map((drawing: any) => {
               const daysInfo = getDaysWithStatus(drawing.submitted_at, drawing.responsibility)
               const borderClass = drawing.responsibility === 'internal_action' ? 'border-l-2 border-l-blue-500' :
                                  drawing.responsibility === 'client_review' ? 'border-l-2 border-l-orange-500' :
@@ -451,7 +451,7 @@ export function ShopDrawingsTable({ projectId }: ShopDrawingsTableProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageSquare className="h-5 w-5 text-blue-600" />
-              Comments - {selectedDrawingId ? drawings.find(d => d.id === selectedDrawingId)?.title : 'Drawing'}
+              Comments - {selectedDrawingId ? drawings.find((d: any) => d.id === selectedDrawingId)?.title : 'Drawing'}
             </DialogTitle>
           </DialogHeader>
           
@@ -460,7 +460,7 @@ export function ShopDrawingsTable({ projectId }: ShopDrawingsTableProps) {
               {/* Drawing Info */}
               <div className="bg-gray-50 p-3 rounded-lg mb-4">
                 {(() => {
-                  const drawing = drawings.find(d => d.id === selectedDrawingId)
+                  const drawing = drawings.find((d: any) => d.id === selectedDrawingId)
                   return drawing ? (
                     <div className="flex items-center gap-3">
                       <FileText className="h-5 w-5 text-red-600" />

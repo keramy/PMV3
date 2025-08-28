@@ -25,95 +25,27 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              // Optimized cookie settings for construction team sessions
-              const cookieOptions = {
-                ...options,
-                httpOnly: true, // CRITICAL: Must be true for security
-                secure: process.env.NODE_ENV === 'production',
-                sameSite: 'lax' as const,
-                maxAge: options?.maxAge || 60 * 60 * 24 * 7, // 7 days for field workers
-              }
-              cookieStore.set(name, value, cookieOptions)
-            })
-          } catch (error) {
-            // Server component error handling - cookies will be handled by middleware
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('🔍 Cookie setting failed in server component:', error)
-            }
+            // OFFICIAL SUPABASE PATTERN: Pass options unchanged
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
           }
         }
       },
       auth: {
-        persistSession: false, // Server-side doesn't persist sessions
-        autoRefreshToken: false, // Prevent token conflicts
+        persistSession: false, // Server-side doesn't persist sessions (SSR best practice)
+        autoRefreshToken: false, // Prevent token conflicts in SSR
         detectSessionInUrl: false, // Handled by middleware
       }
     }
   )
 
-  // Enhanced error handling for server-side auth operations
-  // Based on V2 patterns but improved for construction workflows
-  const originalGetSession = client.auth.getSession.bind(client.auth)
-  const originalGetUser = client.auth.getUser.bind(client.auth)
-  
-  client.auth.getSession = async () => {
-    try {
-      const result = await originalGetSession()
-      
-      // Handle refresh token errors gracefully for construction site connectivity
-      if (result.error && (
-        result.error.message.includes('Invalid Refresh Token') || 
-        result.error.message.includes('Refresh Token Not Found')
-      )) {
-        if (process.env.NODE_ENV === 'development') {
-          // Silent handling in development
-        } else {
-          console.log('🔐 [ServerAuth] Handling refresh token error - construction site connectivity')
-        }
-        return { data: { session: null }, error: null }
-      }
-      
-      return result
-    } catch (error: any) {
-      // Enhanced error handling for construction site scenarios
-      if (error?.message?.includes('Refresh Token') || error?.message?.includes('JWT')) {
-        if (process.env.NODE_ENV !== 'development') {
-          console.log('🔐 [ServerAuth] Auth error handled - returning null session')
-        }
-        return { data: { session: null }, error: null }
-      }
-      throw error
-    }
-  }
-  
-  client.auth.getUser = async (jwt?: string) => {
-    try {
-      const result = await originalGetUser(jwt)
-      
-      // Handle refresh token errors for getUser
-      if (result.error && (
-        result.error.message.includes('Invalid Refresh Token') || 
-        result.error.message.includes('Refresh Token Not Found') ||
-        result.error.message.includes('JWT expired')
-      )) {
-        if (process.env.NODE_ENV !== 'development') {
-          console.log('🔐 [ServerAuth] User auth error handled')
-        }
-        return { data: { user: null }, error: null }
-      }
-      
-      return result
-    } catch (error: any) {
-      if (error?.message?.includes('Refresh Token') || error?.message?.includes('JWT')) {
-        if (process.env.NODE_ENV !== 'development') {
-          console.log('🔐 [ServerAuth] User lookup error handled')
-        }
-        return { data: { user: null }, error: null }
-      }
-      throw error
-    }
-  }
+  // 2024 BEST PRACTICE: Let Supabase handle errors naturally
+  // No custom error handling - trust @supabase/ssr error management
 
   return client
 }
@@ -155,7 +87,11 @@ export function createServiceClient() {
 // UTILITY FUNCTIONS
 // ============================================================================
 
-// Get authenticated user with enhanced error handling
+/**
+ * 2024 BEST PRACTICE: Get authenticated user using getUser()
+ * Always validates JWT tokens - recommended for server-side auth checks
+ * Returns null safely on authentication errors (for graceful handling)
+ */
 export async function getAuthenticatedUser() {
   const supabase = await createClient()
   
@@ -163,18 +99,22 @@ export async function getAuthenticatedUser() {
     const { data: { user }, error } = await supabase.auth.getUser()
     
     if (error) {
-      console.warn('🔐 [ServerAuth] Failed to get authenticated user:', error.message)
+      console.warn('🔐 [ServerAuth] Authentication error:', error.message)
       return null
     }
     
     return user
   } catch (error) {
-    console.warn('🔐 [ServerAuth] Exception getting authenticated user:', error)
+    console.warn('🔐 [ServerAuth] Exception during authentication:', error)
     return null
   }
 }
 
-// Get user session with enhanced error handling
+/**
+ * Get session (use sparingly - getUser() is preferred for auth validation)
+ * Only use this when you need session metadata, not for authentication
+ * Returns null safely on errors
+ */
 export async function getSession() {
   const supabase = await createClient()
   
@@ -182,7 +122,7 @@ export async function getSession() {
     const { data: { session }, error } = await supabase.auth.getSession()
     
     if (error) {
-      console.warn('🔐 [ServerAuth] Failed to get session:', error.message)
+      console.warn('🔐 [ServerAuth] Session error:', error.message)
       return null
     }
     

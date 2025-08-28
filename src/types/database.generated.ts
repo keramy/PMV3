@@ -63,6 +63,13 @@ export type Database = {
             foreignKeyName: "activity_logs_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -137,6 +144,13 @@ export type Database = {
             foreignKeyName: "change_orders_client_approved_by_fkey"
             columns: ["client_approved_by"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_orders_client_approved_by_fkey"
+            columns: ["client_approved_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -144,7 +158,21 @@ export type Database = {
             foreignKeyName: "change_orders_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "change_orders_internal_approved_by_fkey"
+            columns: ["internal_approved_by"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -214,6 +242,7 @@ export type Database = {
           quantity: number | null
           review_date: string | null
           review_notes: string | null
+          reviewed_by: string | null
           spec_number: string | null
           specification: string | null
           status: string | null
@@ -240,6 +269,7 @@ export type Database = {
           quantity?: number | null
           review_date?: string | null
           review_notes?: string | null
+          reviewed_by?: string | null
           spec_number?: string | null
           specification?: string | null
           status?: string | null
@@ -266,6 +296,7 @@ export type Database = {
           quantity?: number | null
           review_date?: string | null
           review_notes?: string | null
+          reviewed_by?: string | null
           spec_number?: string | null
           specification?: string | null
           status?: string | null
@@ -280,7 +311,21 @@ export type Database = {
             foreignKeyName: "material_specs_approved_by_fkey"
             columns: ["approved_by"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_specs_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_specs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -295,6 +340,20 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_specs_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_specs_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -334,6 +393,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notification_preferences_user_id_fkey"
             columns: ["user_id"]
@@ -378,6 +444,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
@@ -427,6 +500,13 @@ export type Database = {
             foreignKeyName: "project_members_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -449,6 +529,7 @@ export type Database = {
           name: string
           priority: string | null
           progress_percentage: number | null
+          project_code: string | null
           project_manager: string | null
           project_number: string | null
           start_date: string | null
@@ -471,6 +552,7 @@ export type Database = {
           name: string
           priority?: string | null
           progress_percentage?: number | null
+          project_code?: string | null
           project_manager?: string | null
           project_number?: string | null
           start_date?: string | null
@@ -493,6 +575,7 @@ export type Database = {
           name?: string
           priority?: string | null
           progress_percentage?: number | null
+          project_code?: string | null
           project_manager?: string | null
           project_number?: string | null
           start_date?: string | null
@@ -511,7 +594,21 @@ export type Database = {
             foreignKeyName: "projects_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_project_manager_fkey"
+            columns: ["project_manager"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -595,7 +692,21 @@ export type Database = {
             foreignKeyName: "punch_items_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_items_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_items_identified_by_fkey"
+            columns: ["identified_by"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -610,6 +721,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "punch_items_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -687,7 +805,21 @@ export type Database = {
             foreignKeyName: "rfis_answered_by_fkey"
             columns: ["answered_by"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfis_answered_by_fkey"
+            columns: ["answered_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfis_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -708,10 +840,56 @@ export type Database = {
             foreignKeyName: "rfis_submitted_by_fkey"
             columns: ["submitted_by"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rfis_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      role_configurations: {
+        Row: {
+          created_at: string | null
+          default_can_edit_costs: boolean
+          default_can_view_costs: boolean
+          description: string | null
+          display_name: string
+          id: string
+          permission_level: number
+          project_access_type: string
+          role_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          default_can_edit_costs?: boolean
+          default_can_view_costs?: boolean
+          description?: string | null
+          display_name: string
+          id?: string
+          permission_level: number
+          project_access_type?: string
+          role_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          default_can_edit_costs?: boolean
+          default_can_view_costs?: boolean
+          description?: string | null
+          display_name?: string
+          id?: string
+          permission_level?: number
+          project_access_type?: string
+          role_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       scope_items: {
         Row: {
@@ -810,7 +988,21 @@ export type Database = {
             foreignKeyName: "scope_items_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scope_items_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scope_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -882,6 +1074,13 @@ export type Database = {
             foreignKeyName: "shop_drawing_comments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawing_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -889,6 +1088,7 @@ export type Database = {
       }
       shop_drawings: {
         Row: {
+          assigned_to: string | null
           category: Database["public"]["Enums"]["drawing_category"] | null
           client_comments: string | null
           client_contact: string | null
@@ -921,6 +1121,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          assigned_to?: string | null
           category?: Database["public"]["Enums"]["drawing_category"] | null
           client_comments?: string | null
           client_contact?: string | null
@@ -953,6 +1154,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          assigned_to?: string | null
           category?: Database["public"]["Enums"]["drawing_category"] | null
           client_comments?: string | null
           client_contact?: string | null
@@ -993,6 +1195,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "shop_drawings_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawings_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawings_client_contact_fkey"
+            columns: ["client_contact"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "shop_drawings_client_contact_fkey"
             columns: ["client_contact"]
             isOneToOne: false
@@ -1010,6 +1233,13 @@ export type Database = {
             foreignKeyName: "shop_drawings_reviewed_by_fkey"
             columns: ["reviewed_by"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawings_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -1017,7 +1247,21 @@ export type Database = {
             foreignKeyName: "shop_drawings_submitted_by_fkey"
             columns: ["submitted_by"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawings_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_drawings_submitted_to_client_by_fkey"
+            columns: ["submitted_to_client_by"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -1128,6 +1372,13 @@ export type Database = {
             foreignKeyName: "task_comments_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
             referencedColumns: ["id"]
           },
@@ -1209,7 +1460,21 @@ export type Database = {
             foreignKeyName: "tasks_assigned_to_fkey"
             columns: ["assigned_to"]
             isOneToOne: false
+            referencedRelation: "migration_audit_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
             referencedRelation: "user_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "migration_audit_view"
             referencedColumns: ["id"]
           },
           {
@@ -1237,7 +1502,9 @@ export type Database = {
       }
       user_profiles: {
         Row: {
+          assigned_projects: string[] | null
           avatar_url: string | null
+          can_view_costs: boolean | null
           created_at: string | null
           email: string
           first_name: string | null
@@ -1248,10 +1515,13 @@ export type Database = {
           last_name: string | null
           permissions: string[] | null
           phone: string | null
+          role: string | null
           updated_at: string | null
         }
         Insert: {
+          assigned_projects?: string[] | null
           avatar_url?: string | null
+          can_view_costs?: boolean | null
           created_at?: string | null
           email: string
           first_name?: string | null
@@ -1262,10 +1532,13 @@ export type Database = {
           last_name?: string | null
           permissions?: string[] | null
           phone?: string | null
+          role?: string | null
           updated_at?: string | null
         }
         Update: {
+          assigned_projects?: string[] | null
           avatar_url?: string | null
+          can_view_costs?: boolean | null
           created_at?: string | null
           email?: string
           first_name?: string | null
@@ -1276,6 +1549,7 @@ export type Database = {
           last_name?: string | null
           permissions?: string[] | null
           phone?: string | null
+          role?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1315,8 +1589,52 @@ export type Database = {
           },
         ]
       }
+      migration_audit_view: {
+        Row: {
+          assigned_projects: string[] | null
+          can_view_costs: boolean | null
+          email: string | null
+          first_name: string | null
+          id: string | null
+          last_name: string | null
+          migration_date: string | null
+          old_permissions: string[] | null
+          role: string | null
+        }
+        Insert: {
+          assigned_projects?: string[] | null
+          can_view_costs?: boolean | null
+          email?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          migration_date?: string | null
+          old_permissions?: string[] | null
+          role?: string | null
+        }
+        Update: {
+          assigned_projects?: string[] | null
+          can_view_costs?: boolean | null
+          email?: string | null
+          first_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          migration_date?: string | null
+          old_permissions?: string[] | null
+          role?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      assign_client_to_projects: {
+        Args: { client_user_id: string; project_ids: string[] }
+        Returns: boolean
+      }
+      can_user_access_project: {
+        Args: { check_project_id: string; check_user_id: string }
+        Returns: boolean
+      }
       create_notification: {
         Args: {
           notification_data?: Json
@@ -1326,6 +1644,17 @@ export type Database = {
           target_user_id: string
         }
         Returns: string
+      }
+      get_effective_permissions: {
+        Args: { user_id: string }
+        Returns: {
+          assigned_projects: string[]
+          can_edit_costs: boolean
+          can_view_costs: boolean
+          permission_level: number
+          project_access_type: string
+          role: string
+        }[]
       }
       get_next_scope_sequence: {
         Args: { p_project_id: string }
@@ -1342,6 +1671,18 @@ export type Database = {
       mark_notifications_as_read: {
         Args: { notification_ids: string[]; target_user_id: string }
         Returns: number
+      }
+      migrate_existing_permissions: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      user_can_access_project: {
+        Args: { project_id: string; user_id: string }
+        Returns: boolean
+      }
+      user_can_view_costs: {
+        Args: { user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
@@ -1370,6 +1711,26 @@ export type Database = {
         | "hardware"
         | "miscellaneous"
       material_priority: "low" | "medium" | "high" | "critical"
+      priority_level: "low" | "medium" | "high" | "critical"
+      shop_drawing_approval_stage:
+        | "not_submitted"
+        | "internal_review"
+        | "client_review"
+        | "approved"
+        | "approved_with_comments"
+        | "rejected"
+        | "resubmit_required"
+      shop_drawing_category:
+        | "architectural"
+        | "structural"
+        | "mechanical"
+        | "electrical"
+        | "plumbing"
+        | "hvac"
+        | "fire_protection"
+        | "technology"
+        | "specialty"
+        | "other"
       unit_type:
         | "pcs"
         | "set"
@@ -1546,6 +1907,28 @@ export const Constants = {
         "miscellaneous",
       ],
       material_priority: ["low", "medium", "high", "critical"],
+      priority_level: ["low", "medium", "high", "critical"],
+      shop_drawing_approval_stage: [
+        "not_submitted",
+        "internal_review",
+        "client_review",
+        "approved",
+        "approved_with_comments",
+        "rejected",
+        "resubmit_required",
+      ],
+      shop_drawing_category: [
+        "architectural",
+        "structural",
+        "mechanical",
+        "electrical",
+        "plumbing",
+        "hvac",
+        "fire_protection",
+        "technology",
+        "specialty",
+        "other",
+      ],
       unit_type: [
         "pcs",
         "set",

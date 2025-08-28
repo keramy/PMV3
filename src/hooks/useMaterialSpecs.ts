@@ -4,8 +4,8 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { createClient } from '@/lib/supabase/client'
-import { useAuth } from '@/hooks/useAuth'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
+import { useAuthContext } from '@/providers/AuthProvider'
 import type { 
   MaterialSpec, 
   MaterialSpecFormData, 
@@ -27,7 +27,12 @@ export const materialSpecsQueryKeys = {
 
 // Custom hook for fetching material specs list
 export function useMaterialSpecs(params: MaterialSpecListParams) {
-  const { profile } = useAuth()
+  const { profile, user } = useAuthContext()
+  
+  // Auth verification - prevent queries without authentication
+  if (!user || !profile) {
+    throw new Error('Authentication required for material specs')
+  }
   
   return useQuery({
     queryKey: materialSpecsQueryKeys.list(params),
@@ -70,7 +75,7 @@ export function useMaterialSpecs(params: MaterialSpecListParams) {
 
 // Custom hook for fetching a single material spec
 export function useMaterialSpec(id: string) {
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useQuery({
     queryKey: materialSpecsQueryKeys.detail(id),
@@ -94,7 +99,7 @@ export function useMaterialSpec(id: string) {
 // Mutation hook for creating material specs
 export function useCreateMaterialSpec() {
   const queryClient = useQueryClient()
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useMutation({
     mutationFn: async (data: MaterialSpecFormData & { project_id: string }): Promise<MaterialSpec> => {
@@ -142,7 +147,7 @@ export function useCreateMaterialSpec() {
 // Mutation hook for updating material specs
 export function useUpdateMaterialSpec() {
   const queryClient = useQueryClient()
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: MaterialSpecUpdateData }): Promise<MaterialSpec> => {
@@ -178,7 +183,7 @@ export function useUpdateMaterialSpec() {
 // Mutation hook for PM review (approve/reject)
 export function useReviewMaterialSpec() {
   const queryClient = useQueryClient()
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   return useMutation({
     mutationFn: async ({ id, reviewData }: { id: string; reviewData: MaterialSpecReviewData }): Promise<MaterialSpec> => {

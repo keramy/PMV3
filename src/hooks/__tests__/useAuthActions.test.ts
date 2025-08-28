@@ -6,9 +6,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useAuthActions } from '../useAuthActions'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase/singleton'
 
-// Type the mocked functions
+// Get the singleton client and mock it
+const supabase = getSupabaseClient()
 const mockedSupabase = vi.mocked(supabase)
 
 describe('useAuthActions', () => {

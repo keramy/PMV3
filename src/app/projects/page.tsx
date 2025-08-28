@@ -3,7 +3,14 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
+import type { 
+  AppProject, 
+  ProjectListItem, 
+  ProjectFilters,
+  ProjectsApiResponse 
+} from '@/types/application'
+import { transformDatabaseProjectToApp } from '@/types/application'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -45,7 +52,7 @@ import { ProjectCreateDialog } from '@/components/projects/ProjectCreateDialog'
 function ProjectsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [sortField, setSortField] = useState<string>('')
@@ -79,7 +86,8 @@ function ProjectsPageContent() {
     refetchInterval: 30000 // Refresh every 30 seconds
   })
 
-  const allProjects = projectsResponse?.projects || []
+  // Transform database projects to app projects with proper typing
+  const allProjects: ProjectListItem[] = (projectsResponse?.projects || []).map(transformDatabaseProjectToApp)
 
   // Utility functions
   const getStatusBadge = (status: string) => {
@@ -146,13 +154,13 @@ function ProjectsPageContent() {
 
   // Filter and sort projects
   const filteredAndSortedProjects = allProjects
-    .filter(project => {
+    .filter((project: ProjectListItem) => {
       const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            project.client.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesStatus = statusFilter === 'all' || project.status === statusFilter
       return matchesSearch && matchesStatus
     })
-    .sort((a, b) => {
+    .sort((a: ProjectListItem, b: ProjectListItem) => {
       if (!sortField) return 0
       
       let aValue: any = a[sortField as keyof typeof a]
@@ -222,7 +230,7 @@ function ProjectsPageContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-600">
-                {allProjects.filter(p => p.status === 'in_progress').length}
+                {allProjects.filter((p: ProjectListItem) => p.status === 'in_progress').length}
               </div>
               <p className="text-xs text-muted-foreground">Currently in progress</p>
             </CardContent>
@@ -233,7 +241,7 @@ function ProjectsPageContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                ₺{(allProjects.reduce((sum, p) => sum + p.budget, 0) / 1000000).toFixed(1)}M
+                ₺{(allProjects.reduce((sum: number, p: ProjectListItem) => sum + p.budget, 0) / 1000000).toFixed(1)}M
               </div>
               <p className="text-xs text-muted-foreground">Across all projects</p>
             </CardContent>
@@ -244,7 +252,7 @@ function ProjectsPageContent() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {Math.round(allProjects.reduce((sum, p) => sum + p.progress_percentage, 0) / allProjects.length)}%
+                {Math.round(allProjects.reduce((sum: number, p: ProjectListItem) => sum + p.progress_percentage, 0) / allProjects.length)}%
               </div>
               <p className="text-xs text-muted-foreground">Overall completion</p>
             </CardContent>
@@ -367,7 +375,7 @@ function ProjectsPageContent() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAndSortedProjects.map((project) => {
+                  {filteredAndSortedProjects.map((project: ProjectListItem) => {
                     const dueInfo = getDaysUntilDeadline(project.end_date)
                     return (
                       <TableRow key={project.id}>
@@ -384,8 +392,8 @@ function ProjectsPageContent() {
                         <TableCell>{getStatusBadge(project.status)}</TableCell>
                         <TableCell className="font-medium">{formatCurrency(project.budget)}</TableCell>
                         <TableCell className="text-sm">
-                          <span className={project.spent > project.budget * 0.9 ? 'text-red-600 font-medium' : ''}>
-                            {formatCurrency(project.spent)}
+                          <span className={(project.spent || 0) > project.budget * 0.9 ? 'text-red-600 font-medium' : ''}>
+                            {formatCurrency(project.spent || 0)}
                           </span>
                         </TableCell>
                         <TableCell className="text-sm">{formatDate(project.end_date)}</TableCell>

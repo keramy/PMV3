@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useQuery } from '@tanstack/react-query'
-import { useAuth } from '@/hooks/useAuth'
+import { useAuthContext } from '@/providers/AuthProvider'
 import { ProjectTabs, type TabCounts } from './components/project-tabs'
 import { ProjectOverview } from './components/project-overview'
 import { ProjectScope } from './components/project-scope'
@@ -18,7 +18,7 @@ interface ProjectWorkspacePageProps {
 export default function ProjectWorkspacePage({ params }: ProjectWorkspacePageProps) {
   const [activeTab, setActiveTab] = useState('overview')
   const [projectId, setProjectId] = useState<string | null>(null)
-  const { profile } = useAuth()
+  const { profile } = useAuthContext()
   
   // Unwrap params and set project ID
   React.useEffect(() => {

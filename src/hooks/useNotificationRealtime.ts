@@ -5,13 +5,13 @@
 
 import { useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { getClient } from '@/lib/supabase/client'
-import { useAuth } from './useAuth'
+import { getSupabaseSingleton } from '@/lib/supabase/singleton'
+import { useAuthContext } from '@/providers/AuthProvider'
 
 export function useNotificationRealtime() {
   const queryClient = useQueryClient()
-  const supabase = getClient()
-  const { user } = useAuth()
+  const supabase = getSupabaseSingleton()
+  const { user } = useAuthContext()
 
   useEffect(() => {
     if (!user) return

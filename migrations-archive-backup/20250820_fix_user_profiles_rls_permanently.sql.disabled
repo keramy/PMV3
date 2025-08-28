@@ -1,0 +1,110 @@
+-- ============================================================================
+-- FORMULA PM V3 - PERMANENT FIX FOR USER_PROFILES RLS POLICIES
+-- Date: 2025-08-20
+-- Purpose: Consolidate all user_profiles RLS fixes into a single migration
+--          to prevent recurring 500 errors and policy conflicts
+-- Note: Original schema DISABLES RLS on user_profiles, this enables it properly
+-- ============================================================================
+
+-- Step 1: Clean slate approach - handle both ENABLED and DISABLED states
+DO $$
+DECLARE
+    policy_record RECORD;
+    rls_enabled BOOLEAN;
+BEGIN
+    -- Check if RLS is currently enabled
+    SELECT relrowsecurity INTO rls_enabled
+    FROM pg_class 
+    WHERE relname = 'user_profiles' AND relnamespace = 'public'::regnamespace;
+    
+    RAISE NOTICE 'Current RLS status for user_profiles: %', 
+        CASE WHEN rls_enabled THEN 'ENABLED' ELSE 'DISABLED' END;
+
+    -- Drop all existing policies on user_profiles (if any exist)
+    FOR policy_record IN 
+        SELECT policyname 
+        FROM pg_policies 
+        WHERE tablename = 'user_profiles' 
+        AND schemaname = 'public'
+    LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON user_profiles', policy_record.policyname);
+        RAISE NOTICE 'Dropped conflicting policy: %', policy_record.policyname;
+    END LOOP;
+    
+    -- Temporarily disable RLS to ensure clean state
+    IF rls_enabled THEN
+        ALTER TABLE user_profiles DISABLE ROW LEVEL SECURITY;
+        RAISE NOTICE 'Temporarily disabled RLS to ensure clean state';
+    END IF;
+END $$;
+
+-- Step 2: Enable RLS properly (overrides original DISABLE from complete_schema.sql)
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+
+-- Step 3: Create the definitive set of non-conflicting policies
+-- These are granular policies that don't overlap
+
+-- 1. SELECT Policy: Users can see ONLY their own profile (fixes infinite recursion)
+-- Note: Team member visibility removed to eliminate circular dependency with project_members
+CREATE POLICY "user_profiles_select_simple" ON user_profiles
+    FOR SELECT
+    USING (
+        -- User can only see their own profile
+        id = (SELECT auth.uid())
+    );
+
+-- 2. INSERT Policy: Only for own profile
+CREATE POLICY "user_profiles_insert_final" ON user_profiles
+    FOR INSERT
+    WITH CHECK (id = (SELECT auth.uid()));
+
+-- 3. UPDATE Policy: Only for own profile
+CREATE POLICY "user_profiles_update_final" ON user_profiles
+    FOR UPDATE
+    USING (id = (SELECT auth.uid()))
+    WITH CHECK (id = (SELECT auth.uid()));
+
+-- 4. DELETE Policy: Only for own profile (rarely used)
+CREATE POLICY "user_profiles_delete_final" ON user_profiles
+    FOR DELETE
+    USING (id = (SELECT auth.uid()));
+
+-- Create indexes for performance (if they don't exist)
+CREATE INDEX IF NOT EXISTS idx_user_profiles_id ON user_profiles(id);
+
+-- Add a comment to the table explaining the policy structure
+COMMENT ON TABLE user_profiles IS 'User profiles with simple RLS policies. SELECT restricted to own profile only to prevent infinite recursion with project_members. INSERT/UPDATE/DELETE restricted to own profile only. Fixed 2025-08-20.';
+
+-- Verification query
+DO $$
+DECLARE
+    policy_count INTEGER;
+    all_policy_count INTEGER;
+BEGIN
+    -- Count total policies
+    SELECT COUNT(*) INTO policy_count
+    FROM pg_policies 
+    WHERE tablename = 'user_profiles' 
+    AND schemaname = 'public';
+    
+    -- Count ALL type policies (should be 0)
+    SELECT COUNT(*) INTO all_policy_count
+    FROM pg_policies 
+    WHERE tablename = 'user_profiles' 
+    AND schemaname = 'public'
+    AND cmd = 'ALL';
+    
+    -- Report results
+    RAISE NOTICE '✅ User profiles RLS policies fixed permanently';
+    RAISE NOTICE '📊 Total policies on user_profiles: %', policy_count;
+    RAISE NOTICE '⚠️  ALL-type policies (should be 0): %', all_policy_count;
+    
+    -- Verify we have exactly 4 policies
+    IF policy_count != 4 THEN
+        RAISE WARNING 'Expected 4 policies but found %. Please investigate.', policy_count;
+    END IF;
+    
+    IF all_policy_count > 0 THEN
+        RAISE WARNING 'Found % ALL-type policies. This may cause 500 errors!', all_policy_count;
+    END IF;
+END $$;
