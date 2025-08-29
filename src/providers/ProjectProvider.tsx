@@ -9,7 +9,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useAuthContext } from '@/providers/AuthProvider'
-import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { usePermissions } from '@/hooks/usePermissions'
 import { useApiClient, handleApiResponse } from '@/lib/api-client'
 
 // Project types for construction workflows
@@ -148,7 +148,7 @@ interface ProjectProviderProps {
 
 export function ProjectProvider({ children, initialProjectId }: ProjectProviderProps) {
   const { user } = useAuthContext()
-  const { hasPermission } = usePermissionsEnhanced()
+  const { hasPermission } = usePermissions()
   const queryClient = useQueryClient()
   const { fetchProject, fetchProjectStats, fetchProjectNotifications } = useProjectDataFetchers()
   const apiClient = useApiClient()

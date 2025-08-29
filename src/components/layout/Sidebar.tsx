@@ -16,7 +16,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { LogoIcon, LogoText } from '@/components/ui/logo'
-import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { usePermissions } from '@/hooks/usePermissions'
 import { ProjectSelector } from '@/components/navigation/ProjectSelector'
 import { useProject } from '@/providers/ProjectProvider'
 import { useAuthContext } from '@/providers/AuthProvider'
@@ -35,21 +35,16 @@ export function Sidebar({ activeView, setActiveView, isCollapsed, onToggleCollap
   const supabase = getSupabaseSingleton()
   
   // Use permissions hook with safe fallback for SSR
+  const { isAdmin, loading } = useAuthContext()
   let permissions = null
-  let isAdmin = false
-  let loading = true
   
   try {
-    const permissionsHook = usePermissionsEnhanced()
+    const permissionsHook = usePermissions()
     permissions = permissionsHook
-    isAdmin = permissionsHook.isAdmin
-    loading = permissionsHook.loading
   } catch (error) {
     // Fallback during SSR or when AuthProvider is not available
     console.warn('Permissions hook not available during SSR, using fallback state')
     permissions = null
-    isAdmin = false
-    loading = false
   }
   
   // Use project context with safe fallback

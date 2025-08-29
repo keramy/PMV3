@@ -1514,6 +1514,7 @@ export type Database = {
           last_login: string | null
           last_name: string | null
           permissions: string[] | null
+          permissions_bitwise: number | null
           phone: string | null
           role: string | null
           updated_at: string | null
@@ -1531,6 +1532,7 @@ export type Database = {
           last_login?: string | null
           last_name?: string | null
           permissions?: string[] | null
+          permissions_bitwise?: number | null
           phone?: string | null
           role?: string | null
           updated_at?: string | null
@@ -1548,6 +1550,7 @@ export type Database = {
           last_login?: string | null
           last_name?: string | null
           permissions?: string[] | null
+          permissions_bitwise?: number | null
           phone?: string | null
           role?: string | null
           updated_at?: string | null

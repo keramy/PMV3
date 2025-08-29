@@ -9,7 +9,6 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { ScopeItemUpdateData } from '@/types/scope'
 import { SCOPE_PERMISSIONS } from '@/types/scope'
-import { hasPermission } from '@/lib/permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -29,12 +28,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasPermission(profile.permissions, SCOPE_PERMISSIONS.VIEW)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check VIEW_ASSIGNED_PROJECTS permission (bit 1: value 2) or admin (bit 0: value 1)
+    const canViewScope = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 2) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canViewScope) {
+      return Response.json({ error: 'Insufficient permissions to view scope items' }, { status: 403 })
     }
 
     // Get scope item with relationships including subcontractor
@@ -89,12 +91,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasPermission(profile.permissions, SCOPE_PERMISSIONS.EDIT)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check MANAGE_SCOPE permission (bit 8: value 256) or admin (bit 0: value 1)
+    const canEditScope = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 256) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canEditScope) {
+      return Response.json({ error: 'Insufficient permissions to edit scope items' }, { status: 403 })
     }
 
     // Parse request body
@@ -188,12 +193,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasPermission(profile.permissions, SCOPE_PERMISSIONS.DELETE)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check DELETE_DATA permission (bit 24: value 16777216) or admin (bit 0: value 1)
+    const canDeleteScope = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 16777216) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canDeleteScope) {
+      return Response.json({ error: 'Insufficient permissions to delete scope items' }, { status: 403 })
     }
 
     // Check if scope item exists and get project_id for activity logging

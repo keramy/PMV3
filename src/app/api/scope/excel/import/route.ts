@@ -31,12 +31,15 @@ export async function POST(request: NextRequest) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasPermission(profile.permissions, SCOPE_PERMISSIONS.EXCEL_IMPORT)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check IMPORT_DATA permission (bit 23: value 8388608) or admin (bit 0: value 1)
+    const canImportData = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 8388608) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canImportData) {
+      return Response.json({ error: 'Insufficient permissions to import Excel data' }, { status: 403 })
     }
 
     // Parse form data

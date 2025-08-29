@@ -5,7 +5,7 @@
  */
 
 import { getSupabaseSingleton } from '@/lib/supabase/singleton'
-import { isDevAuthBypassEnabled, mockUserProfile } from '@/lib/dev/mock-user'
+import { PermissionManager, PERMISSIONS } from '@/lib/permissions/bitwise'
 import type { 
   AppUserProfile,
   Project,
@@ -25,12 +25,6 @@ import type { Permission } from '@/types/auth'
  */
 export async function getCurrentUserProfile(): Promise<AppUserProfile | null> {
   try {
-    // DEVELOPMENT: Return mock user profile if auth bypass is enabled
-    const devBypass = isDevAuthBypassEnabled()
-    if (devBypass) {
-      return mockUserProfile as AppUserProfile
-    }
-    
     const client = getSupabaseSingleton()
     const { data: { user }, error: userError } = await client.auth.getUser()
     
@@ -51,6 +45,7 @@ export async function getCurrentUserProfile(): Promise<AppUserProfile | null> {
     const appProfile: AppUserProfile = {
       ...profile,
       permissions: Array.isArray(profile.permissions) ? profile.permissions as Permission[] : [],
+      permissions_bitwise: profile.permissions_bitwise || 0,
       full_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || 'No Name',
       role: profile.role || null,
       assigned_projects: profile.assigned_projects || null
@@ -64,20 +59,74 @@ export async function getCurrentUserProfile(): Promise<AppUserProfile | null> {
 }
 
 /**
- * Check if current user has a specific permission
+ * Check if current user has a specific permission using bitwise check
  */
 export async function hasPermission(permission: Permission): Promise<boolean> {
   try {
-    // DEVELOPMENT: Grant all permissions if auth bypass is enabled
-    if (isDevAuthBypassEnabled()) {
-      console.log(`🚀 [DEV MODE] Permission "${permission}" granted (bypass mode)`)
-      return true
-    }
-    
     const profile = await getCurrentUserProfile()
-    if (!profile) return false
+    if (!profile || !profile.permissions_bitwise) return false
 
-    return profile.permissions.includes(permission)
+    // Map old Permission strings to bitwise constants using proper PERMISSIONS constants
+    const PERMISSION_MAPPING: Partial<Record<Permission, number>> = {
+      // Project permissions
+      'view_projects': PERMISSIONS.VIEW_ASSIGNED_PROJECTS,
+      'create_projects': PERMISSIONS.CREATE_PROJECTS,
+      'edit_projects': PERMISSIONS.MANAGE_ALL_PROJECTS,
+      'delete_projects': PERMISSIONS.DELETE_DATA,
+      'edit_project_settings': PERMISSIONS.MANAGE_ALL_PROJECTS,
+      'view_project_costs': PERMISSIONS.VIEW_FINANCIAL_DATA,
+      'assign_project_team': PERMISSIONS.MANAGE_TEAM_MEMBERS,
+      
+      // Scope management
+      'view_scope': PERMISSIONS.VIEW_ASSIGNED_PROJECTS,
+      'manage_scope_items': PERMISSIONS.MANAGE_SCOPE,
+      'assign_subcontractors': PERMISSIONS.MANAGE_SCOPE,
+      'approve_scope_changes': PERMISSIONS.APPROVE_SCOPE_CHANGES,
+      'export_scope_excel': PERMISSIONS.EXPORT_DATA,
+      
+      // Shop drawings workflow
+      'view_drawings': PERMISSIONS.VIEW_SHOP_DRAWINGS,
+      'upload_drawings': PERMISSIONS.CREATE_SHOP_DRAWINGS,
+      'internal_review_drawings': PERMISSIONS.EDIT_SHOP_DRAWINGS,
+      'client_review_drawings': PERMISSIONS.APPROVE_SHOP_DRAWINGS_CLIENT,
+      'approve_shop_drawings': PERMISSIONS.APPROVE_SHOP_DRAWINGS,
+      
+      // Material specifications  
+      'view_materials': PERMISSIONS.VIEW_ASSIGNED_PROJECTS,
+      'create_material_specs': PERMISSIONS.MANAGE_MATERIALS,
+      'approve_material_specs': PERMISSIONS.MANAGE_MATERIALS,
+      
+      // Task management
+      'view_tasks': PERMISSIONS.VIEW_ASSIGNED_PROJECTS,
+      'create_tasks': PERMISSIONS.CREATE_TASKS,
+      'assign_tasks': PERMISSIONS.ASSIGN_TASKS,
+      'edit_tasks': PERMISSIONS.EDIT_TASKS,
+      
+      // Financial permissions
+      'view_all_costs': PERMISSIONS.VIEW_FINANCIAL_DATA,
+      'approve_expenses': PERMISSIONS.APPROVE_EXPENSES,
+      'generate_financial_reports': PERMISSIONS.EXPORT_FINANCIAL_REPORTS,
+      'export_data': PERMISSIONS.EXPORT_DATA,
+      
+      // Admin permissions
+      'manage_users': PERMISSIONS.MANAGE_ALL_USERS,
+      'manage_company_settings': PERMISSIONS.MANAGE_COMPANY_SETTINGS,
+      'view_audit_logs': PERMISSIONS.VIEW_AUDIT_LOGS,
+      'backup_restore': PERMISSIONS.BACKUP_RESTORE_DATA,
+      
+      // Client permissions  
+      'client_portal_access': PERMISSIONS.VIEW_ASSIGNED_PROJECTS,
+      'submit_feedback': PERMISSIONS.VIEW_ASSIGNED_PROJECTS,
+      'approve_drawings_client': PERMISSIONS.APPROVE_SHOP_DRAWINGS_CLIENT
+    }
+
+    const bitwiseConstant = PERMISSION_MAPPING[permission]
+    if (bitwiseConstant === undefined) {
+      console.warn(`Unknown permission: ${permission}`)
+      return false
+    }
+
+    return PermissionManager.hasPermission(profile.permissions_bitwise, bitwiseConstant)
   } catch (error) {
     console.error('🔍 hasPermission - Error checking permission:', error)
     return false
@@ -112,6 +161,7 @@ export async function getUserProfile(userId: string): Promise<AppUserProfile | n
     const appProfile: AppUserProfile = {
       ...profile,
       permissions: Array.isArray(profile.permissions) ? profile.permissions as Permission[] : [],
+      permissions_bitwise: profile.permissions_bitwise || 0,
       full_name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || 'No Name',
       role: profile.role || null,
       assigned_projects: profile.assigned_projects || null

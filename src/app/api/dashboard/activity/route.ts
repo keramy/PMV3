@@ -22,10 +22,28 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Activity API - Fetching real data for user:', userId)
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
-    // Get recent activity from activity_logs table
-    const { data: activities, error } = await supabase
+    // Get user profile for permission checking
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('permissions_bitwise, role, assigned_projects')
+      .eq('id', userId)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'User profile not found' },
+        { status: 403 }
+      )
+    }
+
+    // Check VIEW_AUDIT_LOGS permission (bit 25: value 33554432) or admin (bit 0: value 1)
+    const hasAuditPermission = profile.permissions_bitwise && 
+      ((profile.permissions_bitwise & 33554432) > 0 || (profile.permissions_bitwise & 1) > 0)
+
+    // Build query with permission-based filtering
+    let query = supabase
       .from('activity_logs')
       .select(`
         *,
@@ -34,6 +52,20 @@ export async function GET(request: NextRequest) {
       `)
       .order('created_at', { ascending: false })
       .limit(limit)
+
+    // Filter to assigned projects only if user doesn't have company-wide audit permission
+    if (!hasAuditPermission && profile.assigned_projects) {
+      console.log('🔍 Activity API - Filtering to assigned projects for user:', userId)
+      query = query.in('project_id', profile.assigned_projects)
+    } else if (!hasAuditPermission) {
+      // If no audit permission and no assigned projects, return empty
+      console.log('🔍 Activity API - No audit permission and no assigned projects for user:', userId)
+      return NextResponse.json([])
+    } else {
+      console.log('🔍 Activity API - User has audit permission, showing all activities for user:', userId)
+    }
+
+    const { data: activities, error } = await query
 
     if (error) {
       console.error('🔍 Activity API - Database error:', error)

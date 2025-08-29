@@ -62,7 +62,10 @@ export type ActivityLog = Tables['activity_logs']['Row']
 export type UserProfileRaw = Tables['user_profiles']['Row']
 export interface AppUserProfile extends Omit<UserProfileRaw, 'permissions' | 'assigned_projects'> {
   full_name: string
+  // Legacy permissions array - deprecated, use permissions_bitwise instead
   permissions: Permission[]
+  // Bitwise permission system - primary permission field
+  permissions_bitwise: number | null
   // Keep compatible with database schema types
   assigned_projects: string[] | null
 }

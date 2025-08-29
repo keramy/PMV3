@@ -30,23 +30,17 @@ export const GET = withAuth(async (user, request) => {
   // Check admin permissions using current user's session
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('permissions')
+    .select('permissions_bitwise, role')
     .eq('id', user.id)
     .single()
   
-  // Enhanced admin permission check
-  const permissions = profile?.permissions || []
-  const hasAdminAccess = permissions.includes('admin_access') || 
-                        permissions.includes('manage_users') ||
-                        permissions.some(p => typeof p === 'string' && (
-                          p.includes('admin') || 
-                          p === 'manage_all_projects' || 
-                          p === 'view_all_projects'
-                        ))
+  // Check admin permission (bit 0: value 1) or MANAGE_USERS permission (bit 25: value 33554432)
+  const hasAdminAccess = profile?.permissions_bitwise && 
+    ((profile.permissions_bitwise & 1) > 0 || (profile.permissions_bitwise & 33554432) > 0)
   
   if (!hasAdminAccess) {
-    console.log('🚫 [Admin API] Access denied for user:', user.id, 'permissions:', permissions)
-    return ApiResponses.forbidden('Admin access required - need admin_access or manage_users permission')
+    console.log('🚫 [Admin API] Access denied for user:', user.id, 'permissions_bitwise:', profile?.permissions_bitwise)
+    return ApiResponses.forbidden('Admin access required - need admin or manage_users permission')
   }
   
   try {
@@ -111,18 +105,18 @@ export const POST = withAuth(async (user, request) => {
   // Check admin permissions using current user's session
   const { data: profile } = await supabase
     .from('user_profiles')
-    .select('permissions')
+    .select('permissions_bitwise, role')
     .eq('id', user.id)
     .single()
   
   // Enhanced admin permission check - stricter for user creation
-  const permissions = profile?.permissions || []
-  const hasAdminAccess = permissions.includes('admin_access') || 
-                        permissions.includes('manage_users')
+  // Check admin permission (bit 0: value 1) or MANAGE_USERS permission (bit 25: value 33554432)
+  const hasAdminAccess = profile?.permissions_bitwise && 
+    ((profile.permissions_bitwise & 1) > 0 || (profile.permissions_bitwise & 33554432) > 0)
   
   if (!hasAdminAccess) {
-    console.log('🚫 [Admin API] User creation denied for user:', user.id, 'permissions:', permissions)
-    return ApiResponses.forbidden('Admin access required - need admin_access or manage_users permission for user creation')
+    console.log('🚫 [Admin API] User creation denied for user:', user.id, 'permissions_bitwise:', profile?.permissions_bitwise)
+    return ApiResponses.forbidden('Admin access required - need admin or manage_users permission for user creation')
   }
   
   try {
@@ -169,7 +163,8 @@ export const POST = withAuth(async (user, request) => {
         last_name: validatedData.last_name,
         job_title: validatedData.job_title || null,
         phone: validatedData.phone || null,
-        permissions: validatedData.permissions,
+        permissions: [], // Legacy field - keep empty for now
+        permissions_bitwise: 0, // Default permissions - will be set by admin later
         is_active: true,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()

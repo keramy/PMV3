@@ -16,16 +16,19 @@ import { z } from 'zod'
 export const GET = apiMiddleware.queryValidate(
   taskFiltersSchema,
   async (validatedFilters, user, request) => {
-    // Check permissions
+    // Check permissions using bitwise system
     const supabase = await createClient()
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.permissions?.some((p: string) => p === 'view_tasks')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check if user has VIEW_TASKS permission (bit 13: value 8192) or admin (bit 0: value 1)
+    const canViewTasks = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 8192) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canViewTasks) {
+      return NextResponse.json({ error: 'Insufficient permissions to view tasks' }, { status: 403 })
     }
       const { page = 1, limit = 10 } = validatedFilters
       const offset = (page - 1) * limit
@@ -166,12 +169,15 @@ export const POST = apiMiddleware.validate(
     const supabase = await createClient()
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.permissions?.some((p: string) => p === 'create_tasks')) {
-      return NextResponse.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check if user has CREATE_TASKS permission (bit 4: value 16) or admin (bit 0: value 1)
+    const canCreateTasks = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 16) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canCreateTasks) {
+      return NextResponse.json({ error: 'Insufficient permissions to create tasks' }, { status: 403 })
     }
       // Create task using direct Supabase
       const { data: newTask, error } = await supabase

@@ -7,7 +7,7 @@
 'use client'
 
 import React from 'react'
-import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { usePermissions } from '@/hooks/usePermissions'
 import { useAuthContext } from '@/providers/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge' 
@@ -57,8 +57,7 @@ export function ProtectedComponent({
   children 
 }: AdvancedPermissionProps) {
   const { user, loading: authLoading } = useAuthContext()
-  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissionsEnhanced()
-  const permLoading = false // usePermissions doesn't have loading state
+  const { hasPermission, hasAllPermissions, hasAnyPermission, loading: permLoading } = usePermissions()
 
   // Handle loading states
   if (authLoading || permLoading) {
@@ -215,7 +214,7 @@ export function ProtectedButton({
   children,
   ...buttonProps 
 }: ProtectedButtonProps) {
-  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissionsEnhanced()
+  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissions()
 
   if (!permission) {
     return <Button {...buttonProps}>{children}</Button>
@@ -448,7 +447,7 @@ export function InternalContent({
  * Hook for conditional rendering based on permissions
  */
 export function usePermissionRenderer() {
-  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissionsEnhanced()
+  const { hasPermission, hasAllPermissions, hasAnyPermission } = usePermissions()
 
   return {
     renderIf: (permission: Permission | Permission[], requireAll = false) => 
@@ -485,7 +484,7 @@ export function PermissionStatus({
   permission: Permission
   className?: string 
 }) {
-  const { hasPermission } = usePermissionsEnhanced()
+  const { hasPermission } = usePermissions()
   const hasAccess = hasPermission(permission)
 
   return (

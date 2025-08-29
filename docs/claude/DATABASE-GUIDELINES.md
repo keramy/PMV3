@@ -85,16 +85,16 @@ USING (
 );
 ```
 
-**Permission-based access:**
+**Bitwise permission-based access:**
 ```sql
--- Users with specific permissions can access
-CREATE POLICY "permission_based_access" ON sensitive_table
+-- Users with specific bitwise permissions can access
+CREATE POLICY "bitwise_permission_access" ON sensitive_table
 FOR SELECT TO authenticated
 USING (
   EXISTS (
     SELECT 1 FROM user_profiles
     WHERE id = auth.uid()
-    AND 'required_permission' = ANY(permissions)
+    AND (permissions_bitwise & 32) > 0  -- Check VIEW_FINANCIAL_DATA = 32
   )
 );
 ```
@@ -122,14 +122,56 @@ WHERE table_schema = 'public';
 - ❌ Don't assume `completion_percentage` exists on scope_items (it doesn't)
 - ❌ Don't try to remove `actual_cost` column (it's actively used)
 - ❌ Don't trust migration file timestamps (manual changes bypass migrations)
+- ❌ Don't use old `permissions` array column (removed for bitwise system)
 - ✅ Always check actual database state before modifications
 - ✅ Use service role for admin operations that need to bypass RLS
+- ✅ Use `permissions_bitwise` column for all permission operations
+- ✅ Remove duplicate foreign key constraints to prevent PostgREST errors
+
+## 🔥 Bitwise Permission Values
+
+### Role-Based Permission Templates
+```sql
+-- Admin (all permissions): 268435455
+-- Project Manager: 184549375  
+-- Team Member: 4718594
+-- Client: 34818
+
+-- Check what permissions a bitwise value represents
+SELECT 
+  email,
+  permissions_bitwise,
+  CASE permissions_bitwise
+    WHEN 268435455 THEN 'admin (full access)'
+    WHEN 184549375 THEN 'project_manager'
+    WHEN 4718594 THEN 'team_member'
+    WHEN 34818 THEN 'client'
+    ELSE 'custom permissions'
+  END as role_type
+FROM user_profiles;
+```
+
+### Common Permission Bits
+```sql
+-- Key permission constants:
+-- VIEW_ASSIGNED_PROJECTS = 2
+-- CREATE_PROJECTS = 4  
+-- MANAGE_ALL_PROJECTS = 8
+-- VIEW_FINANCIAL_DATA = 32
+-- MANAGE_SCOPE = 256
+-- VIEW_AUDIT_LOGS = 33554432
+```
 
 ## 📝 SQL Patterns for Common Operations
 
-### Get User Permissions
+### Get User Bitwise Permissions
 ```sql
-SELECT email, permissions 
+SELECT email, permissions_bitwise, role 
+FROM user_profiles 
+WHERE email = 'admin@formulapm.com';
+
+-- Check if user has specific permission (e.g. VIEW_SCOPE = 2)
+SELECT email, (permissions_bitwise & 2) > 0 as can_view_scope
 FROM user_profiles 
 WHERE email = 'admin@formulapm.com';
 ```
@@ -142,12 +184,22 @@ JOIN project_members pm ON pm.project_id = p.id
 WHERE pm.user_id = 'user-uuid-here';
 ```
 
-### Update User Permissions
+### Update User Bitwise Permissions
 ```sql
+-- Set admin permissions (all 28 bits = 268435455)
 UPDATE user_profiles 
-SET permissions = permissions || ARRAY['new_permission']
-WHERE email = 'user@example.com'
-AND NOT ('new_permission' = ANY(permissions));
+SET permissions_bitwise = 268435455, role = 'admin'
+WHERE email = 'user@example.com';
+
+-- Add specific permission using bitwise OR (e.g. add VIEW_SCOPE = 2)
+UPDATE user_profiles 
+SET permissions_bitwise = permissions_bitwise | 2
+WHERE email = 'user@example.com';
+
+-- Remove specific permission using bitwise AND NOT (e.g. remove VIEW_SCOPE = 2)
+UPDATE user_profiles 
+SET permissions_bitwise = permissions_bitwise & ~2
+WHERE email = 'user@example.com';
 ```
 
 ## 🚀 Performance Tips

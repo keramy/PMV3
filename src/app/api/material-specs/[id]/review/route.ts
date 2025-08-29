@@ -28,10 +28,12 @@ export async function POST(
       )
     }
 
-    // Check PM permissions
-    if (!user.permissions.includes('approve_material_specs')) {
+    // Check PM permissions - APPROVE_MATERIAL_SPECS permission (bit 18: value 262144) or admin (bit 0: value 1)
+    const canApproveMaterialSpecs = user.permissions_bitwise && 
+      ((user.permissions_bitwise & 262144) > 0 || (user.permissions_bitwise & 1) > 0)
+    if (!canApproveMaterialSpecs) {
       return NextResponse.json(
-        { error: 'Only Project Managers can review material specs' },
+        { error: 'Only Project Managers can review material specs - need approve_material_specs permission' },
         { status: 403 }
       )
     }
@@ -144,10 +146,12 @@ export async function GET(
       )
     }
 
-    // Check permissions
-    if (!user.permissions.includes('view_materials')) {
+    // Check permissions - VIEW_MATERIALS permission (bit 16: value 65536) or admin (bit 0: value 1)
+    const canViewMaterials = user.permissions_bitwise && 
+      ((user.permissions_bitwise & 65536) > 0 || (user.permissions_bitwise & 1) > 0)
+    if (!canViewMaterials) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'Insufficient permissions to view material specs' },
         { status: 403 }
       )
     }
@@ -217,7 +221,7 @@ export async function GET(
       review_history: reviewHistory,
       current_status: spec.status,
       awaiting_pm_review: spec.status === 'pending',
-      can_review: user.permissions.includes('approve_material_specs') && spec.status !== 'approved'
+      can_review: user.permissions_bitwise && ((user.permissions_bitwise & 262144) > 0 || (user.permissions_bitwise & 1) > 0) && spec.status !== 'approved'
     })
 
   } catch (error) {

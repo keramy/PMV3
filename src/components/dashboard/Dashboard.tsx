@@ -184,14 +184,15 @@ export function Dashboard({ user, profile, loading }: DashboardProps) {
     overdueTasks: 0
   }
 
-  const totalProjects = metrics.activeProjects + metrics.completedProjects
-  const completionRate = totalProjects > 0 ? Math.round((metrics.completedProjects / totalProjects) * 100) : 0
+  const totalProjects = (metrics.activeProjects ?? 0) + (metrics.completedProjects ?? 0)
+  const completionRate = totalProjects > 0 ? Math.round(((metrics.completedProjects ?? 0) / totalProjects) * 100) : 0
   
-  const formatCurrency = (amount: number) => {
-    if (amount === 0) return '₺0'
-    if (amount >= 1000000) return `₺${(amount / 1000000).toFixed(1)}M`
-    if (amount >= 1000) return `₺${(amount / 1000).toFixed(0)}K`
-    return `₺${amount.toLocaleString()}`
+  const formatCurrency = (amount: number | undefined | null) => {
+    const safeAmount = amount ?? 0
+    if (safeAmount === 0) return '₺0'
+    if (safeAmount >= 1000000) return `₺${(safeAmount / 1000000).toFixed(1)}M`
+    if (safeAmount >= 1000) return `₺${(safeAmount / 1000).toFixed(0)}K`
+    return `₺${safeAmount.toLocaleString()}`
   }
 
   const kpiCards = [

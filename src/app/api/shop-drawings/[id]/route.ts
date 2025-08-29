@@ -9,7 +9,6 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { ShopDrawingUpdateData } from '@/types/shop-drawings'
 import { SHOP_DRAWING_PERMISSIONS } from '@/types/shop-drawings'
-import { hasPermission, hasAnyPermission } from '@/lib/permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -29,12 +28,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.VIEW)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check VIEW_SHOP_DRAWINGS permission (bit 11: value 2048) or admin (bit 0: value 1)
+    const canViewShopDrawings = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 2048) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canViewShopDrawings) {
+      return Response.json({ error: 'Insufficient permissions to view shop drawings' }, { status: 403 })
     }
 
     // Get shop drawing with full relationships
@@ -113,7 +115,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
@@ -124,28 +126,34 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Parse request body
     const updates: ShopDrawingUpdateData = await request.json()
 
-    // Check permissions based on update type
+    // Check permissions based on update type using bitwise system
     let hasUpdatePermission = false
+    const userPermissions = profile?.permissions_bitwise || 0
 
-    if (updates.status) {
+    // Admin always has permission
+    if ((userPermissions & 1) > 0) {
+      hasUpdatePermission = true
+    } else if (updates.status) {
       // Status changes need appropriate permissions
       if (updates.status === 'submitted_to_client' || updates.submitted_to_client_date) {
-        hasUpdatePermission = hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.SUBMIT_TO_CLIENT)
+        // Need APPROVE_SHOP_DRAWINGS permission (bit 14: value 16384)
+        hasUpdatePermission = (userPermissions & 16384) > 0
       } else if (updates.status === 'approved' || updates.status === 'rejected' || updates.status === 'revision_requested') {
-        hasUpdatePermission = hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.CLIENT_RESPONSE)
+        // Need APPROVE_SHOP_DRAWINGS_CLIENT permission (bit 15: value 32768)
+        hasUpdatePermission = (userPermissions & 32768) > 0
       } else {
-        // Basic status updates (pending_submittal)
-        hasUpdatePermission = hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.EDIT)
+        // Basic status updates - need EDIT_SHOP_DRAWINGS permission (bit 13: value 8192)
+        hasUpdatePermission = (userPermissions & 8192) > 0
       }
     }
 
     if (!hasUpdatePermission) {
-      // Basic edit permission for other updates
-      hasUpdatePermission = hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.EDIT)
+      // Basic edit permission for other updates - EDIT_SHOP_DRAWINGS permission (bit 13: value 8192)
+      hasUpdatePermission = (userPermissions & 8192) > 0
     }
 
     if (!hasUpdatePermission) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+      return Response.json({ error: 'Insufficient permissions to update shop drawing' }, { status: 403 })
     }
 
     // Get current drawing for validation
@@ -267,12 +275,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.DELETE)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check DELETE_DATA permission (bit 24: value 16777216) or admin (bit 0: value 1)
+    const canDeleteShopDrawing = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 16777216) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canDeleteShopDrawing) {
+      return Response.json({ error: 'Insufficient permissions to delete shop drawings' }, { status: 403 })
     }
 
     // Check if drawing exists and get info for activity logging

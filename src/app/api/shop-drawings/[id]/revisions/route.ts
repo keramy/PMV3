@@ -8,7 +8,6 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { RevisionUploadData } from '@/types/shop-drawings'
 import { SHOP_DRAWING_PERMISSIONS } from '@/types/shop-drawings'
-import { hasAnyPermission } from '@/lib/permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -28,12 +27,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.VIEW)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check VIEW_SHOP_DRAWINGS permission (bit 11: value 2048) or admin (bit 0: value 1)
+    const canViewShopDrawings = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 2048) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canViewShopDrawings) {
+      return Response.json({ error: 'Insufficient permissions to view shop drawing revisions' }, { status: 403 })
     }
 
     // Verify shop drawing exists
@@ -100,12 +102,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.UPLOAD_REVISION)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check EDIT_SHOP_DRAWINGS permission (bit 13: value 8192) for uploading revisions or admin (bit 0: value 1)
+    const canUploadRevision = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 8192) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canUploadRevision) {
+      return Response.json({ error: 'Insufficient permissions to upload shop drawing revisions' }, { status: 403 })
     }
 
     // Parse form data (for file uploads)

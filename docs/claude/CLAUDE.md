@@ -21,7 +21,7 @@ Formula PM V3 is a **construction project management platform** built with:
 - [**Database Guidelines**](./DATABASE-GUIDELINES.md) - Schema management, RLS policies, migrations
 - [**Authentication Patterns**](./AUTHENTICATION-PATTERNS.md) - Auth hooks, API middleware, session management
 - [**API Development**](./API-PATTERNS.md) - Route patterns, middleware usage, error handling
-- [**Permissions & RLS**](./PERMISSIONS-RLS.md) - RBAC system, RLS policies, permission checks
+- [**Bitwise Permissions**](./PERMISSIONS-BITWISE.md) - Complete bitwise permission system guide
 
 ### Development Guides  
 - [**Component Architecture**](./COMPONENT-ARCHITECTURE.md) - UI components, hooks, providers

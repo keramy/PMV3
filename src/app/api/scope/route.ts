@@ -164,16 +164,18 @@ const scopeItemFormSchema = z.object({
 export const POST = apiMiddleware.validate(
   scopeItemFormSchema,
   async (validatedData, user, request) => {
-    // Check permissions
+    // Check permissions using bitwise system
     const supabase = await createClient()
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasPermission(profile.permissions, SCOPE_PERMISSIONS.CREATE)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check if user has CREATE_SCOPE_ITEMS permission (bit 3: value 8)
+    const canCreateScope = profile?.permissions_bitwise && (profile.permissions_bitwise & 8) > 0
+    if (!canCreateScope) {
+      return Response.json({ error: 'Insufficient permissions to create scope items' }, { status: 403 })
     }
 
     // Get project code and next sequence number

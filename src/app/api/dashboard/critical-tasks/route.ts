@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const limit = parseInt(searchParams.get('limit') || '10')
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Get critical and high priority tasks from database
     const { data: tasks, error } = await supabase

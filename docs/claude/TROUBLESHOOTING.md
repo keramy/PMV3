@@ -1,5 +1,72 @@
 # Troubleshooting Guide - Formula PM V3
 
+## 🔥 NEW: Bitwise Permission System Issues
+
+### "permissions column does not exist" 
+**Symptoms:**
+- API middleware errors in console
+- Server logs: "column user_profiles.permissions does not exist"
+- Authentication works but permission checks fail
+
+**Root Cause:**
+Code trying to access removed `permissions` array column
+
+**Solution:**
+✅ **FIXED** - Middleware updated to use `permissions_bitwise`
+```typescript
+// ✅ CORRECT - Updated middleware
+const { data: profile } = await supabase
+  .from('user_profiles')
+  .select('permissions_bitwise, role')
+  .eq('id', userId)
+  .single()
+```
+
+### User Permissions Show as 0 or Empty
+**Symptoms:**
+- User can login but has no access to any features
+- API returns "User has no permissions"
+- Dashboard shows "Insufficient permissions"
+
+**Root Cause:**
+User has no bitwise permissions assigned (permissions_bitwise = 0 or null)
+
+**Solution:**
+```sql
+-- Check current permissions
+SELECT email, permissions_bitwise, role 
+FROM user_profiles 
+WHERE email = 'user@example.com';
+
+-- Assign admin permissions
+UPDATE user_profiles 
+SET permissions_bitwise = 268435455, role = 'admin'
+WHERE email = 'admin@example.com';
+
+-- Assign project manager permissions  
+UPDATE user_profiles 
+SET permissions_bitwise = 184549375, role = 'project_manager'
+WHERE email = 'pm@example.com';
+```
+
+### PostgREST Embedding Errors (Tasks)
+**Symptoms:**
+```
+Could not embed because more than one relationship was found 
+for 'tasks' and 'projects'
+```
+
+**Root Cause:**
+Duplicate foreign key constraints on same relationship
+
+**Solution:**
+✅ **FIXED** - Removed duplicate constraint
+```sql
+-- Already applied fix:
+ALTER TABLE tasks DROP CONSTRAINT tasks_project_id_fkey;
+-- Kept: fk_tasks_project constraint
+```
+
 ## 🔴 Critical Issues & Solutions
 
 ### Access Denied / 403 Forbidden Errors

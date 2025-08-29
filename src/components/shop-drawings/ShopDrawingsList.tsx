@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
-import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { usePermissions } from '@/hooks/usePermissions'
 import { 
   SHOP_DRAWING_STATUSES, 
   DRAWING_CATEGORIES, 
@@ -50,7 +50,7 @@ export function ShopDrawingsList({
   onDrawingUpdated, 
   projectId 
 }: ShopDrawingsListProps) {
-  const { hasPermission, hasAnyPermission } = usePermissionsEnhanced()
+  const { hasPermission, hasAnyPermission } = usePermissions()
   const [selectedDrawings, setSelectedDrawings] = useState<string[]>([])
 
   const formatDate = (dateString: string) => {

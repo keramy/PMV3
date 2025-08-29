@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
-import { isDevAuthBypassEnabled, MOCK_DEV_USER_ID } from '@/lib/dev/mock-user'
+// Mock user functionality removed for security
 
 export async function updateSession(request: NextRequest) {
   // OFFICIAL SUPABASE PATTERN: Create response once, never recreate

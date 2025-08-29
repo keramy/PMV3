@@ -170,12 +170,15 @@ export const POST = apiMiddleware.validate(
     const supabase = await createClient()
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.CREATE)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check CREATE_SHOP_DRAWINGS permission (bit 12: value 4096) or admin (bit 0: value 1)
+    const canCreateShopDrawings = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 4096) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canCreateShopDrawings) {
+      return Response.json({ error: 'Insufficient permissions to create shop drawings' }, { status: 403 })
     }
 
     // Create shop drawing using direct Supabase

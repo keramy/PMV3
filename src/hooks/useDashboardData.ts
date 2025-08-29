@@ -6,6 +6,7 @@
 'use client'
 
 import { useQuery, useQueries, keepPreviousData } from '@tanstack/react-query'
+import { usePermissions } from '@/hooks/usePermissions'
 import type { 
   Project, 
   Task, 
@@ -15,6 +16,7 @@ import type {
   ChangeOrder,
   AppUserProfile
 } from '@/types/database'
+import type { Permission } from '@/types/auth'
 
 // Temporary type for missing Milestone table
 type Milestone = {
@@ -24,7 +26,6 @@ type Milestone = {
   completed_at?: string
   status: string
 }
-import type { Permission } from '@/types/auth'
 
 // Construction-specific dashboard metrics
 export interface DashboardMetrics {
@@ -233,9 +234,11 @@ export function useDashboardData(userProfile: AppUserProfile | null) {
 
 // Permission-based data filtering
 export function useRoleSpecificData(userProfile: AppUserProfile | null) {
-  const hasFinanceAccess = userProfile?.permissions?.includes('view_project_budgets')
-  const hasAdminAccess = userProfile?.permissions?.includes('manage_users')
-  const hasProjectManagement = userProfile?.permissions?.includes('create_projects')
+  const { hasPermission } = usePermissions()
+  
+  const hasFinanceAccess = hasPermission('view_all_costs')
+  const hasAdminAccess = hasPermission('manage_users')  
+  const hasProjectManagement = hasPermission('create_projects')
 
   return useQuery({
     queryKey: ['role-data', userProfile?.id, userProfile?.permissions],
@@ -271,7 +274,10 @@ export function useSafetyMetrics(userProfile: AppUserProfile | null) {
       if (!response.ok) throw new Error('Failed to fetch safety metrics')
       return response.json()
     },
-    enabled: !!userProfile && userProfile.permissions?.includes('view_project_reports'),
+    enabled: !!userProfile && !!(
+      (userProfile.permissions_bitwise && (userProfile.permissions_bitwise & 2) > 0) || // VIEW_ASSIGNED_PROJECTS
+      (userProfile.permissions_bitwise && (userProfile.permissions_bitwise & 1) > 0)    // Admin access
+    ),
     staleTime: 5 * 60 * 1000,
     refetchInterval: 15 * 60 * 1000,
   })

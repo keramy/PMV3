@@ -54,6 +54,7 @@ export type Permission =
   | 'view_tasks'
   | 'create_tasks'
   | 'assign_tasks'
+  | 'edit_tasks'
   | 'complete_tasks'
   | 'view_all_tasks'
   
@@ -85,14 +86,20 @@ export type Permission =
   | 'manage_users'
   | 'manage_permissions'
   | 'manage_company_settings'
-  | 'view_audit_logs'
+  | 'view_audit_logs' // Maps to bitwise VIEW_AUDIT_LOGS (bit 25)
+  | 'backup_restore' // Maps to bitwise BACKUP_RESTORE_DATA (bit 27)
   
   // Client portal
-  | 'access_client_portal'
-  | 'view_client_projects'
+  | 'client_portal_access' // Maps to VIEW_ASSIGNED_PROJECTS
+  | 'submit_feedback' // Maps to VIEW_ASSIGNED_PROJECTS  
+  | 'approve_drawings_client' // Maps to APPROVE_SHOP_DRAWINGS_CLIENT
   
   // Finance and billing
   | 'view_project_budgets'
+  | 'view_all_costs'
+  | 'approve_expenses'
+  | 'generate_financial_reports'
+  | 'export_data'
   | 'approve_invoices'
 
 // User profile with dynamic permissions

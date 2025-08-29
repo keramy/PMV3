@@ -23,12 +23,15 @@ export async function GET(request: NextRequest) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasPermission(profile.permissions, SCOPE_PERMISSIONS.EXCEL_EXPORT)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check EXPORT_DATA permission (bit 22: value 4194304) or admin (bit 0: value 1)
+    const canExportData = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 4194304) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canExportData) {
+      return Response.json({ error: 'Insufficient permissions to export Excel data' }, { status: 403 })
     }
 
     // Parse query parameters

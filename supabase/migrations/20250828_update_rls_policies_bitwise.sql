@@ -94,11 +94,12 @@ USING (
 -- Drop existing policy if exists
 DROP POLICY IF EXISTS "material_specs_access" ON material_specs;
 
--- Check if material_specs table exists before creating policy
+-- Create material_specs policy if table exists
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'material_specs') THEN
-    EXECUTE 'CREATE POLICY "material_specs_access" ON material_specs
+    EXECUTE '
+    CREATE POLICY "material_specs_access" ON material_specs
     FOR ALL
     USING (
       -- Project owner can access material specs
@@ -112,7 +113,7 @@ BEGIN
           -- Others can see if assigned to project (bit 1: VIEW_ASSIGNED_PROJECTS)
           ((up.permissions_bitwise & 2) > 0 AND 
            (EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = material_specs.project_id AND pm.user_id = up.id) OR
-            COALESCE(up.assigned_projects, '''{}''')::text[] @> ARRAY[material_specs.project_id::text]))
+            COALESCE(up.assigned_projects, ARRAY[]::uuid[])::text[] @> ARRAY[material_specs.project_id::text]))
         )
       )
     )';
@@ -185,7 +186,8 @@ DROP POLICY IF EXISTS "notifications_access" ON notifications;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'notifications') THEN
-    EXECUTE 'CREATE POLICY "notifications_access" ON notifications
+    EXECUTE '
+    CREATE POLICY "notifications_access" ON notifications
     FOR ALL
     USING (
       -- Users can see their own notifications
@@ -213,7 +215,8 @@ DROP POLICY IF EXISTS "activity_logs_access" ON activity_logs;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'activity_logs') THEN
-    EXECUTE 'CREATE POLICY "activity_logs_access" ON activity_logs
+    EXECUTE '
+    CREATE POLICY "activity_logs_access" ON activity_logs
     FOR SELECT
     USING (
       EXISTS (
@@ -239,7 +242,8 @@ DROP POLICY IF EXISTS "shop_drawing_comments_access" ON shop_drawing_comments;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'shop_drawing_comments') THEN
-    EXECUTE 'CREATE POLICY "shop_drawing_comments_access" ON shop_drawing_comments
+    EXECUTE '
+    CREATE POLICY "shop_drawing_comments_access" ON shop_drawing_comments
     FOR ALL
     USING (
       -- Users can access comments if they can access the shop drawing
@@ -258,7 +262,7 @@ BEGIN
               -- Others can see if assigned and have view permission
               ((up.permissions_bitwise & 2) > 0 AND (up.permissions_bitwise & 2048) > 0 AND
                (EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = sd.project_id AND pm.user_id = up.id) OR
-                COALESCE(up.assigned_projects, '''{}''')::text[] @> ARRAY[sd.project_id::text]))
+                COALESCE(up.assigned_projects, ARRAY[]::uuid[])::text[] @> ARRAY[sd.project_id::text]))
             )
           )
         )
@@ -299,7 +303,7 @@ BEGIN
               -- Others can see if assigned to project
               ((up.permissions_bitwise & 2) > 0 AND
                (EXISTS (SELECT 1 FROM project_members pm WHERE pm.project_id = t.project_id AND pm.user_id = up.id) OR
-                COALESCE(up.assigned_projects, '''{}''')::text[] @> ARRAY[t.project_id::text]))
+                COALESCE(up.assigned_projects, ARRAY[]::uuid[])::text[] @> ARRAY[t.project_id::text]))
             )
           )
         )

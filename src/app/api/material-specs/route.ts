@@ -197,12 +197,15 @@ export const POST = apiMiddleware.validate(
     const supabase = await createClient()
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !profile.permissions || !profile.permissions.includes('create_materials')) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check MANAGE_MATERIALS permission (bit 10: value 1024) or admin (bit 0: value 1)
+    const canCreateMaterials = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 1024) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canCreateMaterials) {
+      return Response.json({ error: 'Insufficient permissions to create materials' }, { status: 403 })
     }
 
     // Create material spec

@@ -23,12 +23,11 @@ import {
   Target
 } from 'lucide-react'
 import type { DashboardMetrics } from '@/hooks/useDashboardData'
-import type { Permission } from '@/types/auth'
+import { usePermissions } from '@/hooks/usePermissions'
 
 interface MetricsCardsProps {
   metrics?: DashboardMetrics
   isLoading: boolean
-  permissions: Permission[]
 }
 
 interface MetricCardProps {
@@ -89,7 +88,8 @@ function MetricCard({ title, value, subtitle, trend, icon, color, isLoading }: M
   )
 }
 
-export function MetricsCards({ metrics, isLoading, permissions }: MetricsCardsProps) {
+export function MetricsCards({ metrics, isLoading }: MetricsCardsProps) {
+  const { hasPermission, hasAnyPermission } = usePermissions()
   if (!metrics && !isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -146,7 +146,7 @@ export function MetricsCards({ metrics, isLoading, permissions }: MetricsCardsPr
   ]
 
   // Financial metrics for users with budget permissions
-  const financialMetrics = permissions.includes('view_project_budgets') ? [
+  const financialMetrics = hasPermission('view_project_budgets') ? [
     {
       title: 'Total Budget',
       value: `$${((metrics?.totalBudget || 0) / 1000000).toFixed(1)}M`,
@@ -161,7 +161,7 @@ export function MetricsCards({ metrics, isLoading, permissions }: MetricsCardsPr
   ] : []
 
   // Safety metrics for supervisory roles
-  const safetyMetrics = permissions.some(p => ['view_project_reports', 'manage_users'].includes(p)) ? [
+  const safetyMetrics = hasAnyPermission(['view_project_reports', 'manage_users']) ? [
     {
       title: 'Safety Score',
       value: metrics ? `${Math.max(0, 100 - (metrics.safetyIncidents * 5))}%` : '100%',

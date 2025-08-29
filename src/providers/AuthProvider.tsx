@@ -11,6 +11,7 @@ import { getSupabaseSingleton } from '@/lib/supabase/singleton'
 import { PermissionManager, PERMISSIONS, hasPermission, canViewCosts, isAdmin, canManageProject } from '@/lib/permissions/bitwise'
 import type { User } from '@supabase/supabase-js'
 import type { AppUserProfile } from '@/types/database'
+import type { Permission } from '@/types/auth'
 import type { Project } from '@/lib/permissions/bitwise'
 
 interface AuthContextType {
@@ -57,7 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const supabaseRef = useRef(getSupabaseSingleton())
   const profileCacheRef = useRef<{ userId: string; profile: AppUserProfile | null; timestamp: number } | null>(null)
 
-  const fetchUserProfile = async (userId: string, useCache: boolean = true): Promise<AppUserProfile | null> => {
+  const fetchUserProfile = async (userId: string, useCache: boolean = true, retryCount: number = 0): Promise<AppUserProfile | null> => {
     // Use cache if available and recent (within 5 seconds)
     const now = Date.now()
     if (useCache && profileCacheRef.current && 
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
     
     try {
-      console.log('🔐 AuthProvider: Fetching profile for user:', userId)
+      console.log('🔐 AuthProvider: Fetching profile for user:', userId, retryCount > 0 ? `(retry ${retryCount})` : '')
       
       const { data, error } = await supabaseRef.current
         .from('user_profiles')
@@ -78,6 +79,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (error) {
         console.error('🔐 AuthProvider: Profile fetch error:', error)
+        
+        // Retry on certain types of errors
+        if (retryCount < 2 && (
+          error.code === 'PGRST301' || // infinite recursion
+          error.message?.includes('infinite recursion') ||
+          error.message?.includes('policy') ||
+          error.message?.includes('timeout')
+        )) {
+          console.log('🔐 AuthProvider: Retrying profile fetch due to policy error')
+          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1))) // Exponential backoff
+          return fetchUserProfile(userId, false, retryCount + 1)
+        }
+        
         return null
       }
 
@@ -85,6 +99,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const profile: AppUserProfile = {
           ...data,
           permissions: Array.isArray(data.permissions) ? data.permissions as Permission[] : [],
+          permissions_bitwise: data.permissions_bitwise || 0, // Default to 0 if null
           full_name: [data.first_name, data.last_name].filter(Boolean).join(' ').trim() || 
                      (data.email ? data.email.split('@')[0] : 'User'),
           assigned_projects: data.assigned_projects || []
@@ -101,7 +116,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return profile
       }
 
-      // Cache null result too
+      // Cache null result too (but only for short time on policy errors)
       profileCacheRef.current = {
         userId,
         profile: null,
@@ -109,14 +124,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       return null
-    } catch (error) {
+    } catch (error: any) {
       console.error('🔐 AuthProvider: Profile fetch exception:', error)
       
-      // Cache null result on error
+      // Retry on RLS policy errors
+      if (retryCount < 2 && (
+        error.message?.includes('infinite recursion') ||
+        error.message?.includes('policy') ||
+        error.code === 'PGRST301'
+      )) {
+        console.log('🔐 AuthProvider: Retrying profile fetch due to exception')
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)))
+        return fetchUserProfile(userId, false, retryCount + 1)
+      }
+      
+      // Don't cache errors for too long
       profileCacheRef.current = {
         userId,
         profile: null,
-        timestamp: Date.now()
+        timestamp: Date.now() - 4000 // Cache for only 1 second on errors
       }
       
       return null

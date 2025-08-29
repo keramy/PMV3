@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/empty-state'
 import { useTasks } from '@/hooks/useTasks'
 import { useTaskRealtime } from '@/hooks/useTaskRealtime'
-import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { usePermissions } from '@/hooks/usePermissions'
 import { TaskCard } from './TaskCard'
 import { TaskForm } from './TaskForm'
 import { TaskFilters } from './TaskFilters'
@@ -33,7 +33,7 @@ export function TaskList({ projectId }: TaskListProps) {
     limit: 20
   })
 
-  const { hasPermission } = usePermissionsEnhanced()
+  const { hasPermission } = usePermissions()
 
   // Fetch tasks with filters
   const { data, isLoading, error } = useTasks({

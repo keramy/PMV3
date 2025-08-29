@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     console.log('🔍 Dashboard Metrics API - Fetching real data for user:', userId)
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Get all metrics from database in parallel
     const [

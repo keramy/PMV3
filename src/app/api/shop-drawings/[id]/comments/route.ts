@@ -8,7 +8,6 @@ import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { CommentFormData, CommentType } from '@/types/shop-drawings'
 import { SHOP_DRAWING_PERMISSIONS } from '@/types/shop-drawings'
-import { hasAnyPermission } from '@/lib/permissions'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -28,12 +27,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.VIEW)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check VIEW_SHOP_DRAWINGS permission (bit 11: value 2048) or admin (bit 0: value 1)
+    const canViewShopDrawings = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 2048) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canViewShopDrawings) {
+      return Response.json({ error: 'Insufficient permissions to view shop drawing comments' }, { status: 403 })
     }
 
     // Verify shop drawing exists
@@ -98,12 +100,15 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     // Get user profile for permissions
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('permissions')
+      .select('permissions_bitwise, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile || !hasAnyPermission(profile.permissions, SHOP_DRAWING_PERMISSIONS.COMMENT)) {
-      return Response.json({ error: 'Insufficient permissions' }, { status: 403 })
+    // Check EDIT_SHOP_DRAWINGS permission (bit 13: value 8192) for commenting or admin (bit 0: value 1)
+    const canComment = profile?.permissions_bitwise && 
+      ((profile.permissions_bitwise & 8192) > 0 || (profile.permissions_bitwise & 1) > 0)
+    if (!canComment) {
+      return Response.json({ error: 'Insufficient permissions to comment on shop drawings' }, { status: 403 })
     }
 
     // Parse request body
@@ -135,8 +140,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     // Validate comment type permissions
-    const canComment = validateCommentPermissions(body.comment_type, profile.permissions || [])
-    if (!canComment) {
+    const canCommentForType = validateCommentPermissions(body.comment_type, profile?.permissions_bitwise || 0)
+    if (!canCommentForType) {
       return Response.json({ 
         error: 'Insufficient permissions for this comment type',
         required_permission: getRequiredPermissionForCommentType(body.comment_type)
@@ -215,18 +220,24 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-// Helper function to validate comment permissions
-function validateCommentPermissions(commentType: CommentType, userPermissions: string[]): boolean {
+// Helper function to validate comment permissions using bitwise system
+function validateCommentPermissions(commentType: CommentType, userPermissionsBitwise: number): boolean {
+  // Admin always has permission
+  if ((userPermissionsBitwise & 1) > 0) return true
+
   switch (commentType) {
     case 'submittal':
-      return hasAnyPermission(userPermissions, SHOP_DRAWING_PERMISSIONS.SUBMIT_TO_CLIENT)
+      // Need APPROVE_SHOP_DRAWINGS permission (bit 14: value 16384)
+      return (userPermissionsBitwise & 16384) > 0
     case 'client_feedback':
     case 'approval':
     case 'rejection':
     case 'revision_request':
-      return hasAnyPermission(userPermissions, SHOP_DRAWING_PERMISSIONS.CLIENT_RESPONSE)
+      // Need APPROVE_SHOP_DRAWINGS_CLIENT permission (bit 15: value 32768)
+      return (userPermissionsBitwise & 32768) > 0
     case 'general':
-      return hasAnyPermission(userPermissions, SHOP_DRAWING_PERMISSIONS.COMMENT)
+      // Need EDIT_SHOP_DRAWINGS permission (bit 13: value 8192)
+      return (userPermissionsBitwise & 8192) > 0
     default:
       return false
   }

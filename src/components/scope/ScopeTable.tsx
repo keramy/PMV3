@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthContext } from '@/providers/AuthProvider'
-import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { usePermissions } from '@/hooks/usePermissions'
 import { toast } from '@/hooks/use-toast'
 import { useCreateScopeItem } from '@/hooks/useScope'
 import { EmptyScope, EmptyState } from '@/components/ui/empty-state'
@@ -132,8 +132,8 @@ interface SubcontractorOption {
 }
 
 export function ScopeTable({ projectId }: ScopeTableProps) {
-  // Enhanced permissions hook for cost visibility
-  const { canViewCosts, canEditCosts, isAdmin, filterCosts } = usePermissionsEnhanced()
+  // Comprehensive permissions hook for cost visibility
+  const { canViewCosts, canEditCosts, isAdmin, filterCosts } = usePermissions()
   
   const [selectedProject, setSelectedProject] = useState(projectId || 'all')
   const [searchTerm, setSearchTerm] = useState('')

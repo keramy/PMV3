@@ -3,7 +3,7 @@
  * Replaces mock data with actual Supabase queries
  */
 
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { apiMiddleware } from '@/lib/api/middleware'
 import { createClient } from '@/lib/supabase/server'
 import type { Project } from '@/types/database'

@@ -38,7 +38,7 @@ import { Loader2, Building2, Calendar, DollarSign, User, FileText } from 'lucide
 import { useAuthContext } from '@/providers/AuthProvider'
 import { useRouter } from 'next/navigation'
 import { useToast } from '@/hooks/use-toast'
-import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { usePermissions } from '@/hooks/usePermissions'
 // Remove complex schema dependency - use simple approach
 
 // Schema and types now imported from centralized location
@@ -53,13 +53,13 @@ export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: Pr
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { profile } = useAuthContext()
-  const { role } = usePermissionsEnhanced()
+  const { estimatedRole, canViewCosts, canManageProjects } = usePermissions()
   const router = useRouter()
   const { toast } = useToast()
   
-  // Simple form validation - no complex schemas
-  const canSetBudget = ['admin', 'technical_manager', 'project_manager'].includes(role || '')
-  const canSetPriority = ['admin', 'technical_manager', 'project_manager'].includes(role || '')
+  // Simple form validation using bitwise permissions
+  const canSetBudget = canViewCosts // If can view costs, can set budget
+  const canSetPriority = canManageProjects // If can manage projects, can set priority
 
   // Simple form interface
   interface SimpleProjectForm {
@@ -324,14 +324,14 @@ export function ProjectCreateDialog({ open, onOpenChange, onProjectCreated }: Pr
                       <FormLabel className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4" />
                         Budget (₺)
-                        {role === 'team_member' && (
+                        {estimatedRole === 'team_member' && (
                           <span className="text-xs text-orange-600">(Limited to ₺50,000)</span>
                         )}
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="text"
-                          placeholder={role === 'team_member' ? 'Max: 50,000' : 'e.g., 5,000,000'}
+                          placeholder={estimatedRole === 'team_member' ? 'Max: 50,000' : 'e.g., 5,000,000'}
                           {...field}
                           className="border-gray-400"
                         />

@@ -30,7 +30,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { useQuickStatusUpdate, useDeleteTask } from '@/hooks/useTasks'
-import { usePermissionsEnhanced } from '@/hooks/usePermissionsEnhanced'
+import { usePermissions } from '@/hooks/usePermissions'
 import { TaskDetail } from './TaskDetail'
 import type { Task, TaskStatus, TaskPriority } from '@/types/tasks'
 import { formatDistanceToNow, isOverdue as checkOverdue } from '@/lib/formatting'
@@ -53,7 +53,7 @@ export function TaskCard({ task }: TaskCardProps) {
   const [showDetail, setShowDetail] = useState(false)
   const updateStatus = useQuickStatusUpdate()
   const deleteTask = useDeleteTask()
-  const { hasPermission } = usePermissionsEnhanced()
+  const { hasPermission } = usePermissions()
 
   const handleStatusChange = (status: TaskStatus) => {
     updateStatus.mutate({ taskId: task.id, status })

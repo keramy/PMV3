@@ -280,5 +280,57 @@ try {
 ### Issue: CORS errors
 **Solution**: CORS is handled automatically by Next.js, check if calling correct URL
 
+## 🔥 NEW: Bitwise Permission Middleware
+
+### Updated Middleware Implementation
+Our middleware now uses the efficient bitwise permission system:
+
+```typescript
+// /src/lib/api/middleware.ts - Updated for bitwise
+export function withAuth(handler: AuthenticatedHandler) {
+  return async (request: NextRequest): Promise<Response> => {
+    // Get user permissions from database using bitwise column
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('permissions_bitwise, role') // ✅ No more permissions array
+      .eq('id', middlewareUserId)
+      .single()
+    
+    if (profile) {
+      user.permissions_bitwise = profile.permissions_bitwise || 0
+      user.role = profile.role || null
+      // Generate permissions array from bitwise for compatibility
+      user.permissions = PermissionManager.getPermissionNames(user.permissions_bitwise)
+    }
+    
+    return await handler(user, request)
+  }
+}
+```
+
+### Bitwise Permission Mapping
+```typescript  
+// Middleware maps old Permission strings to bitwise constants
+const PERMISSION_MAPPING: Partial<Record<Permission, number>> = {
+  'manage_scope_items': PERMISSIONS.MANAGE_SCOPE,        // 256
+  'view_financial_data': PERMISSIONS.VIEW_FINANCIAL_DATA, // 32
+  'approve_shop_drawings': PERMISSIONS.APPROVE_SHOP_DRAWINGS, // 16384
+  'manage_users': PERMISSIONS.MANAGE_ALL_USERS,          // 262144
+  // ... complete mapping
+}
+
+// Efficient bitwise permission check
+const hasRequiredPermission = permissions.some(permission => {
+  const bitwiseConstant = PERMISSION_MAPPING[permission]
+  return PermissionManager.hasPermission(user.permissions_bitwise!, bitwiseConstant)
+})
+```
+
+### Fixed Issues
+- ✅ **"permissions column does not exist"** - Middleware now uses `permissions_bitwise`  
+- ✅ **Duplicate foreign key constraints** - Removed duplicate `tasks_project_id_fkey`
+- ✅ **Hybrid permission complexity** - Pure bitwise system implementation
+- ✅ **Performance improvements** - Single integer vs array operations
+
 ---
-*Last Updated: December 2024*
+*Last Updated: December 2024 - Bitwise System Integration*

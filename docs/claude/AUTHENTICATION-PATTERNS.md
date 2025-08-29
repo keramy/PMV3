@@ -117,46 +117,49 @@ export function useProjectData(projectId: string) {
 
 ### User Profile Structure
 ```typescript
-interface UserProfile {
+interface AppUserProfile {
   id: string
   email: string
-  permissions: string[]  // Dynamic permission array
+  permissions_bitwise: number  // Bitwise permission value
+  role?: string | null
+  assigned_projects?: string[]
   job_title?: string
-  // ... other fields
+  // Legacy permissions array generated from bitwise for compatibility
+  permissions?: string[]
 }
 ```
 
-### Common Permissions
+### Bitwise Permission System
 ```typescript
-// Project permissions
-'view_all_projects'    // See all company projects
-'create_projects'      // Create new projects
-'manage_all_projects'  // Edit/delete any project
+// User has bitwise permission value (e.g. 268435455 for admin)
+const { hasPermission, canViewCosts, isAdmin } = usePermissions()
 
-// Feature permissions
-'view_scope'          // View scope items
-'manage_scope_items'  // Create/edit/delete scope
-'view_materials'      // View material specs
-'approve_material_specs' // PM approval rights
-'view_drawings'       // View shop drawings
-'manage_drawings'     // Upload/manage drawings
-'view_tasks'         // View tasks
-'manage_tasks'       // Create/edit tasks
+// Permission checking uses efficient bitwise operations
+const canManageScope = hasPermission('manage_scope_items') // Maps to PERMISSIONS.MANAGE_SCOPE
+const canViewFinancials = hasPermission('view_financial_data') // Maps to PERMISSIONS.VIEW_FINANCIAL_DATA
 
-// Financial permissions
-'view_financial_data'  // See costs and budgets
-'export_data'         // Export to Excel/CSV
+// Common bitwise permission values:
+// Admin: 268435455 (all 28 permission bits)
+// Project Manager: 184549375
+// Team Member: 4718594  
+// Client: 34818
 ```
 
 ## 🐛 Common Authentication Issues & Fixes
 
 ### Issue: "Access Denied" on API calls
-**Cause**: Missing permissions in user_profiles
-**Fix**: Update user permissions in database
+**Cause**: Missing bitwise permissions in user_profiles
+**Fix**: Update user permissions using bitwise values
 ```sql
+-- Set admin permissions (all 28 bits)
 UPDATE user_profiles 
-SET permissions = ARRAY['view_scope', 'manage_scope_items', ...]
-WHERE email = 'user@example.com';
+SET permissions_bitwise = 268435455, role = 'admin'
+WHERE email = 'admin@example.com';
+
+-- Set project manager permissions
+UPDATE user_profiles 
+SET permissions_bitwise = 184549375, role = 'project_manager'
+WHERE email = 'pm@example.com';
 ```
 
 ### Issue: 401 Unauthorized
@@ -212,5 +215,39 @@ useEffect(() => {
 - `/auth-debug` - Authentication debugging page
 - `/api/auth-debug` - API endpoint for auth testing
 
+## 🔥 NEW: Bitwise Permission Troubleshooting
+
+### Issue: "permissions column does not exist"
+**Cause**: Middleware trying to access removed permissions array column
+**Fix**: Our middleware now properly uses `permissions_bitwise` column
+```typescript
+// ✅ FIXED in middleware.ts
+const { data: profile } = await supabase
+  .from('user_profiles')
+  .select('permissions_bitwise, role')
+  .eq('id', userId)
+  .single()
+```
+
+### Issue: User permissions showing as 0 or null
+**Cause**: User has no bitwise permissions assigned
+**Fix**: Assign proper role-based permissions
+```sql
+-- Assign admin permissions
+UPDATE user_profiles 
+SET permissions_bitwise = 268435455, role = 'admin'
+WHERE email = 'user@example.com';
+
+-- Check user bitwise permissions
+SELECT email, permissions_bitwise, role
+FROM user_profiles 
+WHERE email = 'user@example.com';
+
+-- Check if user has specific permission (e.g. VIEW_SCOPE = 2)
+SELECT email, (permissions_bitwise & 2) > 0 as can_view_scope
+FROM user_profiles 
+WHERE email = 'user@example.com';
+```
+
 ---
-*Last Updated: December 2024*
+*Last Updated: December 2024 - Bitwise System Implementation*
